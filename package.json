@@ -6,7 +6,20 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "start": "node .output/server/index.mjs"
+    "start": "node .output/server/index.mjs",
+    "db:start": "bun scripts/db-local.ts start",
+    "db:stop": "bun scripts/db-local.ts stop",
+    "db:setup": "bun scripts/db-local.ts start && bun scripts/db-bootstrap.ts && bun scripts/migrate.ts up && bun scripts/migrate.ts up --test && bun scripts/seed.ts",
+    "db:ping": "bun scripts/db-ping.ts",
+    "db:migrate": "bun scripts/migrate.ts up && bun scripts/migrate.ts up --test",
+    "db:status": "bun scripts/migrate.ts status",
+    "db:reset": "bun scripts/migrate.ts reset",
+    "db:seed": "bun scripts/seed.ts",
+    "lint": "biome check . && bun scripts/lint-sql.ts",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "bun run lint && bun run typecheck && bun run test"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.2",

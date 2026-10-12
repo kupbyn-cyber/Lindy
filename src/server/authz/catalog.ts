@@ -1,0 +1,105 @@
+// Danh mục quyền theo PRD §4 và module lịch §4 (gồm B05–B07). Quyền gán theo vai trò và cơ sở, không theo tên người.
+
+export const PERMISSIONS = {
+  'appointments.read_branch': 'Xem lịch chung trong cơ sở',
+  'appointments.create': 'Tạo lịch (Mới đặt)',
+  'appointments.update_own_pending': 'Sửa lịch mình tạo khi còn Mới đặt',
+  'appointments.cancel_own_pending': 'Tự huỷ lịch mình tạo khi còn Mới đặt',
+  'appointments.report_customer_cancel': 'Bấm Khách báo huỷ',
+  'appointments.mark_arrived': 'Bấm Khách đã đến',
+  'appointments.create_order': 'Tạo đơn từ lịch',
+  'appointments.manage_all': 'Sửa mọi lịch, đánh dấu không đến, Hoàn thành',
+  'appointments.confirm_all': 'Chốt lịch, Tạo và chốt',
+  'appointments.cancel_all': 'Huỷ mọi lịch',
+  'appointments.audit_read': 'Xem lịch sử thay đổi mọi lịch',
+  'deposits.record': 'Ghi khoản cọc',
+  'deposits.confirm': 'Xác nhận tiền cọc đã vào',
+  'deposits.resolve': 'Hoàn cọc, giữ cọc',
+  'booking_settings.manage': 'Cài đặt lịch: giờ mở cửa, thời lượng, mùa cọc',
+  'order.create_draft': 'Tạo đơn nháp',
+  'order.confirm': 'Xác nhận bill',
+  'discount.apply_up_to_10pct': 'Áp giảm giá đến 10%',
+  'discount.approve_up_to_20pct': 'Duyệt giảm giá đến 20%',
+  'discount.approve_any': 'Duyệt mọi mức giảm giá',
+  'payroll.read_all_branch': 'Xem bảng lương toàn quán',
+  'payroll.read_own': 'Xem lương của mình',
+  'payroll.edit': 'Sửa bảng lương',
+  'payroll.approve_lock': 'Khoá bảng lương',
+  'payroll.pay': 'Chi lương',
+  'payroll.export_all_branch': 'Tải bảng lương toàn quán',
+  'money_accounts.read_balance': 'Xem số dư tài khoản tiền',
+  'profit.read': 'Xem lợi nhuận',
+  'expense.request': 'Đề nghị chi',
+  'expense.approve_within_limit': 'Duyệt chi trong hạn mức',
+  'expense.approve_above_limit': 'Duyệt chi trên hạn mức',
+  'advance.approve': 'Duyệt tạm ứng',
+  'attendance.approve': 'Duyệt công',
+  'review_queue.read': 'Xem danh sách Cần xem lại',
+  'catalog.manage': 'Quản lý danh mục dịch vụ',
+} as const
+
+export type Permission = keyof typeof PERMISSIONS
+
+const APPOINTMENTS_BASIC: Permission[] = [
+  'appointments.read_branch',
+  'appointments.create',
+  'appointments.update_own_pending',
+  'appointments.cancel_own_pending',
+  'appointments.report_customer_cancel',
+  'appointments.mark_arrived',
+  'appointments.create_order',
+]
+const APPOINTMENTS_EXTENDED: Permission[] = [
+  ...APPOINTMENTS_BASIC,
+  'appointments.manage_all',
+  'appointments.confirm_all',
+  'appointments.cancel_all',
+  'appointments.audit_read',
+]
+
+export const ROLES: Record<string, { name: string; permissions: Permission[] }> = {
+  owner: { name: 'Chủ', permissions: Object.keys(PERMISSIONS) as Permission[] },
+  manager: {
+    name: 'Quản lý',
+    permissions: [
+      ...APPOINTMENTS_EXTENDED,
+      'deposits.record',
+      'deposits.confirm',
+      'deposits.resolve',
+      'order.create_draft',
+      'order.confirm',
+      'discount.apply_up_to_10pct',
+      'discount.approve_up_to_20pct',
+      'payroll.read_all_branch',
+      'payroll.read_own',
+      'money_accounts.read_balance',
+      'expense.request',
+      'expense.approve_within_limit',
+      'attendance.approve',
+    ],
+  },
+  // Quyền lịch mở rộng không kéo theo quyền lương, thu chi, lợi nhuận, xác nhận bill hay xác nhận cọc (D17).
+  staff_booking_plus: {
+    name: 'Thợ (quyền lịch mở rộng)',
+    permissions: [
+      ...APPOINTMENTS_EXTENDED,
+      'deposits.record',
+      'deposits.resolve',
+      'order.create_draft',
+      'discount.apply_up_to_10pct',
+      'payroll.read_own',
+      'expense.request',
+    ],
+  },
+  staff: {
+    name: 'Thợ',
+    permissions: [
+      ...APPOINTMENTS_BASIC,
+      'deposits.record',
+      'order.create_draft',
+      'discount.apply_up_to_10pct',
+      'payroll.read_own',
+      'expense.request',
+    ],
+  },
+}
