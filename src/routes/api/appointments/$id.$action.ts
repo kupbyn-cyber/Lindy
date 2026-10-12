@@ -1,0 +1,44 @@
+// POST /api/appointments/:id/confirm | cancel | report-customer-cancel | arrived | no-show | complete
+// GET  /api/appointments/:id/audit
+import { createFileRoute } from '@tanstack/react-router'
+import { CancelBody, ReportCancelBody, VersionBody } from '~/server/appointments/schema'
+import { auditTrail, type Transition, transitionAppointment } from '~/server/appointments/service'
+import { requireAuth } from '~/server/auth/context'
+import { notFound } from '~/server/http/errors'
+import { handle, limitWrites, readBody } from '~/server/http/route'
+
+const ACTIONS: Record<string, Transition> = {
+  confirm: 'confirm',
+  cancel: 'cancel',
+  'report-customer-cancel': 'report_customer_cancel',
+  arrived: 'arrived',
+  'no-show': 'no_show',
+  complete: 'complete',
+}
+
+export const Route = createFileRoute('/api/appointments/$id/$action')({
+  server: {
+    handlers: {
+      GET: ({ request, params }) =>
+        handle(request, async () => {
+          if (params.action !== 'audit') throw notFound()
+          const auth = await requireAuth(request)
+          return Response.json({ items: await auditTrail(auth, params.id) })
+        }),
+      POST: ({ request, params }) =>
+        handle(request, async () => {
+          const action = ACTIONS[params.action]
+          if (!action) throw notFound()
+          const auth = await requireAuth(request)
+          limitWrites(auth.userId)
+          const body =
+            action === 'cancel'
+              ? await readBody(request, CancelBody)
+              : action === 'report_customer_cancel'
+                ? await readBody(request, ReportCancelBody)
+                : await readBody(request, VersionBody)
+          return Response.json(await transitionAppointment(auth, params.id, action, body))
+        }),
+    },
+  },
+})
