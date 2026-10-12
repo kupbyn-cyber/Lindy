@@ -48,7 +48,8 @@ for (const g of t.type.groups) {
       `font-weight: ${s.fontWeight};`,
     ]
     if (s.letterSpacing) rules.push(`letter-spacing: ${s.letterSpacing};`)
-    if (s.name === 'overline') rules.push('text-transform: uppercase;')
+    // Tailwind cũng có lớp "overline" (gạch trên chữ) — tắt để giữ đúng kiểu chữ của bộ giao diện.
+    if (s.name === 'overline') rules.push('text-transform: uppercase; text-decoration-line: none;')
     if (['display-money', 'amount'].includes(s.name))
       rules.push('font-variant-numeric: lining-nums tabular-nums;')
     typeClasses.push(`.${s.name} { ${rules.join(' ')} }`)

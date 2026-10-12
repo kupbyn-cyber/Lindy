@@ -1,6 +1,6 @@
 // Middleware toàn cục: header bảo mật cho mọi response [P18].
 // Kiểm Origin (CSRF) nằm trong handle() của từng API route ghi; app không dùng server function để ghi.
-import { createMiddleware, createStart } from '@tanstack/react-start'
+import { createCsrfMiddleware, createMiddleware, createStart } from '@tanstack/react-start'
 import { applySecurityHeaders } from './server/http/headers'
 
 const securityHeaders = createMiddleware().server(async ({ next, request }) => {
@@ -19,6 +19,9 @@ const securityHeaders = createMiddleware().server(async ({ next, request }) => {
   return result
 })
 
+// Server function (getMeFn) cũng được chặn gọi từ trang khác.
+const csrfMiddleware = createCsrfMiddleware({ filter: (ctx) => ctx.handlerType === 'serverFn' })
+
 export const startInstance = createStart(() => ({
-  requestMiddleware: [securityHeaders],
+  requestMiddleware: [csrfMiddleware, securityHeaders],
 }))

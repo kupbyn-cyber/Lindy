@@ -93,7 +93,7 @@
 .amount { font-family: var(--font-sans); font-size: 16px; line-height: 21px; font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
 .label { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; }
 .caption { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.01em; }
-.overline { font-family: var(--font-sans); font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.overline { font-family: var(--font-sans); font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; text-decoration-line: none; }
 .button-label { font-family: var(--font-sans); font-size: 15px; line-height: 20px; font-weight: 600; }
 .input-text { font-family: var(--font-sans); font-size: 16px; line-height: 22px; font-weight: 400; }
 .nav-label { font-family: var(--font-sans); font-size: 11px; line-height: 13px; font-weight: 500; }

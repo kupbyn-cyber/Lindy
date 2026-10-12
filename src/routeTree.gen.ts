@@ -19,7 +19,10 @@ import { Route as AppThongBaoRouteImport } from './routes/_app/thong-bao'
 import { Route as ApiBookingSettingsRouteImport } from './routes/api/booking-settings'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiMeRouteImport } from './routes/api/me'
+import { Route as AppLichIndexRouteImport } from './routes/_app/lich/index'
+import { Route as AppLichIdRouteImport } from './routes/_app/lich/$id'
 import { Route as AppThemIndexRouteImport } from './routes/_app/them/index'
+import { Route as AppThemCaiDatLichRouteImport } from './routes/_app/them/cai-dat-lich'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
 import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
 import { Route as ApiAppointmentsIndexRouteImport } from './routes/api/appointments/index'
@@ -88,9 +91,24 @@ const ApiMeRoute = ApiMeRouteImport.update({
   path: '/api/me',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppLichIndexRoute = AppLichIndexRouteImport.update({
+  id: '/lich/',
+  path: '/lich/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLichIdRoute = AppLichIdRouteImport.update({
+  id: '/lich/$id',
+  path: '/lich/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppThemIndexRoute = AppThemIndexRouteImport.update({
   id: '/them/',
   path: '/them/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemCaiDatLichRoute = AppThemCaiDatLichRouteImport.update({
+  id: '/them/cai-dat-lich',
+  path: '/them/cai-dat-lich',
   getParentRoute: () => AppRoute,
 } as any)
 const AppThemDoiMatKhauRoute = AppThemDoiMatKhauRouteImport.update({
@@ -197,6 +215,8 @@ export interface FileRoutesByFullPath {
   '/api/booking-settings': typeof ApiBookingSettingsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/me': typeof ApiMeRoute
+  '/lich/$id': typeof AppLichIdRoute
+  '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -210,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/lich/': typeof AppLichIndexRoute
   '/them/': typeof AppThemIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
@@ -227,6 +248,8 @@ export interface FileRoutesByTo {
   '/api/events': typeof ApiEventsRoute
   '/api/me': typeof ApiMeRoute
   '/': typeof AppIndexRoute
+  '/lich/$id': typeof AppLichIdRoute
+  '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -240,6 +263,7 @@ export interface FileRoutesByTo {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/lich': typeof AppLichIndexRoute
   '/them': typeof AppThemIndexRoute
   '/api/appointments': typeof ApiAppointmentsIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
@@ -259,6 +283,8 @@ export interface FileRoutesById {
   '/api/events': typeof ApiEventsRoute
   '/api/me': typeof ApiMeRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/lich/$id': typeof AppLichIdRoute
+  '/_app/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/_app/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -272,6 +298,7 @@ export interface FileRoutesById {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/_app/lich/': typeof AppLichIndexRoute
   '/_app/them/': typeof AppThemIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
@@ -291,6 +318,8 @@ export interface FileRouteTypes {
     | '/api/booking-settings'
     | '/api/events'
     | '/api/me'
+    | '/lich/$id'
+    | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
     | '/them/thong-bao'
     | '/api/appointments/$id'
@@ -304,6 +333,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/lich/'
     | '/them/'
     | '/api/appointments/'
     | '/api/notifications/'
@@ -321,6 +351,8 @@ export interface FileRouteTypes {
     | '/api/events'
     | '/api/me'
     | '/'
+    | '/lich/$id'
+    | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
     | '/them/thong-bao'
     | '/api/appointments/$id'
@@ -334,6 +366,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/lich'
     | '/them'
     | '/api/appointments'
     | '/api/notifications'
@@ -352,6 +385,8 @@ export interface FileRouteTypes {
     | '/api/events'
     | '/api/me'
     | '/_app/'
+    | '/_app/lich/$id'
+    | '/_app/them/cai-dat-lich'
     | '/_app/them/doi-mat-khau'
     | '/_app/them/thong-bao'
     | '/api/appointments/$id'
@@ -365,6 +400,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/_app/lich/'
     | '/_app/them/'
     | '/api/appointments/'
     | '/api/notifications/'
@@ -468,11 +504,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/lich/': {
+      id: '/_app/lich/'
+      path: '/lich'
+      fullPath: '/lich/'
+      preLoaderRoute: typeof AppLichIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/lich/$id': {
+      id: '/_app/lich/$id'
+      path: '/lich/$id'
+      fullPath: '/lich/$id'
+      preLoaderRoute: typeof AppLichIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/them/': {
       id: '/_app/them/'
       path: '/them'
       fullPath: '/them/'
       preLoaderRoute: typeof AppThemIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/cai-dat-lich': {
+      id: '/_app/them/cai-dat-lich'
+      path: '/them/cai-dat-lich'
+      fullPath: '/them/cai-dat-lich'
+      preLoaderRoute: typeof AppThemCaiDatLichRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/them/doi-mat-khau': {
@@ -609,8 +666,11 @@ interface AppRouteChildren {
   AppKhachRoute: typeof AppKhachRoute
   AppThongBaoRoute: typeof AppThongBaoRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppLichIdRoute: typeof AppLichIdRoute
+  AppThemCaiDatLichRoute: typeof AppThemCaiDatLichRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
   AppThemThongBaoRoute: typeof AppThemThongBaoRoute
+  AppLichIndexRoute: typeof AppLichIndexRoute
   AppThemIndexRoute: typeof AppThemIndexRoute
 }
 
@@ -619,8 +679,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppKhachRoute: AppKhachRoute,
   AppThongBaoRoute: AppThongBaoRoute,
   AppIndexRoute: AppIndexRoute,
+  AppLichIdRoute: AppLichIdRoute,
+  AppThemCaiDatLichRoute: AppThemCaiDatLichRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
   AppThemThongBaoRoute: AppThemThongBaoRoute,
+  AppLichIndexRoute: AppLichIndexRoute,
   AppThemIndexRoute: AppThemIndexRoute,
 }
 

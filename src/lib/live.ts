@@ -11,6 +11,7 @@ export function useLiveEvents(branchId: string | null) {
     if (!branchId || typeof window === 'undefined' || !('EventSource' in window)) return
     let es: EventSource | null = null
     let healthy = false
+    let everConnected = false
     let stopped = false
 
     const refreshAll = () => {
@@ -23,8 +24,9 @@ export function useLiveEvents(branchId: string | null) {
       es?.close()
       es = new EventSource('/api/events')
       es.addEventListener('ready', () => {
-        if (!healthy) refreshAll() // vừa nối lại: tải lại khoảng đang xem
+        if (everConnected && !healthy) refreshAll() // vừa nối lại: tải lại khoảng đang xem
         healthy = true
+        everConnected = true
       })
       es.addEventListener('appointments', () => void qc.invalidateQueries({ queryKey: ['appointments'] }))
       es.addEventListener('notifications', () => void qc.invalidateQueries({ queryKey: ['notifications'] }))
