@@ -2,7 +2,7 @@
 
 App quản lý nội bộ cho **Lindy Nailash Studio** (cơ sở 31/49 Huỳnh Thúc Kháng, Hà Nội; Instagram @lindy.nailashstudio): lịch đặt khách, đơn hàng, chia doanh thu thợ, thu chi, chấm công, lương, khách hàng. Web mobile-first/PWA, dùng trên iPhone.
 
-**Trạng thái (12/10/2026):** yêu cầu nghiệp vụ **đã đủ** (PRD v1.2, module lịch đặt v1.2). Nền tảng **đã chốt** (T01): kiến trúc như CEN WORK, chạy local trước, sau lên Vibe Hosting Mắt Bão. **Chưa có code.**
+**Trạng thái (13/10/2026):** Đợt 0 (nền móng) và Đợt 1 (lịch đặt, trừ cọc và tạo đơn) **chạy được ở local**; test tự động đạt. Chưa thử trên iPhone, chưa lên GitHub, chưa lên Mắt Bão. Cách chạy: `docs/CHAY_LOCAL.md`. Kế hoạch và kết quả: `docs/plans/2026-10-12-dot-0-dot-1.md`.
 
 ## Bắt đầu phiên làm việc với Claude Code
 

@@ -2,6 +2,29 @@
 
 **Đã chốt ngày 12/10/2026 (T01 trong `DECISIONS.md`):** phương án A, kiến trúc như CEN WORK. Chạy thật trên **Vibe Hosting của Mắt Bão**; tên miền mua sau. **Làm và chạy local trước**, xong mới đồng bộ lên GitHub. Code đặt tại `E:\AI - Vibecode\Lindy`.
 
+## Phiên bản đã ghim (13/10/2026, Đợt 0–1)
+
+Ghim chính xác trong `package.json` + `bun.lock`; không tự nâng.
+
+| Gói | Phiên bản | Ghi chú |
+|---|---|---|
+| `@tanstack/react-start` | 1.168.61 | SSR, server route `/api/*` |
+| `@tanstack/react-router` | 1.170.42 | |
+| `@tanstack/react-query` | 5.104.2 | |
+| `react`, `react-dom` | 19.3.0 | |
+| `vite` | 8.3.4 | |
+| `nitro` | 3.0.260903-beta | **beta**; preset node-server |
+| `tailwindcss`, `@tailwindcss/vite` | 4.3.3 | |
+| `postgres` (postgres.js) | 3.4.9 | SQL thuần, tagged template |
+| `web-push` | 3.6.7 | |
+| `zod` | 4.6.7 | |
+| `typescript` | 7.0.2 | |
+| `vitest` | 5.0.4 | |
+| `@biomejs/biome` | 2.5.15 | lint + format |
+| `embedded-postgres` | 16.14.0-beta.17 | PostgreSQL 16.14 nhúng cho local khi máy chưa cài PostgreSQL |
+
+Bun 1.4 cài gói và chạy script; server chạy bằng Node 24.
+
 Phần dưới giữ nguyên bản đề xuất để tra lý do chọn.
 
 ## Yêu cầu bắt buộc từ đặc tả

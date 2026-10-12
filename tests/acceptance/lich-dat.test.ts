@@ -1,7 +1,7 @@
 // Kiểm thử nghiệm thu module lịch đặt §13: test 01–20, 24, 25 (21–23 thử tay trên iPhone; 26–36 ở Đợt 2, 3).
 // Kèm test bảo mật S04, S05, S11, S12, S13 (kế hoạch 9.2).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { addDays, toLocalDate } from '../../src/lib/time'
+import { addDays, fromLocal, toLocalDate } from '../../src/lib/time'
 import { createUser, revokeBranch } from '../../src/server/admin/users'
 import { notifyOverdue } from '../../src/server/appointments/overdue'
 import { CreateBody, UpdateBody } from '../../src/server/appointments/schema'
@@ -524,9 +524,14 @@ describe('Thông báo §9', () => {
       auth('trang'),
       input({ date: today, startTime: '00:00', endTime: '00:15' }),
     )
-    // Ép giờ kết thúc vào quá khứ gần (lịch tạo trong ngày hôm nay có thể chưa qua giờ)
-    await owner`update appointments set start_at = now() - interval '2 hours', end_at = now() - interval '1 hour'
-                where id = ${appointment.id}`
+    // Ép lịch vào quá khứ gần, luôn nằm trong cùng một ngày (không vắt qua nửa đêm, kể cả khi test chạy lúc 00:xx)
+    let end = new Date(Date.now() - 60_000)
+    let start = new Date(end.getTime() - 10 * 60_000)
+    if (toLocalDate(start) !== toLocalDate(end)) {
+      end = new Date(fromLocal(toLocalDate(end), '00:00').getTime() - 60 * 60_000) // 23:00 hôm trước
+      start = new Date(end.getTime() - 30 * 60_000)
+    }
+    await owner`update appointments set start_at = ${start}, end_at = ${end} where id = ${appointment.id}`
     await notifyOverdue()
     await notifyOverdue()
     const ev = (await eventsFor(appointment.id)).filter((e) => e.type === 'appointment.overdue')
