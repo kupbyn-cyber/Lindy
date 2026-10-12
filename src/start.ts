@@ -4,6 +4,9 @@ import { createMiddleware, createStart } from '@tanstack/react-start'
 import { applySecurityHeaders } from './server/http/headers'
 
 const securityHeaders = createMiddleware().server(async ({ next, request }) => {
+  // Khởi động tiến trình nền (push, việc định kỳ) ở request đầu tiên. Import động để không lọt vào bundle trình duyệt.
+  const { ensureWorker } = await import('./server/worker')
+  ensureWorker()
   const result = await next()
   try {
     applySecurityHeaders(result.response.headers, {

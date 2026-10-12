@@ -9,60 +9,541 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as DangNhapRouteImport } from './routes/dang-nhap'
+import { Route as DoiMatKhauRouteImport } from './routes/doi-mat-khau'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppDonHangRouteImport } from './routes/_app/don-hang'
+import { Route as AppKhachRouteImport } from './routes/_app/khach'
+import { Route as AppThongBaoRouteImport } from './routes/_app/thong-bao'
+import { Route as ApiEventsRouteImport } from './routes/api/events'
+import { Route as ApiMeRouteImport } from './routes/api/me'
+import { Route as AppThemIndexRouteImport } from './routes/_app/them/index'
+import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
+import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthPasswordRouteImport } from './routes/api/auth/password'
+import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
+import { Route as ApiNotificationsPreferencesRouteImport } from './routes/api/notifications/preferences'
+import { Route as ApiNotificationsUnreadCountRouteImport } from './routes/api/notifications/unread-count'
+import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
+import { Route as ApiPushSubscriptionsRouteImport } from './routes/api/push/subscriptions'
+import { Route as ApiPushTestRouteImport } from './routes/api/push/test'
+import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notifications/$id.read'
+import { Route as ApiPushSubscriptionsIdRouteImport } from './routes/api/push/subscriptions.$id'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DangNhapRoute = DangNhapRouteImport.update({
+  id: '/dang-nhap',
+  path: '/dang-nhap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DoiMatKhauRoute = DoiMatKhauRouteImport.update({
+  id: '/doi-mat-khau',
+  path: '/doi-mat-khau',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDonHangRoute = AppDonHangRouteImport.update({
+  id: '/don-hang',
+  path: '/don-hang',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppKhachRoute = AppKhachRouteImport.update({
+  id: '/khach',
+  path: '/khach',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThongBaoRoute = AppThongBaoRouteImport.update({
+  id: '/thong-bao',
+  path: '/thong-bao',
+  getParentRoute: () => AppRoute,
+} as any)
+const ApiEventsRoute = ApiEventsRouteImport.update({
+  id: '/api/events',
+  path: '/api/events',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMeRoute = ApiMeRouteImport.update({
+  id: '/api/me',
+  path: '/api/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppThemIndexRoute = AppThemIndexRouteImport.update({
+  id: '/them/',
+  path: '/them/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemDoiMatKhauRoute = AppThemDoiMatKhauRouteImport.update({
+  id: '/them/doi-mat-khau',
+  path: '/them/doi-mat-khau',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemThongBaoRoute = AppThemThongBaoRouteImport.update({
+  id: '/them/thong-bao',
+  path: '/them/thong-bao',
+  getParentRoute: () => AppRoute,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthPasswordRoute = ApiAuthPasswordRouteImport.update({
+  id: '/api/auth/password',
+  path: '/api/auth/password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotificationsIndexRoute = ApiNotificationsIndexRouteImport.update({
+  id: '/api/notifications/',
+  path: '/api/notifications/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotificationsPreferencesRoute =
+  ApiNotificationsPreferencesRouteImport.update({
+    id: '/api/notifications/preferences',
+    path: '/api/notifications/preferences',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiNotificationsUnreadCountRoute =
+  ApiNotificationsUnreadCountRouteImport.update({
+    id: '/api/notifications/unread-count',
+    path: '/api/notifications/unread-count',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPushConfigRoute = ApiPushConfigRouteImport.update({
+  id: '/api/push/config',
+  path: '/api/push/config',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushSubscriptionsRoute = ApiPushSubscriptionsRouteImport.update({
+  id: '/api/push/subscriptions',
+  path: '/api/push/subscriptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushTestRoute = ApiPushTestRouteImport.update({
+  id: '/api/push/test',
+  path: '/api/push/test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotificationsIdReadRoute = ApiNotificationsIdReadRouteImport.update({
+  id: '/api/notifications/$id/read',
+  path: '/api/notifications/$id/read',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushSubscriptionsIdRoute = ApiPushSubscriptionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiPushSubscriptionsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/dang-nhap': typeof DangNhapRoute
+  '/doi-mat-khau': typeof DoiMatKhauRoute
+  '/don-hang': typeof AppDonHangRoute
+  '/khach': typeof AppKhachRoute
+  '/thong-bao': typeof AppThongBaoRoute
+  '/api/events': typeof ApiEventsRoute
+  '/api/me': typeof ApiMeRoute
+  '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/thong-bao': typeof AppThemThongBaoRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
+  '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
+  '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
+  '/api/push/test': typeof ApiPushTestRoute
+  '/them/': typeof AppThemIndexRoute
+  '/api/notifications/': typeof ApiNotificationsIndexRoute
+  '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
+  '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/dang-nhap': typeof DangNhapRoute
+  '/doi-mat-khau': typeof DoiMatKhauRoute
+  '/don-hang': typeof AppDonHangRoute
+  '/khach': typeof AppKhachRoute
+  '/thong-bao': typeof AppThongBaoRoute
+  '/api/events': typeof ApiEventsRoute
+  '/api/me': typeof ApiMeRoute
+  '/': typeof AppIndexRoute
+  '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/thong-bao': typeof AppThemThongBaoRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
+  '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
+  '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
+  '/api/push/test': typeof ApiPushTestRoute
+  '/them': typeof AppThemIndexRoute
+  '/api/notifications': typeof ApiNotificationsIndexRoute
+  '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
+  '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/dang-nhap': typeof DangNhapRoute
+  '/doi-mat-khau': typeof DoiMatKhauRoute
+  '/_app/don-hang': typeof AppDonHangRoute
+  '/_app/khach': typeof AppKhachRoute
+  '/_app/thong-bao': typeof AppThongBaoRoute
+  '/api/events': typeof ApiEventsRoute
+  '/api/me': typeof ApiMeRoute
+  '/_app/': typeof AppIndexRoute
+  '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/_app/them/thong-bao': typeof AppThemThongBaoRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
+  '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
+  '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
+  '/api/push/test': typeof ApiPushTestRoute
+  '/_app/them/': typeof AppThemIndexRoute
+  '/api/notifications/': typeof ApiNotificationsIndexRoute
+  '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
+  '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dang-nhap'
+    | '/doi-mat-khau'
+    | '/don-hang'
+    | '/khach'
+    | '/thong-bao'
+    | '/api/events'
+    | '/api/me'
+    | '/them/doi-mat-khau'
+    | '/them/thong-bao'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/password'
+    | '/api/notifications/preferences'
+    | '/api/notifications/unread-count'
+    | '/api/push/config'
+    | '/api/push/subscriptions'
+    | '/api/push/test'
+    | '/them/'
+    | '/api/notifications/'
+    | '/api/notifications/$id/read'
+    | '/api/push/subscriptions/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/dang-nhap'
+    | '/doi-mat-khau'
+    | '/don-hang'
+    | '/khach'
+    | '/thong-bao'
+    | '/api/events'
+    | '/api/me'
+    | '/'
+    | '/them/doi-mat-khau'
+    | '/them/thong-bao'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/password'
+    | '/api/notifications/preferences'
+    | '/api/notifications/unread-count'
+    | '/api/push/config'
+    | '/api/push/subscriptions'
+    | '/api/push/test'
+    | '/them'
+    | '/api/notifications'
+    | '/api/notifications/$id/read'
+    | '/api/push/subscriptions/$id'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/dang-nhap'
+    | '/doi-mat-khau'
+    | '/_app/don-hang'
+    | '/_app/khach'
+    | '/_app/thong-bao'
+    | '/api/events'
+    | '/api/me'
+    | '/_app/'
+    | '/_app/them/doi-mat-khau'
+    | '/_app/them/thong-bao'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/password'
+    | '/api/notifications/preferences'
+    | '/api/notifications/unread-count'
+    | '/api/push/config'
+    | '/api/push/subscriptions'
+    | '/api/push/test'
+    | '/_app/them/'
+    | '/api/notifications/'
+    | '/api/notifications/$id/read'
+    | '/api/push/subscriptions/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  DangNhapRoute: typeof DangNhapRoute
+  DoiMatKhauRoute: typeof DoiMatKhauRoute
+  ApiEventsRoute: typeof ApiEventsRoute
+  ApiMeRoute: typeof ApiMeRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthPasswordRoute: typeof ApiAuthPasswordRoute
+  ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
+  ApiNotificationsUnreadCountRoute: typeof ApiNotificationsUnreadCountRoute
+  ApiPushConfigRoute: typeof ApiPushConfigRoute
+  ApiPushSubscriptionsRoute: typeof ApiPushSubscriptionsRouteWithChildren
+  ApiPushTestRoute: typeof ApiPushTestRoute
+  ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
+  ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dang-nhap': {
+      id: '/dang-nhap'
+      path: '/dang-nhap'
+      fullPath: '/dang-nhap'
+      preLoaderRoute: typeof DangNhapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/doi-mat-khau': {
+      id: '/doi-mat-khau'
+      path: '/doi-mat-khau'
+      fullPath: '/doi-mat-khau'
+      preLoaderRoute: typeof DoiMatKhauRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/don-hang': {
+      id: '/_app/don-hang'
+      path: '/don-hang'
+      fullPath: '/don-hang'
+      preLoaderRoute: typeof AppDonHangRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/khach': {
+      id: '/_app/khach'
+      path: '/khach'
+      fullPath: '/khach'
+      preLoaderRoute: typeof AppKhachRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/thong-bao': {
+      id: '/_app/thong-bao'
+      path: '/thong-bao'
+      fullPath: '/thong-bao'
+      preLoaderRoute: typeof AppThongBaoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/api/events': {
+      id: '/api/events'
+      path: '/api/events'
+      fullPath: '/api/events'
+      preLoaderRoute: typeof ApiEventsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/me': {
+      id: '/api/me'
+      path: '/api/me'
+      fullPath: '/api/me'
+      preLoaderRoute: typeof ApiMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/them/': {
+      id: '/_app/them/'
+      path: '/them'
+      fullPath: '/them/'
+      preLoaderRoute: typeof AppThemIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/doi-mat-khau': {
+      id: '/_app/them/doi-mat-khau'
+      path: '/them/doi-mat-khau'
+      fullPath: '/them/doi-mat-khau'
+      preLoaderRoute: typeof AppThemDoiMatKhauRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/thong-bao': {
+      id: '/_app/them/thong-bao'
+      path: '/them/thong-bao'
+      fullPath: '/them/thong-bao'
+      preLoaderRoute: typeof AppThemThongBaoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/password': {
+      id: '/api/auth/password'
+      path: '/api/auth/password'
+      fullPath: '/api/auth/password'
+      preLoaderRoute: typeof ApiAuthPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notifications/': {
+      id: '/api/notifications/'
+      path: '/api/notifications'
+      fullPath: '/api/notifications/'
+      preLoaderRoute: typeof ApiNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notifications/preferences': {
+      id: '/api/notifications/preferences'
+      path: '/api/notifications/preferences'
+      fullPath: '/api/notifications/preferences'
+      preLoaderRoute: typeof ApiNotificationsPreferencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notifications/unread-count': {
+      id: '/api/notifications/unread-count'
+      path: '/api/notifications/unread-count'
+      fullPath: '/api/notifications/unread-count'
+      preLoaderRoute: typeof ApiNotificationsUnreadCountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/config': {
+      id: '/api/push/config'
+      path: '/api/push/config'
+      fullPath: '/api/push/config'
+      preLoaderRoute: typeof ApiPushConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/subscriptions': {
+      id: '/api/push/subscriptions'
+      path: '/api/push/subscriptions'
+      fullPath: '/api/push/subscriptions'
+      preLoaderRoute: typeof ApiPushSubscriptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/test': {
+      id: '/api/push/test'
+      path: '/api/push/test'
+      fullPath: '/api/push/test'
+      preLoaderRoute: typeof ApiPushTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notifications/$id/read': {
+      id: '/api/notifications/$id/read'
+      path: '/api/notifications/$id/read'
+      fullPath: '/api/notifications/$id/read'
+      preLoaderRoute: typeof ApiNotificationsIdReadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/subscriptions/$id': {
+      id: '/api/push/subscriptions/$id'
+      path: '/$id'
+      fullPath: '/api/push/subscriptions/$id'
+      preLoaderRoute: typeof ApiPushSubscriptionsIdRouteImport
+      parentRoute: typeof ApiPushSubscriptionsRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppDonHangRoute: typeof AppDonHangRoute
+  AppKhachRoute: typeof AppKhachRoute
+  AppThongBaoRoute: typeof AppThongBaoRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
+  AppThemThongBaoRoute: typeof AppThemThongBaoRoute
+  AppThemIndexRoute: typeof AppThemIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppDonHangRoute: AppDonHangRoute,
+  AppKhachRoute: AppKhachRoute,
+  AppThongBaoRoute: AppThongBaoRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
+  AppThemThongBaoRoute: AppThemThongBaoRoute,
+  AppThemIndexRoute: AppThemIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface ApiPushSubscriptionsRouteChildren {
+  ApiPushSubscriptionsIdRoute: typeof ApiPushSubscriptionsIdRoute
+}
+
+const ApiPushSubscriptionsRouteChildren: ApiPushSubscriptionsRouteChildren = {
+  ApiPushSubscriptionsIdRoute: ApiPushSubscriptionsIdRoute,
+}
+
+const ApiPushSubscriptionsRouteWithChildren =
+  ApiPushSubscriptionsRoute._addFileChildren(ApiPushSubscriptionsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  DangNhapRoute: DangNhapRoute,
+  DoiMatKhauRoute: DoiMatKhauRoute,
+  ApiEventsRoute: ApiEventsRoute,
+  ApiMeRoute: ApiMeRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthPasswordRoute: ApiAuthPasswordRoute,
+  ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
+  ApiNotificationsUnreadCountRoute: ApiNotificationsUnreadCountRoute,
+  ApiPushConfigRoute: ApiPushConfigRoute,
+  ApiPushSubscriptionsRoute: ApiPushSubscriptionsRouteWithChildren,
+  ApiPushTestRoute: ApiPushTestRoute,
+  ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
+  ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

@@ -1,0 +1,99 @@
+/* SINH TỰ ĐỘNG từ design/design-system/tokens.json — không sửa tay. Chạy: bun scripts/gen-tokens.ts */
+
+:root {
+  color-scheme: light dark;
+  --surface: #fbf8f3;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f4efe8;
+  --line: #e9e1da;
+  --line-strong: #9c8d82;
+  --ink: #241c1a;
+  --ink-muted: #6e625c;
+  --accent: #8c2f55;
+  --on-accent: #ffffff;
+  --accent-soft: #f6e8ee;
+  --success: #1d6b43;
+  --success-soft: #e2f2e8;
+  --warning: #94550a;
+  --warning-soft: #fdefd9;
+  --danger: #a8241c;
+  --danger-soft: #fbe3e1;
+  --shadow-sm: 0 1px 2px #241c1a1f;
+  --shadow-fab: 0 4px 12px #241c1a33, 0 1px 3px #241c1a26;
+  --shadow-lg: 0 8px 24px #241c1a29, 0 2px 6px #241c1a1a;
+  --focus-ring: 0 0 0 2px #fbf8f3, 0 0 0 4px #8c2f55;
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-sans: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --tap-min: 44px;
+  --control-h: 44px;
+  --fab-size: 56px;
+  --nav-h: 56px;
+}
+
+/* Sáng/tối tự đổi theo iPhone (G09); không có nút bật/tắt riêng. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #161214;
+    --surface-raised: #201a1d;
+    --surface-sunken: #120e10;
+    --line: #3a2f33;
+    --line-strong: #7d6e74;
+    --ink: #f3ece8;
+    --ink-muted: #b3a69f;
+    --accent: #e58fb1;
+    --on-accent: #2a0f1b;
+    --accent-soft: #3a1f2b;
+    --success: #7ccb9e;
+    --success-soft: #17301f;
+    --warning: #f0b464;
+    --warning-soft: #3a2a12;
+    --danger: #f2948c;
+    --danger-soft: #3d1a18;
+    --shadow-sm: 0 1px 2px #00000099;
+    --shadow-fab: 0 4px 14px #000000b3;
+    --shadow-lg: 0 10px 28px #000000cc;
+    --focus-ring: 0 0 0 2px #161214, 0 0 0 4px #e58fb1;
+  }
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+}
+
+.display-money { font-family: var(--font-display); font-size: 34px; line-height: 38px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: lining-nums tabular-nums; }
+.screen-title { font-family: var(--font-display); font-size: 26px; line-height: 30px; font-weight: 600; }
+.wordmark { font-family: var(--font-display); font-size: 20px; line-height: 24px; font-weight: 600; letter-spacing: 0.06em; }
+.body { font-family: var(--font-sans); font-size: 15px; line-height: 21px; font-weight: 400; }
+.body-strong { font-family: var(--font-sans); font-size: 15px; line-height: 21px; font-weight: 600; }
+.amount { font-family: var(--font-sans); font-size: 16px; line-height: 21px; font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
+.label { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; }
+.caption { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.01em; }
+.overline { font-family: var(--font-sans); font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.button-label { font-family: var(--font-sans); font-size: 15px; line-height: 20px; font-weight: 600; }
+.input-text { font-family: var(--font-sans); font-size: 16px; line-height: 22px; font-weight: 400; }
+.nav-label { font-family: var(--font-sans); font-size: 11px; line-height: 13px; font-weight: 500; }

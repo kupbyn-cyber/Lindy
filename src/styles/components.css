@@ -1,0 +1,545 @@
+/* Thành phần giao diện LINDY OS — chép từ design/design-system/components/bundle.css, thêm Sheet, Dialog, ô chọn. */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+.lo-icon {
+  display: block;
+  flex: none;
+}
+
+/* AppBar */
+.lo-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-h);
+  padding: env(safe-area-inset-top, 0px) var(--space-4) 0;
+  background: var(--surface);
+  color: var(--ink);
+}
+.lo-appbar-brand {
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+.lo-appbar-branch {
+  margin-left: auto;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.lo-appbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* BottomNav */
+.lo-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  display: flex;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.lo-nav-item {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--nav-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-1) 0;
+  background: none;
+  border: 0;
+  color: var(--ink-muted);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.lo-nav-item.is-active {
+  color: var(--accent);
+}
+.lo-nav-label {
+  white-space: nowrap;
+}
+.lo-nav-badge {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 6px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--on-accent);
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Fab */
+.lo-fab {
+  width: var(--fab-size);
+  height: var(--fab-size);
+  border: 0;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-fab);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+.lo-fab-fixed {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--nav-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 20;
+}
+.lo-fab:active {
+  transform: scale(0.96);
+}
+
+/* Button */
+.lo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: transform 120ms ease;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+.lo-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.lo-btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.lo-btn-secondary {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+.lo-btn-quiet {
+  background: transparent;
+  color: var(--accent);
+  padding: 0 var(--space-2);
+}
+.lo-btn-danger {
+  background: var(--surface-raised);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.lo-btn-block {
+  display: flex;
+  width: 100%;
+}
+.lo-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.lo-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  position: relative;
+}
+.lo-icon-btn .lo-nav-badge {
+  top: 6px;
+  left: auto;
+  right: 4px;
+}
+
+/* SegmentedControl */
+.lo-seg {
+  display: inline-flex;
+  padding: 2px;
+  min-height: var(--control-h);
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+.lo-seg-item {
+  flex: 1;
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lo-seg-item.is-active {
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Money */
+.lo-money {
+  font-variant-numeric: lining-nums tabular-nums;
+  white-space: nowrap;
+}
+.lo-money-xl {
+  font-family: var(--font-display);
+}
+.lo-tone-muted {
+  color: var(--ink-muted);
+}
+.lo-tone-negative {
+  color: var(--danger);
+}
+.lo-tone-positive {
+  color: var(--success);
+}
+
+/* Card */
+.lo-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  color: var(--ink);
+}
+.lo-overline {
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Dòng danh sách (OrderRow dùng chung) */
+.lo-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-raised);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+.lo-row-action {
+  cursor: pointer;
+}
+.lo-row-action:active {
+  background: var(--surface-sunken);
+}
+.lo-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.lo-row-title,
+.lo-row-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lo-row-meta {
+  color: var(--ink-muted);
+}
+.lo-row-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+/* StatusChip */
+.lo-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+.lo-chip-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.lo-chip-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.lo-chip-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.lo-chip-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.lo-chip-neutral {
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+}
+
+/* Toast */
+.lo-toast-wrap {
+  position: fixed;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: calc(var(--nav-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.lo-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--ink);
+  color: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: lo-fade 140ms ease-out;
+}
+.lo-toast-error .lo-icon {
+  color: var(--danger-soft);
+}
+
+/* TextField */
+.lo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.lo-field-label {
+  color: var(--ink);
+}
+.lo-field-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.lo-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-appearance: none;
+  appearance: none;
+}
+textarea.lo-input {
+  padding: 10px var(--space-3);
+  min-height: 72px;
+  resize: vertical;
+}
+select.lo-input {
+  padding-right: 32px;
+}
+.lo-input::placeholder {
+  color: var(--ink-muted);
+}
+.lo-field-money .lo-input {
+  padding-right: 32px;
+  text-align: right;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.lo-field-suffix {
+  position: absolute;
+  right: var(--space-3);
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+.has-error .lo-input {
+  border-color: var(--danger);
+}
+.lo-field-msg {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.lo-field-msg.is-error {
+  color: var(--danger);
+}
+
+/* Thông tin, cảnh báo trong form (không chặn lưu) */
+.lo-note {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+}
+.lo-note-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.lo-note-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* Bottom sheet và hộp xác nhận */
+.lo-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(0 0 0 / 0.35);
+  animation: lo-fade 140ms ease-out;
+}
+.lo-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  animation: lo-slide 160ms ease-out;
+}
+.lo-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+.lo-sheet-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.lo-sheet-foot {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.lo-dialog {
+  position: fixed;
+  left: var(--space-4);
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 55;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  background: var(--surface-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Keyboard focus */
+.lo-btn:focus-visible,
+.lo-fab:focus-visible,
+.lo-seg-item:focus-visible,
+.lo-row-action:focus-visible,
+.lo-input:focus-visible,
+.lo-input:focus,
+.lo-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.lo-nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+  border-radius: var(--radius-md);
+}
+
+@keyframes lo-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes lo-slide {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lo-fab,
+  .lo-btn {
+    transition: none;
+  }
+  .lo-fab:active,
+  .lo-btn:active:not(:disabled) {
+    transform: none;
+  }
+  .lo-toast,
+  .lo-sheet,
+  .lo-backdrop {
+    animation: none;
+  }
+}
