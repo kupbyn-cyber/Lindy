@@ -1,0 +1,22 @@
+<!-- @dsCard group="Số liệu" height=120 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Money — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root" class="lo-demo" style="gap:24px"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h(L.Money, { value: 8450000, size: 'xl' }),
+    h(L.Money, { value: 348000 }),
+    h(L.Money, { value: 2000000, sign: true, tone: 'positive' }),
+    h(L.Money, { value: -150000, tone: 'negative' }),
+    h(L.Money, { value: 59750, size: 'sm', tone: 'muted' })
+  ));
+</script>
+</body>
+</html>

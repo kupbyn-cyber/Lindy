@@ -1,0 +1,52 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>LINDY OS</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--surface); color:var(--ink); font-family:var(--font-sans); overflow:hidden; }
+  .cover { position:relative; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:480px; height:288px; }
+  .plum { fill:var(--accent); }
+  .taupe { fill:var(--line-strong); }
+  .bark { fill:var(--ink-muted); }
+  .deep { fill:var(--ink); }
+  .ivory { fill:var(--surface); }
+  .blk { rx:var(--radius-md); }
+  .words { position:absolute; left:var(--space-6); bottom:var(--space-6); max-width:440px; }
+  .name { margin:0; font-family:var(--font-display); font-size:84px; line-height:.92; font-weight:600; letter-spacing:.04em; color:var(--ink); white-space:nowrap; }
+  .tag { margin:var(--space-2) 0 0 4px; font-size:14px; line-height:20px; color:var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      accent 112×280 slab bled off the top (the one hue the brand acts with) · line-strong 64×160 and ink-muted 64×48 (the be–nâu of the shop's sign) · ink 272×264 bleeding off the right and bottom edges
+  arrangement one tall plum slab with two taupe satellites, then a deep ink field; bottoms of slab and satellites on one line space-6 above the edge, space-4 gutters
+  pattern     literal motif, chosen because the studio's work is nails: five nail silhouettes (pills of radius-full, half the 28px short side) rising from the bottom of the ink field in surface, the fourth painted accent like a feature nail
+  scales      sides in space-2 multiples; gutters space-4; nail pitch 40 (28 + space-3); corners radius-md; nails rx 14
+-->
+<rect class="plum blk" x="24" y="-16" width="112" height="280" rx="10"/>
+<rect class="bark blk" x="152" y="40" width="64" height="48" rx="10"/>
+<rect class="taupe blk" x="152" y="104" width="64" height="160" rx="10"/>
+<rect class="deep blk" x="232" y="40" width="272" height="264" rx="10"/>
+<rect class="ivory" x="256" y="156" width="28" height="164" rx="14"/>
+<rect class="ivory" x="296" y="120" width="28" height="200" rx="14"/>
+<rect class="ivory" x="336" y="100" width="28" height="220" rx="14"/>
+<rect class="plum" x="376" y="124" width="28" height="196" rx="14"/>
+<rect class="ivory" x="416" y="168" width="28" height="152" rx="14"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">LINDY OS</h1>
+<p class="tag">Tối giản, hiện đại, dịu nhẹ. App quản lý của Lindy Nailash Studio.</p>
+</div>
+</div>
+</body>
+</html>

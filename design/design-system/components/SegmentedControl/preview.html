@@ -1,0 +1,20 @@
+<!-- @dsCard group="Hành động" height=80 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SegmentedControl — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root" class="lo-demo"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  function Demo() {
+    var s = React.useState('today');
+    return h(L.SegmentedControl, { ariaLabel: 'Khoảng thời gian', options: [{ value: 'today', label: 'Hôm nay' }, { value: 'month', label: 'Tháng' }], value: s[0], onChange: s[1] });
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

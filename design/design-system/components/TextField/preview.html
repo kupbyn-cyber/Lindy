@@ -1,0 +1,26 @@
+<!-- @dsCard group="Nhập liệu" height=300 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>TextField — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root" class="lo-demo-col" style="max-width:360px"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  function Demo() {
+    var paid = React.useState(200000);
+    var name = React.useState('');
+    var due = 348000 - paid[0];
+    return h(React.Fragment, null,
+      h(L.TextField, { label: 'Tiền khách trả', money: true, value: paid[0], onValueChange: paid[1], hint: due > 0 ? 'Còn phải thu ' + L.formatVND(due) : 'Đã thu đủ' }),
+      h(L.TextField, { label: 'Tên khách', value: name[0], onChange: function (e) { name[1](e.target.value); }, placeholder: 'Bỏ trống nếu là khách lẻ' }),
+      h(L.TextField, { label: 'Lý do giảm giá', value: '', onChange: function () {}, error: 'Cần ghi lý do khi giảm giá.' })
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!-- @dsCard group="Trạng thái" height=110 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>StatusChip — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  function row(list) { return h('div', { className: 'lo-demo', style: { gap: '8px' } }, list.map(function (s) { return h(L.StatusChip, { key: s, status: s }); })); }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    row(['paid', 'partial', 'unpaid', 'refund_partial', 'refund_full']),
+    row(['draft', 'in_progress', 'awaiting', 'confirmed', 'cancelled'])
+  ));
+</script>
+</body>
+</html>

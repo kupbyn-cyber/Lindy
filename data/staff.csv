@@ -1,0 +1,5 @@
+﻿name,role,base_salary,commission_rate,leave_days_per_month,advance_max,shift,booking_permission,note
+Linh,Chủ,3500000,0.25,3,3500000,Fulltime 9:00–21:00,Mở rộng (sửa/xác nhận/huỷ mọi lịch),Có dòng lương như bảng tính (Q32)
+Nhung,Quản lý,7000000,0.25,4,7000000,Fulltime 9:00–21:00,Mở rộng (sửa/xác nhận/huỷ mọi lịch),"Thưởng KPI quản lý: 1% doanh thu quán từ 85tr, 1,5% từ 102tr; xem lương toàn quán (chỉ xem)"
+Chin,Thợ,4000000,0.25,3,4000000,Fulltime 9:00–21:00,Mở rộng (sửa/xác nhận/huỷ mọi lịch),Quyền lịch mở rộng không kéo theo quyền lương hay thu chi (D17)
+Trang,Thợ,3500000,0.25,3,3500000,Fulltime 9:00–21:00,"Thường (sửa, huỷ lịch mình tạo khi còn Mới đặt)",

@@ -1,0 +1,27 @@
+<!-- @dsCard group="Khung app" height=100 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>BottomNav — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root" class="lo-demo-col" style="max-width:390px"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  var items = [
+    { key: 'overview', label: 'Tổng quan', icon: 'home' },
+    { key: 'orders', label: 'Đơn hàng', icon: 'receipt', badge: 2 },
+    { key: 'schedule', label: 'Lịch', icon: 'calendar' },
+    { key: 'customers', label: 'Khách', icon: 'user' },
+    { key: 'more', label: 'Thêm', icon: 'more' }
+  ];
+  function Demo() {
+    var s = React.useState('overview');
+    return h('div', { className: 'lo-demo-phone' }, h(L.BottomNav, { items: items, active: s[0], onChange: s[1] }));
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

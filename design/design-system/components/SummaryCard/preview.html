@@ -1,0 +1,21 @@
+<!-- @dsCard group="Số liệu" height=250 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SummaryCard — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root" class="lo-demo-col" style="max-width:390px"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(L.SummaryCard, {
+    label: 'Doanh thu thuần',
+    value: 8450000,
+    rows: [{ label: 'Tiền đã thu', value: 7900000 }, { label: 'Còn khách nợ', value: 550000 }],
+    footnote: '12 đơn · 15 lượt dịch vụ · 2 chưa thu đủ · số liệu ví dụ'
+  }));
+</script>
+</body>
+</html>

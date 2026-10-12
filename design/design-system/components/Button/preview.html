@@ -1,0 +1,25 @@
+<!-- @dsCard group="Hành động" height=150 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Button — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h('div', { className: 'lo-demo' },
+      h(L.Button, { variant: 'primary' }, 'Xác nhận bill'),
+      h(L.Button, null, 'Lưu nháp'),
+      h(L.Button, { variant: 'quiet' }, 'Thêm ghi chú'),
+      h(L.Button, { variant: 'danger' }, 'Huỷ đơn')),
+    h('div', { className: 'lo-demo', style: { paddingTop: 0 } },
+      h(L.Button, { variant: 'primary', loading: true }, 'Ghi tiền'),
+      h(L.Button, { disabled: true }, 'Chốt ngày'))
+  ));
+</script>
+</body>
+</html>

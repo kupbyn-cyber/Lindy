@@ -1,0 +1,23 @@
+<!-- @dsCard group="Nền tảng" height=110 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Icon — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+<style>
+  .cell { display:flex; flex-direction:column; align-items:center; gap:6px; width:72px; color:var(--ink); }
+  .cell span { color:var(--ink-muted); }
+</style>
+</head>
+<body>
+<div id="root" class="lo-demo" style="gap:4px"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  var names = ['home', 'receipt', 'calendar', 'user', 'more', 'plus', 'check', 'chevron-right', 'search', 'wallet', 'alert'];
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null, names.map(function (n) {
+    return h('div', { key: n, className: 'cell' }, h(L.Icon, { name: n }), h('span', { className: 'caption' }, n));
+  })));
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>LINDY OS</title>
+  <rect width="512" height="512" fill="#8C2F55"/>
+  <g fill="#FFFFFF">
+    <rect x="192" y="136" width="44" height="240"/>
+    <rect x="164" y="136" width="100" height="14"/>
+    <rect x="164" y="362" width="184" height="14"/>
+    <rect x="334" y="312" width="14" height="64"/>
+  </g>
+</svg>

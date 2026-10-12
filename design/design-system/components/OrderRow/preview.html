@@ -1,0 +1,24 @@
+<!-- @dsCard group="Số liệu" height=260 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>OrderRow — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root" class="lo-demo-col" style="max-width:390px"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  var rows = [
+    { code: '#0145', time: '15:40', staff: 'Trang', amount: 280000, status: 'awaiting' },
+    { code: '#0142', customer: 'Chị Hà', time: '14:20', staff: 'Nhung, Chin', amount: 348000, status: 'paid' },
+    { code: '#0143', customer: 'Mai Anh', time: '13:05', staff: 'Trang', amount: 500000, status: 'partial' },
+    { code: '#0144', time: '11:30', staff: 'Linh', amount: 250000, status: 'unpaid' }
+  ];
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    h('div', { className: 'lo-demo-phone' }, rows.map(function (r) { return h(L.OrderRow, Object.assign({ key: r.code, onClick: function () {} }, r)); }))
+  );
+</script>
+</body>
+</html>

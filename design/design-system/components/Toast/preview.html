@@ -1,0 +1,19 @@
+<!-- @dsCard group="Trạng thái" height=140 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Toast — preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap">
+</head>
+<body>
+<div id="root" class="lo-demo-col"></div>
+<script>
+  var L = window.LindyOS, h = React.createElement;
+  ReactDOM.createRoot(document.getElementById('root')).render(h(React.Fragment, null,
+    h('div', null, h(L.Toast, null, 'Đã lưu đơn #0142.')),
+    h('div', null, h(L.Toast, { tone: 'error' }, 'Giảm giá vượt 10%. Cần Nhung duyệt.'))
+  ));
+</script>
+</body>
+</html>

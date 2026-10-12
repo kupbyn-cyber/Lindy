@@ -1,0 +1,29 @@
+﻿code,category,name,price_mode,unit,price_min,price_max,warranty_days,note
+CB01,Cơ bản,Cắt sửa,list,lần,40000,40000,3,
+CB02,Cơ bản,Sơn gel trơn,list,lần,70000,70000,3,"Là ""sơn trơn"" trong combo (C08)"
+CB03,Cơ bản,Cứng móng (2 lớp),list,lần,50000,50000,7,Có cứng móng: bảo hành 7 ngày (C12)
+CB04,Cơ bản,Cứng móng tạo cầu,list,lần,70000,70000,7,Có cứng móng: bảo hành 7 ngày (C12)
+CB05,Cơ bản,Sơn gel >3 màu,list,lần,80000,80000,3,
+CB06,Cơ bản,Sơn nhũ,list,lần,80000,80000,3,
+CB07,Cơ bản,Phá móng cũ,custom,lần,20000,50000,3,
+CB08,Cơ bản,Nhặt da,list,lần,40000,40000,3,Giá lẻ 40.000đ (C06); không có trên ảnh menu
+DS01,Design,Mắt mèo,custom,ngón,7000,10000,3,
+DS02,Design,Ombre,custom,ngón,8000,10000,3,
+DS03,Design,Tráng gương,custom,ngón,8000,10000,3,"Menu ghi ""8-10kn""; hiểu là theo ngón"
+DS04,Design,French,custom,ngón,10000,12000,3,"Menu ghi ""Fench"""
+DS05,Design,Loang,custom,ngón,8000,12000,3,
+DS06,Design,Vẽ cơ bản,custom,ngón,5000,30000,3,
+DS07,Design,Thú nổi,custom,hình,30000,50000,3,
+PK01,Phụ kiện,Đá các loại,custom,ngón,4000,50000,3,
+PK02,Phụ kiện,Sticker,custom,ngón,5000,20000,3,
+PK03,Phụ kiện,Charm,custom,cái,10000,50000,3,
+PK04,Phụ kiện,Phụ kiện,custom,ngón,4000,30000,3,
+MG01,Móng giả,Úp keo,list,lần,90000,90000,3,
+MG02,Móng giả,Úp base,list,lần,110000,110000,3,
+MG03,Móng giả,Nối móng + đắp gel,list,lần,220000,220000,3,
+MG04,Móng giả,Fill gel,list,lần,100000,100000,3,
+CS01,Chăm sóc,Dưỡng móng,list,lần,30000,30000,3,
+CS02,Chăm sóc,"Tẩy da chết, chà gót chân",custom,lần,80000,100000,3,"Menu ghi ""Tdc"""
+CS03,Chăm sóc,Lấy khoé,custom,lần,30000,70000,3,
+MI01,Mi,Uốn mi Collagen,list,lần,180000,180000,3,
+MI02,Mi,Uốn mi phủ đen,list,lần,220000,220000,3,

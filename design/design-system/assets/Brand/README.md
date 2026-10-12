@@ -1,0 +1,1 @@
+`lindy-os-app-icon.svg`: biểu tượng app ngoài màn hình chính iPhone. Chữ L trắng (`#ffffff`) trên nền mận (`#8c2f55`, giá trị sáng của `accent`), phủ kín khung vuông vì iOS tự bo góc. Xuất PNG 180px cho apple-touch-icon và 192px, 512px cho manifest PWA. Đây là biểu tượng tạm trong lúc logo quán đang được làm mới.

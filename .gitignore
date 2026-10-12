@@ -1,0 +1,27 @@
+# Phụ thuộc và bản build
+node_modules/
+.output/
+.nitro/
+.tanstack/
+.vinxi/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Bí mật và dữ liệu local — KHÔNG commit
+.env
+.env.*
+!.env.example
+.local/
+*.pem
+rootCA*
+
+# PostgreSQL nhúng chạy local
+.pgdata/
+
+# Hệ điều hành, trình soạn thảo
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

@@ -1,0 +1,5 @@
+﻿code,name,group,price,items,warranty_days,note
+CBO99,Combo móng thật 99k,Móng thật,99000,CB08 + CB01 + CB02,3,Bán đúng giá niêm yết (C07)
+CBO139,Combo móng thật 139k,Móng thật,139000,CB08 + CB01 + CB02 + CB03,7,Bán đúng giá niêm yết (C07); có cứng móng nên bảo hành 7 ngày
+CBO179,Combo móng giả 179k,Móng giả,179000,CB08 + CB01 + MG01 + CB02,3,Bán đúng giá niêm yết (C07)
+CBO199,Combo móng giả 199k,Móng giả,199000,CB08 + CB01 + MG02 + CB02,3,Bán đúng giá niêm yết (C07)
