@@ -65,9 +65,16 @@ export async function login(input: {
   const ok = await verifyPassword(pre?.passwordHash ?? (await getDummyHash()), input.password)
   const success = ok && pre != null
 
+  if (!success || !pre) {
+    // Ghi lần sai rồi mới báo lỗi; ném lỗi trong giao dịch sẽ rollback mất bản ghi này.
+    await withWorker(
+      (tx) => tx`insert into login_attempts (identifier, ip, success) values (${identifier}, ${ip}, false)`,
+    )
+    throw unauthorized(LOGIN_FAIL_MESSAGE)
+  }
+
   return withWorker(async (tx) => {
-    await tx`insert into login_attempts (identifier, ip, success) values (${identifier}, ${ip}, ${success})`
-    if (!success || !pre) throw unauthorized(LOGIN_FAIL_MESSAGE)
+    await tx`insert into login_attempts (identifier, ip, success) values (${identifier}, ${ip}, true)`
     const session = await createSession(tx, pre.id, input.userAgent)
     await tx`
       insert into audit_logs (actor_user_id, action, entity_type, entity_id, details)
