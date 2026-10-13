@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 3 — Sổ tiền và cọc Tết
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. Q-C, Q-D, Q-E đã chốt 13/10/2026 theo phương án (a) → K16, K17, K18. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 3A ĐÃ LÀM (kết quả mục 15); 3B chưa làm, chuẩn bị ở mục 16. Q-C, Q-D, Q-E đã chốt 13/10/2026 theo phương án (a) → K16, K17, K18. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (A02, A03, B01, C01–C04, K05, K09–K15); PRD v1.2 §4, §6.3, §6.6, §7, §11, §12, §13 (B, C, D), §14 (UI06, UI07, UI16), §17, §18; PRD v1.1 §7.3 (chứng từ, trạng thái phiếu chi), Q14–Q24, Q34; module lịch v1.2 §4, §5.1, §6, §9, §11, §12, §13 (test 29–36); kế hoạch Đợt 2 mục 6 (phần dời sang Đợt 3).
 
 Ký hiệu `[Pn]`: điểm phản biện số n ở mục 11 (nối tiếp P26–P45 của Đợt 2). `Sn`: test bảo mật ở mục 10.2.
@@ -352,3 +352,83 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 - Thử tay cho đủ 4 tài khoản (Trang ghi cọc, Chin hoàn/giữ, Linh xem lại) trên điện thoại thật.
 - Hosting chưa có Đợt 2; triển khai Đợt 2 + 3A cùng lúc thì chạy 7 migration (0006–0012), đã giả lập đạt từ 0005.
 - Bước 3B (3.12–3.22) chưa làm.
+
+## 16. Chuẩn bị 3B (rà lại sau khi làm 3A, 13/10/2026)
+
+Không có câu hỏi nghiệp vụ mới: K16–K18 và mục 12 đã đủ để làm 3B. Mục này ghi những gì 3A làm lộ ra, để 3B làm đúng chỗ.
+
+### 16.1. Chia nhỏ 3B
+
+| Phần | Bước | Xong là dùng được |
+|---|---|---|
+| **3B-1 Thu chi và chốt ngày** | 3.12–3.14, 3.17, 3.18 | Đề nghị chi, duyệt chi, chuyển nội bộ, phiếu Linh lập, đối soát, chốt quỹ cuối ngày |
+| **3B-2 Tip, hoàn tiền, chứng từ, báo cáo** | 3.15, 3.16, 3.19–3.22 | Tip giữ hộ, phiếu hoàn, huỷ đơn đã xác nhận, ảnh chứng từ, dòng tiền tháng, trang Cần xem lại |
+
+Mỗi phần chốt bằng `bun run check`, build, `scan-bundle`, `check-upgrade --from=0012`, commit.
+
+### 16.2. Migration (đánh số lại cho khớp)
+
+- `0013_cashbook` (3B-1): `expense_categories`, `expense_requests`, `cash_vouchers`, `cash_transfers`, `cash_day_closes`; thay `app.ledger_business_date` (ngày đã chốt quỹ thì sang ngày kế); cho phép đối soát.
+- `0014_tips_refunds` (3B-2): `tip_holdings`, `tip_payouts`, `order_refunds`, `order_refund_allocations`; `orders_guard` thêm `confirmed → cancelled`.
+- `0015_attachments` (3B-2).
+
+### 16.3. Thiết kế chốt thêm
+
+**Ngày của bút toán và chốt quỹ [P54]**
+- "Đã chốt đến ngày X" = ngày lớn nhất trong `cash_day_closes` của cơ sở.
+- Bút toán mới lấy ngày = max(hôm nay, X + 1).
+- Chỉ chốt được ngày > X, không sau hôm nay. Hôm qua quên chốt thì hôm nay chốt bù được.
+- Bỏ qua một ngày (quán nghỉ) thì ngày đó gộp vào lần chốt sau, vì số lý thuyết tính lũy kế.
+- Tiền mặt lý thuyết của ngày D = Σ bút toán tài khoản tiền mặt từ ngày mở sổ đến hết D. Thu, chi trong ngày tính trên các bút toán của D.
+- Phải mở sổ trước khi chốt quỹ.
+- K17: lệch khác 0 → bút toán `cash_count_diff` ghi đúng ngày D, trong cùng giao dịch chốt (trước khi đánh dấu đã chốt), và vào Cần xem lại của Linh.
+
+**Duyệt chi**
+- Mức duyệt do DB tính: `owner` nếu số tiền > 1.000.000đ hoặc nhóm `owner_only`, ngược lại `manager`.
+- Linh lập phiếu → tự duyệt.
+- Nhung tự duyệt phiếu của mình (trong hạn mức) → vào Cần xem lại.
+- "Đã chi": Nhung, Linh (`cashbook.manage`), chọn tài khoản lúc chi. Số dư âm vẫn cho chi nhưng màn hình cảnh báo (tiền thật đã ra).
+
+**Đối soát chuyển khoản (3.17)**
+- `payments_guard` hiện chặn mọi thay đổi `reconciliation_status` → mở riêng một đường: `unreconciled → reconciled` cho người có `cashbook.manage`, chỉ khoản chuyển khoản.
+- Thêm cột đối soát cho `appointment_deposits` (cọc chuyển khoản) và `tip_holdings`.
+- Đã đối soát thì không huỷ được.
+
+**Tip (3.15)**
+- `POST /api/orders/:id/payments` nhận thêm `tip` (chỉ khi chuyển khoản): số tip và cách chia.
+- Mặc định chia theo phần tiền từng thợ của đơn; khách chỉ định thì nhập tay, tổng phải khớp.
+- Đơn đã thu đủ vẫn ghi tip riêng được ("Ghi tip" trên chi tiết đơn).
+- Trả tip: Nhung chọn thợ → trả hết tip đang giữ của thợ đó, một bút toán tiền mặt.
+- Bỏ câu "Tip chuyển khoản ghi ở Đợt 3" trong `orders/payments.ts`.
+
+**Hoàn tiền, huỷ đơn đã xác nhận (3.16, K18)**
+- Phiếu hoàn ≤ đã thu − đã hoàn. Khoản trừ cọc cũng tính là đã thu.
+- Doanh thu thuần của đơn = net − Σ hoàn (theo `revenue_date`). Phải thu khách không đổi.
+- Sửa các chỗ đang tính doanh thu, đã thu, cho trừ phần hoàn:
+  - `reports/service.ts`: `totals`, `byStaff`, báo cáo tháng theo ngày, theo dịch vụ;
+  - `orders/service.ts`: danh sách, chi tiết, lọc "chưa thu đủ";
+  - lịch sử đơn của khách.
+- `paymentStatus` trong `lib/order-math.ts` thêm `refund_partial` / `refund_full` (Hoàn một phần / Hoàn toàn bộ).
+- Sửa 3 câu báo "có ở Đợt 3":
+  - `orders/service.ts`: sửa đơn đã xác nhận nhỏ hơn số đã thu → "Dùng Hoàn tiền";
+  - `orders/service.ts`: huỷ đơn đã xác nhận → làm thật;
+  - `components/don-hang/OrderEditor.tsx`.
+- Huỷ đơn đã xác nhận: chỉ khi đã thu − đã hoàn = 0 (hoàn hết, hoặc huỷ khoản trừ cọc để cọc về lịch). Lịch liên kết: `sync_appointment` đã bỏ qua đơn huỷ.
+
+**Chứng từ ảnh (3.19)**
+- Route riêng nhận nhị phân (body JSON hiện giới hạn 64KB): `POST /api/attachments?ownerType=&ownerId=`, content-type `image/jpeg` hoặc `image/png`, ≤ 1MB, kiểm byte đầu file.
+- Máy thu nhỏ trước khi gửi: cạnh dài 1600px, JPEG chất lượng khoảng 0,8, thường 200–400KB.
+- `GET /api/attachments/:id`: kiểm quyền theo phiếu gốc, `Cache-Control: private`.
+- Gói DB trên Vibe Host (Starter) chưa rõ dung lượng → theo dõi. Khoảng 100 ảnh/tháng ≈ 30–40MB/tháng.
+
+**Cần xem lại của Linh (3.21)**
+- Hiện mỗi loại nằm một nơi: đơn (lọc ở Đơn hàng), phiếu ưu đãi, cọc (Cần xử lý của Lịch).
+- 3B thêm phiếu chi Nhung tự duyệt, phiếu hoàn của Nhung, lệch quỹ → gom thành một trang **Thêm → Cần xem lại** (PRD §5.2, UI02), Tổng quan hiện tổng số.
+- Mỗi dòng mở đúng phiếu, có nút "Đã xem".
+
+### 16.4. Chuẩn bị ngoài code (anh, Linh)
+
+- **Triển khai Đợt 2 + 3A trước khi làm xong 3B** để quán dùng thử đơn hàng và sổ tiền. Đã giả lập nâng cấp từ bản đang chạy (0005) và đạt. Các bước: anh bảo em đẩy lên GitHub → sao lưu DB trên Vibe Host → Triển khai lại → kiểm `/api/health`.
+- **Ngày mở sổ** (Q24, ngày 1 của tháng): nếu mở sổ 01/11/2026 thì sáng 01/11 Linh đếm tiền mặt, xem số dư tài khoản ngân hàng rồi nhập ở Thêm → Sổ tiền. App cần chạy trên hosting trước ngày đó.
+- **Mùa cọc Tết 2027**: Linh nhập ngày dương lịch của 19 và 28 tháng Chạp ở Cài đặt lịch khi gần đến (app không tự đổi lịch âm).
+- **`VAPID_SUBJECT`** trên hosting: sửa thành `mailto:` + email quán để thử thông báo cọc trên iPhone.
