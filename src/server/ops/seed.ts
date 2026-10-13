@@ -60,6 +60,16 @@ export async function seedBase(
 
   if (await tableExists(sql, 'services')) await seedCatalog(sql, orgId)
 
+  // Hai tài khoản tiền mỗi cơ sở (PRD §7.2): Tiền mặt cs HTK, Tài khoản cs HTK. Số dư, sổ quỹ ở Đợt 3.
+  if (await tableExists(sql, 'money_accounts')) {
+    for (const [code, id] of Object.entries(branchIds)) {
+      await sql`
+        insert into money_accounts (branch_id, code, name, type)
+        values (${id}, 'cash', ${`Tiền mặt cs ${code}`}, 'cash'), (${id}, 'bank', ${`Tài khoản cs ${code}`}, 'bank')
+        on conflict (branch_id, code) do nothing`
+    }
+  }
+
   return { orgId, branchIds, roleIds }
 }
 

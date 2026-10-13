@@ -35,17 +35,23 @@ import { Route as ApiAppointmentsCheckRouteImport } from './routes/api/appointme
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthPasswordRouteImport } from './routes/api/auth/password'
+import { Route as ApiCatalogIndexRouteImport } from './routes/api/catalog/index'
 import { Route as ApiCustomersIndexRouteImport } from './routes/api/customers/index'
 import { Route as ApiCustomersIdRouteImport } from './routes/api/customers/$id'
 import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
 import { Route as ApiNotificationsPreferencesRouteImport } from './routes/api/notifications/preferences'
 import { Route as ApiNotificationsUnreadCountRouteImport } from './routes/api/notifications/unread-count'
+import { Route as ApiOrdersIndexRouteImport } from './routes/api/orders/index'
+import { Route as ApiOrdersIdRouteImport } from './routes/api/orders/$id'
 import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
 import { Route as ApiPushSubscriptionsRouteImport } from './routes/api/push/subscriptions'
 import { Route as ApiPushTestRouteImport } from './routes/api/push/test'
+import { Route as ApiStaffIndexRouteImport } from './routes/api/staff/index'
 import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
 import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notifications/$id.read'
+import { Route as ApiOrdersIdActionRouteImport } from './routes/api/orders/$id.$action'
+import { Route as ApiPaymentsIdActionRouteImport } from './routes/api/payments/$id.$action'
 import { Route as ApiPushSubscriptionsIdRouteImport } from './routes/api/push/subscriptions.$id'
 
 const AppRoute = AppRouteImport.update({
@@ -178,6 +184,11 @@ const ApiAuthPasswordRoute = ApiAuthPasswordRouteImport.update({
   path: '/api/auth/password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCatalogIndexRoute = ApiCatalogIndexRouteImport.update({
+  id: '/api/catalog/',
+  path: '/api/catalog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCustomersIndexRoute = ApiCustomersIndexRouteImport.update({
   id: '/api/customers/',
   path: '/api/customers/',
@@ -205,6 +216,16 @@ const ApiNotificationsUnreadCountRoute =
     path: '/api/notifications/unread-count',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiOrdersIndexRoute = ApiOrdersIndexRouteImport.update({
+  id: '/api/orders/',
+  path: '/api/orders/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOrdersIdRoute = ApiOrdersIdRouteImport.update({
+  id: '/api/orders/$id',
+  path: '/api/orders/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPushConfigRoute = ApiPushConfigRouteImport.update({
   id: '/api/push/config',
   path: '/api/push/config',
@@ -220,6 +241,11 @@ const ApiPushTestRoute = ApiPushTestRouteImport.update({
   path: '/api/push/test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStaffIndexRoute = ApiStaffIndexRouteImport.update({
+  id: '/api/staff/',
+  path: '/api/staff/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAccountsIdActionRoute = ApiAccountsIdActionRouteImport.update({
   id: '/api/accounts/$id/$action',
   path: '/api/accounts/$id/$action',
@@ -233,6 +259,16 @@ const ApiAppointmentsIdActionRoute = ApiAppointmentsIdActionRouteImport.update({
 const ApiNotificationsIdReadRoute = ApiNotificationsIdReadRouteImport.update({
   id: '/api/notifications/$id/read',
   path: '/api/notifications/$id/read',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOrdersIdActionRoute = ApiOrdersIdActionRouteImport.update({
+  id: '/$action',
+  path: '/$action',
+  getParentRoute: () => ApiOrdersIdRoute,
+} as any)
+const ApiPaymentsIdActionRoute = ApiPaymentsIdActionRouteImport.update({
+  id: '/api/payments/$id/$action',
+  path: '/api/payments/$id/$action',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPushSubscriptionsIdRoute = ApiPushSubscriptionsIdRouteImport.update({
@@ -266,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/api/customers/$id': typeof ApiCustomersIdRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
+  '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
@@ -273,11 +310,16 @@ export interface FileRoutesByFullPath {
   '/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
+  '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
+  '/api/orders/': typeof ApiOrdersIndexRoute
+  '/api/staff/': typeof ApiStaffIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
+  '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
+  '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
 }
 export interface FileRoutesByTo {
@@ -305,6 +347,7 @@ export interface FileRoutesByTo {
   '/api/customers/$id': typeof ApiCustomersIdRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
+  '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
@@ -312,11 +355,16 @@ export interface FileRoutesByTo {
   '/them': typeof AppThemIndexRoute
   '/api/accounts': typeof ApiAccountsIndexRoute
   '/api/appointments': typeof ApiAppointmentsIndexRoute
+  '/api/catalog': typeof ApiCatalogIndexRoute
   '/api/customers': typeof ApiCustomersIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
+  '/api/orders': typeof ApiOrdersIndexRoute
+  '/api/staff': typeof ApiStaffIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
+  '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
+  '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
 }
 export interface FileRoutesById {
@@ -346,6 +394,7 @@ export interface FileRoutesById {
   '/api/customers/$id': typeof ApiCustomersIdRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
+  '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
@@ -353,11 +402,16 @@ export interface FileRoutesById {
   '/_app/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
+  '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
+  '/api/orders/': typeof ApiOrdersIndexRoute
+  '/api/staff/': typeof ApiStaffIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
+  '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
+  '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
 }
 export interface FileRouteTypes {
@@ -387,6 +441,7 @@ export interface FileRouteTypes {
     | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
+    | '/api/orders/$id'
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
@@ -394,11 +449,16 @@ export interface FileRouteTypes {
     | '/them/'
     | '/api/accounts/'
     | '/api/appointments/'
+    | '/api/catalog/'
     | '/api/customers/'
     | '/api/notifications/'
+    | '/api/orders/'
+    | '/api/staff/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/notifications/$id/read'
+    | '/api/orders/$id/$action'
+    | '/api/payments/$id/$action'
     | '/api/push/subscriptions/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -426,6 +486,7 @@ export interface FileRouteTypes {
     | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
+    | '/api/orders/$id'
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
@@ -433,11 +494,16 @@ export interface FileRouteTypes {
     | '/them'
     | '/api/accounts'
     | '/api/appointments'
+    | '/api/catalog'
     | '/api/customers'
     | '/api/notifications'
+    | '/api/orders'
+    | '/api/staff'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/notifications/$id/read'
+    | '/api/orders/$id/$action'
+    | '/api/payments/$id/$action'
     | '/api/push/subscriptions/$id'
   id:
     | '__root__'
@@ -466,6 +532,7 @@ export interface FileRouteTypes {
     | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
+    | '/api/orders/$id'
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
@@ -473,11 +540,16 @@ export interface FileRouteTypes {
     | '/_app/them/'
     | '/api/accounts/'
     | '/api/appointments/'
+    | '/api/catalog/'
     | '/api/customers/'
     | '/api/notifications/'
+    | '/api/orders/'
+    | '/api/staff/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/notifications/$id/read'
+    | '/api/orders/$id/$action'
+    | '/api/payments/$id/$action'
     | '/api/push/subscriptions/$id'
   fileRoutesById: FileRoutesById
 }
@@ -498,15 +570,20 @@ export interface RootRouteChildren {
   ApiCustomersIdRoute: typeof ApiCustomersIdRoute
   ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
   ApiNotificationsUnreadCountRoute: typeof ApiNotificationsUnreadCountRoute
+  ApiOrdersIdRoute: typeof ApiOrdersIdRouteWithChildren
   ApiPushConfigRoute: typeof ApiPushConfigRoute
   ApiPushSubscriptionsRoute: typeof ApiPushSubscriptionsRouteWithChildren
   ApiPushTestRoute: typeof ApiPushTestRoute
   ApiAccountsIndexRoute: typeof ApiAccountsIndexRoute
   ApiAppointmentsIndexRoute: typeof ApiAppointmentsIndexRoute
+  ApiCatalogIndexRoute: typeof ApiCatalogIndexRoute
   ApiCustomersIndexRoute: typeof ApiCustomersIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
+  ApiOrdersIndexRoute: typeof ApiOrdersIndexRoute
+  ApiStaffIndexRoute: typeof ApiStaffIndexRoute
   ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
+  ApiPaymentsIdActionRoute: typeof ApiPaymentsIdActionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -693,6 +770,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/catalog/': {
+      id: '/api/catalog/'
+      path: '/api/catalog'
+      fullPath: '/api/catalog/'
+      preLoaderRoute: typeof ApiCatalogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/customers/': {
       id: '/api/customers/'
       path: '/api/customers'
@@ -728,6 +812,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNotificationsUnreadCountRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/orders/': {
+      id: '/api/orders/'
+      path: '/api/orders'
+      fullPath: '/api/orders/'
+      preLoaderRoute: typeof ApiOrdersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/orders/$id': {
+      id: '/api/orders/$id'
+      path: '/api/orders/$id'
+      fullPath: '/api/orders/$id'
+      preLoaderRoute: typeof ApiOrdersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push/config': {
       id: '/api/push/config'
       path: '/api/push/config'
@@ -749,6 +847,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/staff/': {
+      id: '/api/staff/'
+      path: '/api/staff'
+      fullPath: '/api/staff/'
+      preLoaderRoute: typeof ApiStaffIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/accounts/$id/$action': {
       id: '/api/accounts/$id/$action'
       path: '/api/accounts/$id/$action'
@@ -768,6 +873,20 @@ declare module '@tanstack/react-router' {
       path: '/api/notifications/$id/read'
       fullPath: '/api/notifications/$id/read'
       preLoaderRoute: typeof ApiNotificationsIdReadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/orders/$id/$action': {
+      id: '/api/orders/$id/$action'
+      path: '/$action'
+      fullPath: '/api/orders/$id/$action'
+      preLoaderRoute: typeof ApiOrdersIdActionRouteImport
+      parentRoute: typeof ApiOrdersIdRoute
+    }
+    '/api/payments/$id/$action': {
+      id: '/api/payments/$id/$action'
+      path: '/api/payments/$id/$action'
+      fullPath: '/api/payments/$id/$action'
+      preLoaderRoute: typeof ApiPaymentsIdActionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/push/subscriptions/$id': {
@@ -821,6 +940,18 @@ const ApiAppointmentsIdRouteChildren: ApiAppointmentsIdRouteChildren = {
 const ApiAppointmentsIdRouteWithChildren =
   ApiAppointmentsIdRoute._addFileChildren(ApiAppointmentsIdRouteChildren)
 
+interface ApiOrdersIdRouteChildren {
+  ApiOrdersIdActionRoute: typeof ApiOrdersIdActionRoute
+}
+
+const ApiOrdersIdRouteChildren: ApiOrdersIdRouteChildren = {
+  ApiOrdersIdActionRoute: ApiOrdersIdActionRoute,
+}
+
+const ApiOrdersIdRouteWithChildren = ApiOrdersIdRoute._addFileChildren(
+  ApiOrdersIdRouteChildren,
+)
+
 interface ApiPushSubscriptionsRouteChildren {
   ApiPushSubscriptionsIdRoute: typeof ApiPushSubscriptionsIdRoute
 }
@@ -849,15 +980,20 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCustomersIdRoute: ApiCustomersIdRoute,
   ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
   ApiNotificationsUnreadCountRoute: ApiNotificationsUnreadCountRoute,
+  ApiOrdersIdRoute: ApiOrdersIdRouteWithChildren,
   ApiPushConfigRoute: ApiPushConfigRoute,
   ApiPushSubscriptionsRoute: ApiPushSubscriptionsRouteWithChildren,
   ApiPushTestRoute: ApiPushTestRoute,
   ApiAccountsIndexRoute: ApiAccountsIndexRoute,
   ApiAppointmentsIndexRoute: ApiAppointmentsIndexRoute,
+  ApiCatalogIndexRoute: ApiCatalogIndexRoute,
   ApiCustomersIndexRoute: ApiCustomersIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
+  ApiOrdersIndexRoute: ApiOrdersIndexRoute,
+  ApiStaffIndexRoute: ApiStaffIndexRoute,
   ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
+  ApiPaymentsIdActionRoute: ApiPaymentsIdActionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -81,7 +81,22 @@ export type Detail = ListItem & {
   updatedAt: string
   can: ApptCan
   warnings: Warnings
+  /** Đơn tạo từ lịch (kể cả đơn người xem không mở được, K09). */
+  orders: { id: string; codeLabel: string; status: string; visible: boolean }[]
 }
+
+async function linkedOrders(tx: Tx, id: string) {
+  const rows = await tx<{ id: string; code: number; status: string; visible: boolean }[]>`
+    select id, code, status, visible from app.appointment_orders(${id})`
+  return rows.map((r) => ({
+    id: r.id,
+    codeLabel: `#${String(r.code).padStart(4, '0')}`,
+    status: r.status,
+    visible: r.visible,
+  }))
+}
+
+const activeCount = (orders: { status: string }[]) => orders.filter((o) => o.status !== 'cancelled').length
 
 type Settings = { openTime: string; closeTime: string; defaultDurationMin: number; timezone: string }
 
@@ -325,6 +340,7 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
     row.customerCancelReportedBy,
   ])
   const get = (id: string | null) => (id ? (n.get(id) ?? null) : null)
+  const orders = await linkedOrders(tx, row.id)
   return {
     ...toItem(row, auth.userId, s.timezone),
     phone: row.phone,
@@ -339,10 +355,11 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
     customerCancelReportedByName: get(row.customerCancelReportedBy),
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
-    can: appointmentCan(perms(auth, row.branchId), auth.userId, row),
+    can: appointmentCan(perms(auth, row.branchId), auth.userId, row, activeCount(orders)),
     warnings: ['cancelled', 'no_show'].includes(row.status)
       ? { overlapCount: 0, duplicates: [], outsideHours: row.outsideHours }
       : await computeWarnings(tx, row.branchId, row.startAt, row.endAt, row.phone, row.id, s),
+    orders,
   }
 }
 
@@ -557,7 +574,12 @@ export async function transitionAppointment(
 ) {
   return withUser(auth.userId, async (tx) => {
     const row = await loadRow(tx, id)
-    const can = appointmentCan(perms(auth, row.branchId), auth.userId, row)
+    const can = appointmentCan(
+      perms(auth, row.branchId),
+      auth.userId,
+      row,
+      activeCount(await linkedOrders(tx, row.id)),
+    )
     const s = await loadSettings(tx, row.branchId)
     const when = `${toLocalTime(row.startAt, s.timezone)} ${formatIsoDate(toLocalDate(row.startAt, s.timezone)).slice(0, 5)}`
 

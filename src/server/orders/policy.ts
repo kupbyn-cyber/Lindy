@@ -1,0 +1,66 @@
+// Luật quyền đơn hàng (PRD §4; K09–K11). Dùng để ẩn/hiện nút và kiểm trước ở server;
+// trigger orders_guard, payments_guard trong DB kiểm lại cùng luật (bước 2.7).
+import { type Level, levelAtLeast, levelOf } from '~/lib/order-math'
+
+export type OrderStatus = 'in_progress' | 'awaiting_confirmation' | 'confirmed' | 'cancelled'
+
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  in_progress: 'Đang làm',
+  awaiting_confirmation: 'Chờ xác nhận',
+  confirmed: 'Đã xác nhận',
+  cancelled: 'Đã huỷ',
+}
+
+export type OrderCan = {
+  edit: boolean
+  done: boolean
+  confirm: boolean
+  /** Lý do chưa xác nhận được (giảm giá chờ người cấp cao hơn duyệt). */
+  confirmBlocked: string | null
+  approveDiscount: boolean
+  cancel: boolean
+  recordPayment: boolean
+  voidPayment: boolean
+  markReviewed: boolean
+}
+
+export function orderCan(
+  perms: string[],
+  userId: string,
+  o: {
+    status: OrderStatus
+    createdBy: string
+    requiredLevel: Level
+    approvalValid: boolean
+    needsOwnerReview: boolean
+    reviewedAt: unknown
+  },
+): OrderCan {
+  const has = (p: string) => perms.includes(p)
+  const open = o.status === 'in_progress' || o.status === 'awaiting_confirmation'
+  const needsApproval = levelAtLeast(o.requiredLevel, 'manager') && !o.approvalValid
+  const mine = levelOf(perms)
+  const canConfirmRole = has('order.confirm') && open
+  const confirmBlocked =
+    canConfirmRole && needsApproval && !levelAtLeast(mine, o.requiredLevel)
+      ? o.requiredLevel === 'owner'
+        ? 'Giảm giá trên 20% cần Linh duyệt trước.'
+        : 'Giảm giá cần Nhung duyệt trước.'
+      : null
+  return {
+    edit:
+      (o.status === 'in_progress' && has('order.create_draft')) ||
+      (o.status === 'awaiting_confirmation' && has('order.confirm')),
+    done: o.status === 'in_progress' && has('order.create_draft'),
+    confirm: canConfirmRole && !confirmBlocked,
+    confirmBlocked,
+    approveDiscount: open && needsApproval && levelAtLeast(mine, o.requiredLevel),
+    cancel:
+      open &&
+      (has('order.confirm') ||
+        (o.status === 'in_progress' && o.createdBy === userId && has('order.create_draft'))),
+    recordPayment: (o.status === 'awaiting_confirmation' || o.status === 'confirmed') && has('order.confirm'),
+    voidPayment: has('order.confirm'),
+    markReviewed: o.needsOwnerReview && !o.reviewedAt && has('review_queue.read'),
+  }
+}

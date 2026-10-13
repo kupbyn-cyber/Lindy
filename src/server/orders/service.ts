@@ -1,0 +1,1114 @@
+// Nghiệp vụ đơn hàng (Đợt 2, bước 2.8–2.12). Danh tính lấy từ phiên; mọi thao tác chạy dưới withUser nên RLS (K09)
+// và trigger orders_guard kiểm lại quyền ở DB; constraint trigger kiểm tổng tiền khi commit.
+// Máy chỉ gửi lựa chọn; server tính lại toàn bộ tiền từ danh mục và bỏ mọi số tiền máy gửi lên [P26].
+import { createHash } from 'node:crypto'
+import {
+  type CatalogCombo,
+  type CatalogLookup,
+  type CatalogService,
+  type ComputedOrder,
+  computeOrder,
+  type DiscountInput,
+  type ItemInput,
+  type Level,
+  levelAtLeast,
+  levelOf,
+  type PaymentStatus,
+  paymentStatus,
+} from '~/lib/order-math'
+import { escapeLike, foldVietnamese } from '~/lib/text'
+import { addDays, isIsoDate, toLocalDate, toLocalTime } from '~/lib/time'
+import type { Auth } from '../auth/context'
+import { hasPerm, requireBranch } from '../auth/context'
+import { insertCustomer, maskPhone } from '../customers/service'
+import { type Tx, withUser } from '../db/client'
+import { conflict, forbidden, invalid, notFound } from '../http/errors'
+import { type OrderCan, type OrderStatus, orderCan } from './policy'
+import type { CreateOrderInput, OrderContentInput, OrderFilter, UpdateOrderInput } from './schema'
+
+export const MAX_RANGE_DAYS = 62
+export const MAX_ROWS = 500
+
+const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s)
+export const codeLabel = (n: number) => `#${String(n).padStart(4, '0')}`
+const sha = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex')
+
+// ---------------------------------------------------------------- Đọc dữ liệu thô
+
+export type OrderRow = {
+  id: string
+  branchId: string
+  code: number
+  customerId: string | null
+  appointmentId: string | null
+  serviceDate: string
+  status: OrderStatus
+  grossAmount: number
+  discountAmount: number
+  netAmount: number
+  hasHardening: boolean
+  requiredLevel: Level
+  contentRev: number
+  pricingHash: string
+  discountApprovedBy: string | null
+  discountApprovedAt: Date | null
+  discountApprovedLevel: Level | null
+  discountApprovalHash: string | null
+  doneBy: string | null
+  doneAt: Date | null
+  confirmedBy: string | null
+  confirmedAt: Date | null
+  cancelledBy: string | null
+  cancelledAt: Date | null
+  cancelReason: string | null
+  needsOwnerReview: boolean
+  reviewedBy: string | null
+  reviewedAt: Date | null
+  warrantyUntil: string | null
+  createdBy: string
+  createdAt: Date
+  updatedBy: string
+  updatedAt: Date
+  version: number
+  createRequestHash: string
+}
+
+const orderCols = (tx: Tx) => tx`
+  o.id, o.branch_id, o.code, o.customer_id, o.appointment_id, o.service_date::text as service_date, o.status,
+  o.gross_amount::int as gross_amount, o.discount_amount::int as discount_amount, o.net_amount::int as net_amount,
+  o.has_hardening, o.required_level, o.content_rev, o.pricing_hash, o.discount_approved_by, o.discount_approved_at,
+  o.discount_approved_level, o.discount_approval_hash, o.done_by, o.done_at, o.confirmed_by, o.confirmed_at,
+  o.cancelled_by, o.cancelled_at, o.cancel_reason, o.needs_owner_review, o.reviewed_by, o.reviewed_at,
+  o.warranty_until::text as warranty_until, o.created_by, o.created_at, o.updated_by, o.updated_at, o.version,
+  o.create_request_hash`
+
+export async function loadRow(tx: Tx, id: string, lock = false) {
+  if (!isUuid(id)) throw notFound('Không tìm thấy đơn.')
+  // RLS (K09): ngoài phạm vi thì không thấy → 404
+  const [row] = lock
+    ? await tx<OrderRow[]>`select ${orderCols(tx)} from orders o where o.id = ${id} for update`
+    : await tx<OrderRow[]>`select ${orderCols(tx)} from orders o where o.id = ${id}`
+  if (!row) throw notFound('Không tìm thấy đơn.')
+  return row
+}
+
+type ItemRow = {
+  position: number
+  lineType: ItemInput['type']
+  serviceId: string | null
+  comboId: string | null
+  name: string
+  unit: string
+  priceMode: 'list' | 'custom' | 'fixed'
+  listMin: number
+  listMax: number
+  unitPrice: number
+  quantity: number
+  grossAmount: number
+  belowAmount: number
+  belowReason: string | null
+  discountAmount: number
+  netAmount: number
+  shopBorneAmount: number
+  outOfRange: boolean
+  hasHardening: boolean
+  unallocatedReason: string | null
+}
+type DiscountRow = {
+  position: number
+  scopePosition: number | null
+  kind: DiscountInput['kind'] | 'below_list' | 'complaint_compensation'
+  percent: number | null
+  amount: number
+  reason: string
+  appliedBy: string
+}
+type AllocRow = {
+  itemPosition: number
+  staffUserId: string
+  allocatedNetAmount: number
+  commissionBaseAmount: number
+}
+type Content = { items: ItemRow[]; discounts: DiscountRow[]; allocs: AllocRow[] }
+
+async function loadContent(tx: Tx, o: { id: string; contentRev: number }): Promise<Content> {
+  const items = await tx<ItemRow[]>`
+    select position, line_type, service_id, combo_id, name, unit, price_mode, list_min::int as list_min,
+           list_max::int as list_max, unit_price::int as unit_price, quantity, gross_amount::int as gross_amount,
+           below_amount::int as below_amount, below_reason, discount_amount::int as discount_amount,
+           net_amount::int as net_amount, shop_borne_amount::int as shop_borne_amount, out_of_range, has_hardening,
+           unallocated_reason
+    from order_items where order_id = ${o.id} and rev = ${o.contentRev} order by position`
+  const discounts = await tx<DiscountRow[]>`
+    select position, scope_position, kind, percent, amount::int as amount, reason, applied_by
+    from order_discounts where order_id = ${o.id} and rev = ${o.contentRev} order by position`
+  const allocs = await tx<AllocRow[]>`
+    select item_position, staff_user_id, allocated_net_amount::int as allocated_net_amount,
+           commission_base_amount::int as commission_base_amount
+    from order_staff_allocations where order_id = ${o.id} and rev = ${o.contentRev}
+    order by item_position, allocated_net_amount desc, staff_user_id`
+  return { items, discounts, allocs }
+}
+
+/** Đưa nội dung đã lưu về dạng máy gửi lên (để sửa tiếp, và so sánh khi gửi lại sau mất mạng). */
+export function toInput(c: Content): { items: ItemInput[]; discounts: DiscountInput[] } {
+  const items: ItemInput[] = c.items.map((it) => {
+    const allocs = c.allocs.filter((a) => a.itemPosition === it.position)
+    const staff = allocs.map((a) => ({
+      userId: a.staffUserId,
+      amount: allocs.length > 1 ? a.allocatedNetAmount : null,
+    }))
+    const common = { staff, unallocatedReason: it.unallocatedReason }
+    if (it.lineType === 'service')
+      return {
+        type: 'service',
+        serviceId: it.serviceId!,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        belowReason: it.belowReason,
+        ...common,
+      }
+    if (it.lineType === 'combo') return { type: 'combo', comboId: it.comboId!, ...common }
+    return { type: it.lineType, name: it.name, amount: it.unitPrice, ...common }
+  })
+  const discounts = c.discounts
+    .filter((d) => d.kind !== 'below_list')
+    .map((d) => ({
+      scope: d.scopePosition ?? ('order' as const),
+      kind: d.kind as DiscountInput['kind'],
+      percent: d.kind === 'manual' || d.kind === 'complaint_compensation' ? d.percent : null,
+      amount: d.kind === 'manual' && d.percent == null ? d.amount : null,
+      reason: d.kind === 'manual' ? d.reason : null,
+    }))
+  return { items, discounts }
+}
+
+// ---------------------------------------------------------------- Danh mục, thợ
+
+export type Catalog = {
+  services: CatalogService[]
+  combos: (CatalogCombo & { itemNames: string[] })[]
+}
+
+export async function loadCatalog(tx: Tx): Promise<Catalog> {
+  const services = await tx<CatalogService[]>`
+    select id, code, name, category, price_mode, unit, price_min::int as price_min, price_max::int as price_max,
+           has_hardening, is_active
+    from services order by sort_order, code`
+  const combos = await tx<(CatalogCombo & { itemNames: string[] })[]>`
+    select c.id, c.code, c.name, c.group_name, c.price::int as price, h.has_hardening, c.is_active,
+           coalesce((select array_agg(s.name order by ci.position) from combo_items ci
+                     join services s on s.id = ci.service_id where ci.combo_id = c.id), '{}') as item_names
+    from combos c join combo_hardening h on h.combo_id = c.id
+    order by c.sort_order, c.code`
+  return { services, combos }
+}
+
+export function lookupOf(cat: Catalog): CatalogLookup {
+  const s = new Map(cat.services.map((x) => [x.id, x]))
+  const c = new Map(cat.combos.map((x) => [x.id, x]))
+  return { service: (id) => s.get(id), combo: (id) => c.get(id) }
+}
+
+export async function branchStaff(tx: Tx, branchId: string) {
+  return tx<{ id: string; displayName: string }[]>`select id, display_name from app.branch_staff(${branchId})`
+}
+
+export async function getCatalog(auth: Auth) {
+  if (!auth.branches.some((b) => b.perms.includes('order.create_draft'))) throw forbidden()
+  return withUser(auth.userId, loadCatalog)
+}
+
+export async function getStaff(auth: Auth, branchId?: string) {
+  const branch = requireBranch(auth, branchId)
+  if (!hasPerm(auth, branch.id, 'order.create_draft')) throw forbidden()
+  return withUser(auth.userId, (tx) => branchStaff(tx, branch.id))
+}
+
+// ---------------------------------------------------------------- Băm nội dung
+
+/** Phần ảnh hưởng giảm giá: đổi phần này thì duyệt giảm giá cũ hết hiệu lực [P29]. Không gồm chia thợ. */
+export function pricingHash(c: ComputedOrder) {
+  return sha({
+    i: c.items.map((x) => [
+      x.type,
+      x.serviceId,
+      x.comboId,
+      x.name,
+      x.unitPrice,
+      x.quantity,
+      x.grossAmount,
+      x.belowAmount,
+    ]),
+    d: c.discounts.map((d) => [d.scope, d.kind, d.percent, d.amount]),
+  })
+}
+
+/** Toàn bộ nội dung đơn, để nhận ra lần gửi lại sau mất mạng [P24]. */
+function docHash(customerId: string | null, serviceDate: string, c: ComputedOrder) {
+  return sha({
+    c: customerId,
+    s: serviceDate,
+    p: pricingHash(c),
+    a: c.items.map((x) => [
+      x.allocations.map((a) => [a.userId, a.allocatedNetAmount]),
+      x.unallocatedReason,
+      x.belowReason,
+    ]),
+    r: c.discounts.map((d) => d.reason),
+  })
+}
+
+// ---------------------------------------------------------------- Chi tiết
+
+export type OrderItemView = {
+  position: number
+  type: ItemInput['type']
+  serviceId: string | null
+  comboId: string | null
+  name: string
+  unit: string
+  priceMode: 'list' | 'custom' | 'fixed'
+  listMin: number
+  listMax: number
+  unitPrice: number
+  quantity: number
+  grossAmount: number
+  discountAmount: number
+  netAmount: number
+  belowAmount: number
+  belowReason: string | null
+  outOfRange: boolean
+  hasHardening: boolean
+  unallocatedReason: string | null
+  staff: { userId: string; name: string; allocatedNetAmount: number; commissionBaseAmount: number }[]
+}
+
+export type PaymentView = {
+  id: string
+  amount: number
+  method: 'cash' | 'transfer'
+  accountName: string
+  receivedAt: string
+  recordedByName: string | null
+  voided: boolean
+  voidReason: string | null
+  voidedByName: string | null
+}
+
+export type OrderDetail = {
+  id: string
+  code: number
+  codeLabel: string
+  branchId: string
+  status: OrderStatus
+  serviceDate: string
+  customer: { id: string; name: string; phone: string | null } | null
+  appointment: { id: string; date: string; startTime: string } | null
+  items: OrderItemView[]
+  discounts: {
+    scope: 'order' | number
+    kind: DiscountRow['kind']
+    percent: number | null
+    amount: number
+    reason: string
+    appliedByName: string | null
+  }[]
+  input: { items: ItemInput[]; discounts: DiscountInput[] }
+  grossAmount: number
+  discountAmount: number
+  netAmount: number
+  paidAmount: number
+  dueAmount: number
+  paymentStatus: PaymentStatus
+  requiredLevel: Level
+  approval: { byName: string | null; level: Level | null; at: string | null; valid: boolean } | null
+  payments: PaymentView[]
+  hasHardening: boolean
+  warrantyUntil: string | null
+  hasCustomLines: boolean
+  hasOutOfRange: boolean
+  createdByName: string | null
+  createdAt: string
+  doneByName: string | null
+  doneAt: string | null
+  confirmedByName: string | null
+  confirmedAt: string | null
+  cancelledByName: string | null
+  cancelledAt: string | null
+  cancelReason: string | null
+  needsOwnerReview: boolean
+  reviewedByName: string | null
+  version: number
+  doneProblems: string[]
+  can: OrderCan
+}
+
+async function names(tx: Tx, ids: (string | null | undefined)[]) {
+  const list = [...new Set(ids.filter((x): x is string => !!x))]
+  if (list.length === 0) return new Map<string, string>()
+  const rows = await tx<{ id: string; displayName: string }[]>`
+    select id, display_name from users where id = any(${list}::uuid[])`
+  return new Map(rows.map((r) => [r.id, r.displayName]))
+}
+
+async function branchTz(tx: Tx, branchId: string) {
+  const [b] = await tx<{ timezone: string }[]>`select timezone from branches where id = ${branchId}`
+  return b?.timezone ?? 'Asia/Ho_Chi_Minh'
+}
+
+function approvalValid(o: OrderRow) {
+  return (
+    !!o.discountApprovalHash &&
+    o.discountApprovalHash === o.pricingHash &&
+    levelAtLeast(o.discountApprovedLevel ?? 'none', o.requiredLevel)
+  )
+}
+
+function permsOf(auth: Auth, branchId: string) {
+  return auth.branches.find((b) => b.id === branchId)?.perms ?? []
+}
+
+function canFor(auth: Auth, o: OrderRow) {
+  return orderCan(permsOf(auth, o.branchId), auth.userId, {
+    status: o.status,
+    createdBy: o.createdBy,
+    requiredLevel: o.requiredLevel,
+    approvalValid: approvalValid(o),
+    needsOwnerReview: o.needsOwnerReview,
+    reviewedAt: o.reviewedAt,
+  })
+}
+
+function problemsOf(c: Content) {
+  const out: string[] = []
+  if (c.items.length === 0) out.push('Đơn chưa có dịch vụ nào.')
+  for (const it of c.items) {
+    if (!it.unallocatedReason && !c.allocs.some((a) => a.itemPosition === it.position))
+      out.push(`Dòng ${it.position + 1} (${it.name}) chưa chọn thợ.`)
+  }
+  return out
+}
+
+const iso = (d: Date | null) => (d ? new Date(d).toISOString() : null)
+
+export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDetail> {
+  const content = await loadContent(tx, o)
+  const payments = await tx<
+    {
+      id: string
+      amount: number
+      method: 'cash' | 'transfer'
+      accountName: string
+      receivedAt: Date
+      recordedBy: string
+      voidedAt: Date | null
+      voidReason: string | null
+      voidedBy: string | null
+    }[]
+  >`
+    select p.id, p.amount::int as amount, p.method, m.name as account_name, p.received_at, p.recorded_by,
+           p.voided_at, p.void_reason, p.voided_by
+    from payments p join money_accounts m on m.id = p.money_account_id
+    where p.order_id = ${o.id} order by p.received_at`
+  const [customer] = o.customerId
+    ? await tx<{ id: string; name: string; phone: string | null }[]>`
+        select id, name, phone from customers where id = ${o.customerId}`
+    : []
+  let appointment: OrderDetail['appointment'] = null
+  if (o.appointmentId) {
+    const [a] = await tx<
+      { id: string; startAt: Date }[]
+    >`select id, start_at from appointments where id = ${o.appointmentId}`
+    if (a) {
+      const tz = await branchTz(tx, o.branchId)
+      appointment = { id: a.id, date: toLocalDate(a.startAt, tz), startTime: toLocalTime(a.startAt, tz) }
+    }
+  }
+  const n = await names(tx, [
+    o.createdBy,
+    o.doneBy,
+    o.confirmedBy,
+    o.cancelledBy,
+    o.reviewedBy,
+    o.discountApprovedBy,
+    ...content.allocs.map((a) => a.staffUserId),
+    ...content.discounts.map((d) => d.appliedBy),
+    ...payments.flatMap((p) => [p.recordedBy, p.voidedBy]),
+  ])
+  const get = (id: string | null) => (id ? (n.get(id) ?? null) : null)
+  const paid = payments.filter((p) => !p.voidedAt).reduce((a, p) => a + p.amount, 0)
+
+  return {
+    id: o.id,
+    code: o.code,
+    codeLabel: codeLabel(o.code),
+    branchId: o.branchId,
+    status: o.status,
+    serviceDate: o.serviceDate,
+    customer: customer ?? null,
+    appointment,
+    items: content.items.map((it) => ({
+      position: it.position,
+      type: it.lineType,
+      serviceId: it.serviceId,
+      comboId: it.comboId,
+      name: it.name,
+      unit: it.unit,
+      priceMode: it.priceMode,
+      listMin: it.listMin,
+      listMax: it.listMax,
+      unitPrice: it.unitPrice,
+      quantity: it.quantity,
+      grossAmount: it.grossAmount,
+      discountAmount: it.discountAmount,
+      netAmount: it.netAmount,
+      belowAmount: it.belowAmount,
+      belowReason: it.belowReason,
+      outOfRange: it.outOfRange,
+      hasHardening: it.hasHardening,
+      unallocatedReason: it.unallocatedReason,
+      staff: content.allocs
+        .filter((a) => a.itemPosition === it.position)
+        .map((a) => ({
+          userId: a.staffUserId,
+          name: get(a.staffUserId) ?? '—',
+          allocatedNetAmount: a.allocatedNetAmount,
+          commissionBaseAmount: a.commissionBaseAmount,
+        })),
+    })),
+    discounts: content.discounts.map((d) => ({
+      scope: d.scopePosition ?? 'order',
+      kind: d.kind,
+      percent: d.percent,
+      amount: d.amount,
+      reason: d.reason,
+      appliedByName: get(d.appliedBy),
+    })),
+    input: toInput(content),
+    grossAmount: o.grossAmount,
+    discountAmount: o.discountAmount,
+    netAmount: o.netAmount,
+    paidAmount: paid,
+    dueAmount: Math.max(0, o.netAmount - paid),
+    paymentStatus: paymentStatus(o.netAmount, paid),
+    requiredLevel: o.requiredLevel,
+    approval: o.discountApprovedBy
+      ? {
+          byName: get(o.discountApprovedBy),
+          level: o.discountApprovedLevel,
+          at: iso(o.discountApprovedAt),
+          valid: approvalValid(o),
+        }
+      : null,
+    payments: payments.map((p) => ({
+      id: p.id,
+      amount: p.amount,
+      method: p.method,
+      accountName: p.accountName,
+      receivedAt: new Date(p.receivedAt).toISOString(),
+      recordedByName: get(p.recordedBy),
+      voided: !!p.voidedAt,
+      voidReason: p.voidReason,
+      voidedByName: get(p.voidedBy),
+    })),
+    hasHardening: o.hasHardening,
+    warrantyUntil: o.warrantyUntil,
+    hasCustomLines: content.items.some((it) => it.lineType === 'custom'),
+    hasOutOfRange: content.items.some((it) => it.outOfRange),
+    createdByName: get(o.createdBy),
+    createdAt: new Date(o.createdAt).toISOString(),
+    doneByName: get(o.doneBy),
+    doneAt: iso(o.doneAt),
+    confirmedByName: get(o.confirmedBy),
+    confirmedAt: iso(o.confirmedAt),
+    cancelledByName: get(o.cancelledBy),
+    cancelledAt: iso(o.cancelledAt),
+    cancelReason: o.cancelReason,
+    needsOwnerReview: o.needsOwnerReview,
+    reviewedByName: get(o.reviewedBy),
+    version: o.version,
+    doneProblems: problemsOf(content),
+    can: canFor(auth, o),
+  }
+}
+
+export async function getOrder(auth: Auth, id: string) {
+  return withUser(auth.userId, async (tx) => detailOf(tx, auth, await loadRow(tx, id)))
+}
+
+// ---------------------------------------------------------------- Ghi nội dung
+
+async function writeContent(tx: Tx, userId: string, orderId: string, rev: number, c: ComputedOrder) {
+  const it = c.items
+  if (it.length > 0) {
+    await tx`
+      insert into order_items (order_id, rev, position, line_type, service_id, combo_id, name, unit, price_mode,
+        list_min, list_max, unit_price, quantity, gross_amount, below_amount, below_reason, line_discount_amount,
+        order_discount_amount, discount_amount, net_amount, shop_borne_amount, out_of_range, has_hardening,
+        unallocated_reason)
+      select ${orderId}::uuid, ${rev}::int, * from unnest(
+        ${it.map((_, i) => i)}::int[], ${it.map((x) => x.type)}::text[], ${it.map((x) => x.serviceId)}::uuid[],
+        ${it.map((x) => x.comboId)}::uuid[], ${it.map((x) => x.name)}::text[], ${it.map((x) => x.unit)}::text[],
+        ${it.map((x) => x.priceMode)}::text[], ${it.map((x) => x.listMin)}::bigint[],
+        ${it.map((x) => x.listMax)}::bigint[], ${it.map((x) => x.unitPrice)}::bigint[],
+        ${it.map((x) => x.quantity)}::int[], ${it.map((x) => x.grossAmount)}::bigint[],
+        ${it.map((x) => x.belowAmount)}::bigint[], ${it.map((x) => x.belowReason)}::text[],
+        ${it.map((x) => x.lineDiscountAmount)}::bigint[], ${it.map((x) => x.orderDiscountAmount)}::bigint[],
+        ${it.map((x) => x.discountAmount)}::bigint[], ${it.map((x) => x.netAmount)}::bigint[],
+        ${it.map((x) => x.shopBorneAmount)}::bigint[], ${it.map((x) => String(x.outOfRange))}::text[]::boolean[],
+        ${it.map((x) => String(x.hasHardening))}::text[]::boolean[], ${it.map((x) => x.unallocatedReason)}::text[])`
+  }
+  const d = c.discounts
+  if (d.length > 0) {
+    await tx`
+      insert into order_discounts (order_id, rev, position, scope_position, kind, percent, amount, shop_borne, reason,
+        applied_by)
+      select ${orderId}::uuid, ${rev}::int, *, ${userId}::uuid from unnest(
+        ${d.map((_, i) => i)}::int[], ${d.map((x) => (x.scope === 'order' ? null : x.scope))}::int[],
+        ${d.map((x) => x.kind)}::text[], ${d.map((x) => x.percent)}::int[], ${d.map((x) => x.amount)}::bigint[],
+        ${d.map((x) => String(x.shopBorne))}::text[]::boolean[], ${d.map((x) => x.reason)}::text[])`
+  }
+  const a = it.flatMap((x, i) => x.allocations.map((al) => ({ ...al, position: i })))
+  if (a.length > 0) {
+    await tx`
+      insert into order_staff_allocations (order_id, rev, item_position, staff_user_id, allocated_net_amount,
+        commission_base_amount)
+      select ${orderId}::uuid, ${rev}::int, * from unnest(
+        ${a.map((x) => x.position)}::int[], ${a.map((x) => x.userId)}::uuid[],
+        ${a.map((x) => x.allocatedNetAmount)}::bigint[], ${a.map((x) => x.commissionBaseAmount)}::bigint[])`
+  }
+}
+
+type Summary = { status: OrderStatus; net: number; lines: string[]; staff: string[] }
+function summaryOf(status: OrderStatus, c: ComputedOrder): Summary {
+  return {
+    status,
+    net: c.netAmount,
+    lines: c.items.map((x) => `${x.name}${x.quantity > 1 ? ` ×${x.quantity}` : ''}: ${x.netAmount}`),
+    staff: [...new Set(c.items.flatMap((x) => x.allocations.map((a) => a.userId)))],
+  }
+}
+
+async function audit(
+  tx: Tx,
+  auth: Auth,
+  o: { id: string; branchId: string },
+  action: string,
+  extra: { rev?: number; before?: unknown; after?: unknown; reason?: string | null } = {},
+) {
+  await tx`
+    insert into order_audit_events (order_id, branch_id, actor_user_id, action, rev, before_json, after_json, reason)
+    values (${o.id}, ${o.branchId}, ${auth.userId}, ${action}, ${extra.rev ?? null},
+            ${extra.before == null ? null : tx.json(extra.before as never)},
+            ${extra.after == null ? null : tx.json(extra.after as never)}, ${extra.reason ?? null})`
+}
+
+/** Kiểm và tính lại nội dung đơn ở server. */
+async function prepare(
+  tx: Tx,
+  auth: Auth,
+  branchId: string,
+  input: OrderContentInput,
+  currentServiceDate: string | null,
+) {
+  const catalog = await loadCatalog(tx)
+  const computed = computeOrder({ items: input.items, discounts: input.discounts }, lookupOf(catalog))
+  if (computed.errors.length > 0) throw invalid(computed.errors[0]!, { errors: computed.errors })
+
+  const staff = new Set((await branchStaff(tx, branchId)).map((s) => s.id))
+  for (const it of computed.items)
+    for (const a of it.allocations)
+      if (!staff.has(a.userId)) throw invalid('Thợ được chọn không thuộc cơ sở này.')
+
+  if (input.customerId) {
+    const [c] = await tx`select id from customers where id = ${input.customerId}`
+    if (!c) throw invalid('Không tìm thấy khách.')
+  }
+
+  if (!isIsoDate(input.serviceDate)) throw invalid('Ngày làm dịch vụ không hợp lệ.')
+  if (input.serviceDate !== currentServiceDate) {
+    const today = toLocalDate(new Date(), await branchTz(tx, branchId))
+    if (input.serviceDate > today) throw invalid('Ngày làm dịch vụ không được sau hôm nay.')
+    if (!hasPerm(auth, branchId, 'order.confirm') && input.serviceDate < addDays(today, -1))
+      throw invalid('Chỉ chọn được ngày làm dịch vụ hôm nay hoặc hôm qua.')
+  }
+  return computed
+}
+
+/** Người lưu đủ mức duyệt thì lưu luôn là đã duyệt (C15). */
+function selfApproves(auth: Auth, branchId: string, required: Level) {
+  return levelAtLeast(required, 'manager') && levelAtLeast(levelOf(permsOf(auth, branchId)), required)
+}
+
+// ---------------------------------------------------------------- Tạo đơn (2.8)
+
+export async function createOrder(auth: Auth, input: CreateOrderInput) {
+  const branch = requireBranch(auth, input.branchId)
+  if (!hasPerm(auth, branch.id, 'order.create_draft')) throw forbidden('Không có quyền tạo đơn.')
+
+  return withUser(auth.userId, async (tx) => {
+    const computed = await prepare(tx, auth, branch.id, input, null)
+    const hash = sha({ b: branch.id, d: docHash(input.customerId, input.serviceDate, computed) })
+
+    // Chống tạo trùng (P3): cùng mã + cùng nội dung → trả đơn đã tạo; khác nội dung → 422.
+    const replay = async () => {
+      const [ex] = await tx<OrderRow[]>`
+        select ${orderCols(tx)} from orders o
+        where o.created_by = ${auth.userId} and o.create_request_id = ${input.createRequestId}`
+      if (!ex) return null
+      if (ex.createRequestHash !== hash) throw invalid('Đơn này đã lưu với nội dung khác. Mở đơn để sửa.')
+      return ex
+    }
+    const existing = await replay()
+    if (existing) return { order: await detailOf(tx, auth, existing), replayed: true }
+
+    const approve = selfApproves(auth, branch.id, computed.requiredLevel)
+    const [row] = await tx<{ id: string }[]>`
+      insert into orders (branch_id, customer_id, service_date, gross_amount, discount_amount, net_amount,
+                          has_hardening, required_level, pricing_hash, discount_approved_by, created_by, updated_by,
+                          create_request_id, create_request_hash)
+      values (${branch.id}, ${input.customerId}, ${input.serviceDate}, ${computed.grossAmount},
+              ${computed.discountAmount}, ${computed.netAmount}, ${computed.hasHardening}, ${computed.requiredLevel},
+              ${pricingHash(computed)}, ${approve ? auth.userId : null}, ${auth.userId}, ${auth.userId},
+              ${input.createRequestId}, ${hash})
+      on conflict (created_by, create_request_id) do nothing
+      returning id`
+    if (!row) {
+      const again = await replay()
+      if (!again) throw conflict('Không lưu được đơn. Thử lại.')
+      return { order: await detailOf(tx, auth, again), replayed: true }
+    }
+    await writeContent(tx, auth.userId, row.id, 1, computed)
+    await audit(tx, auth, { id: row.id, branchId: branch.id }, 'created', {
+      rev: 1,
+      after: summaryOf('in_progress', computed),
+    })
+    return { order: await detailOf(tx, auth, await loadRow(tx, row.id)), replayed: false }
+  })
+}
+
+// ---------------------------------------------------------------- Sửa đơn (2.8, K10)
+
+export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInput) {
+  return withUser(auth.userId, async (tx) => {
+    const row = await loadRow(tx, id, true)
+    const can = canFor(auth, row)
+    if (!can.edit) {
+      throw forbidden(
+        row.status === 'awaiting_confirmation'
+          ? 'Đơn đã bấm Làm xong, chỉ Nhung, Linh sửa được.'
+          : row.status === 'in_progress'
+            ? 'Không có quyền sửa đơn.'
+            : 'Đơn đã xác nhận hoặc đã huỷ, không sửa được.',
+      )
+    }
+    const computed = await prepare(tx, auth, row.branchId, input, row.serviceDate)
+    const current = await loadContent(tx, row)
+    const catalog = await loadCatalog(tx)
+    const currentComputed = computeOrder(toInput(current), lookupOf(catalog))
+    const same =
+      docHash(input.customerId, input.serviceDate, computed) ===
+      docHash(row.customerId, row.serviceDate, currentComputed)
+
+    if (row.version !== input.version) {
+      // Gửi lại sau mất mạng mà server đã đúng nội dung gửi lên → coi là thành công [P24]
+      if (same) return detailOf(tx, auth, row)
+      throw conflict(
+        'Đơn vừa được người khác sửa. Xem bản mới nhất rồi sửa lại.',
+        await detailOf(tx, auth, row),
+      )
+    }
+    if (same) return detailOf(tx, auth, row)
+
+    const approve = selfApproves(auth, row.branchId, computed.requiredLevel)
+    const [updated] = await tx<{ contentRev: number }[]>`
+      update orders set
+        customer_id = ${input.customerId}, service_date = ${input.serviceDate},
+        gross_amount = ${computed.grossAmount}, discount_amount = ${computed.discountAmount},
+        net_amount = ${computed.netAmount}, has_hardening = ${computed.hasHardening},
+        required_level = ${computed.requiredLevel}, pricing_hash = ${pricingHash(computed)},
+        content_rev = content_rev + 1,
+        discount_approved_by = ${approve ? auth.userId : row.discountApprovedBy},
+        discount_approval_hash = ${approve ? null : row.discountApprovalHash}
+      where id = ${id} and version = ${input.version}
+      returning content_rev`
+    if (!updated) {
+      throw conflict(
+        'Đơn vừa được người khác sửa. Xem bản mới nhất rồi sửa lại.',
+        await detailOf(tx, auth, await loadRow(tx, id)),
+      )
+    }
+    await writeContent(tx, auth.userId, id, updated.contentRev, computed)
+    await audit(tx, auth, row, 'updated', {
+      rev: updated.contentRev,
+      before: summaryOf(row.status, currentComputed),
+      after: summaryOf(row.status, computed),
+    })
+    return detailOf(tx, auth, await loadRow(tx, id))
+  })
+}
+
+// ---------------------------------------------------------------- Chuyển trạng thái (2.8–2.10)
+
+async function checkVersion(tx: Tx, auth: Auth, row: OrderRow, version: number) {
+  if (row.version !== version)
+    throw conflict(
+      'Đơn vừa được người khác sửa. Xem bản mới nhất rồi thao tác lại.',
+      await detailOf(tx, auth, row),
+    )
+}
+
+async function afterUpdate(tx: Tx, auth: Auth, id: string, updated: unknown) {
+  if (!updated)
+    throw conflict(
+      'Đơn vừa được người khác sửa. Xem bản mới nhất rồi thao tác lại.',
+      await detailOf(tx, auth, await loadRow(tx, id)),
+    )
+}
+
+export async function markDone(auth: Auth, id: string, version: number) {
+  return withUser(auth.userId, async (tx) => {
+    const row = await loadRow(tx, id, true)
+    if (!canFor(auth, row).done) {
+      throw forbidden(
+        row.status === 'in_progress'
+          ? 'Không có quyền bấm Làm xong.'
+          : 'Đơn không còn ở trạng thái Đang làm.',
+      )
+    }
+    await checkVersion(tx, auth, row, version)
+    const problems = problemsOf(await loadContent(tx, row))
+    if (problems.length > 0) throw invalid(problems[0]!, { problems })
+    const [u] = await tx`
+      update orders set status = 'awaiting_confirmation' where id = ${id} and version = ${version} returning id`
+    await afterUpdate(tx, auth, id, u)
+    await audit(tx, auth, row, 'done')
+    return detailOf(tx, auth, await loadRow(tx, id))
+  })
+}
+
+export async function confirmOrder(auth: Auth, id: string, version: number) {
+  return withUser(auth.userId, async (tx) => {
+    const row = await loadRow(tx, id, true)
+    const can = canFor(auth, row)
+    if (!can.confirm) {
+      throw forbidden(
+        can.confirmBlocked ??
+          (['confirmed', 'cancelled'].includes(row.status)
+            ? 'Đơn đã xác nhận hoặc đã huỷ.'
+            : 'Chỉ Nhung, Linh xác nhận được bill.'),
+      )
+    }
+    await checkVersion(tx, auth, row, version)
+    const problems = problemsOf(await loadContent(tx, row))
+    if (problems.length > 0) throw invalid(problems[0]!, { problems })
+    // Xác nhận là đồng ý mức giảm trong phạm vi của mình (C15)
+    const approve = levelAtLeast(row.requiredLevel, 'manager') && !approvalValid(row)
+    const [u] = await tx`
+      update orders set status = 'confirmed',
+        discount_approved_by = ${approve ? auth.userId : row.discountApprovedBy},
+        discount_approval_hash = ${approve ? null : row.discountApprovalHash}
+      where id = ${id} and version = ${version} returning id`
+    await afterUpdate(tx, auth, id, u)
+    if (row.appointmentId) await tx`select app.sync_appointment(${row.appointmentId})`
+    await audit(tx, auth, row, 'confirmed')
+    return detailOf(tx, auth, await loadRow(tx, id))
+  })
+}
+
+export async function cancelOrder(auth: Auth, id: string, version: number, reason: string) {
+  return withUser(auth.userId, async (tx) => {
+    const row = await loadRow(tx, id, true)
+    if (!canFor(auth, row).cancel) {
+      throw forbidden(
+        row.status === 'confirmed'
+          ? 'Đơn đã xác nhận; huỷ và hoàn tiền có ở Đợt 3.'
+          : 'Không huỷ được đơn này. Báo Nhung hoặc Linh.',
+      )
+    }
+    await checkVersion(tx, auth, row, version)
+    const [paid] = await tx`select 1 from payments where order_id = ${id} and voided_at is null limit 1`
+    if (paid) throw invalid('Đơn đã có khoản thu. Huỷ khoản thu trước khi huỷ đơn.')
+    const [u] = await tx`
+      update orders set status = 'cancelled', cancel_reason = ${reason.trim()}
+      where id = ${id} and version = ${version} returning id`
+    await afterUpdate(tx, auth, id, u)
+    if (row.appointmentId) await tx`select app.sync_appointment(${row.appointmentId})`
+    await audit(tx, auth, row, 'cancelled', { reason: reason.trim() })
+    return detailOf(tx, auth, await loadRow(tx, id))
+  })
+}
+
+export async function approveDiscounts(auth: Auth, id: string, version: number) {
+  return withUser(auth.userId, async (tx) => {
+    const row = await loadRow(tx, id, true)
+    if (!canFor(auth, row).approveDiscount) {
+      throw forbidden(
+        row.requiredLevel === 'owner'
+          ? 'Giảm giá trên 20% chỉ Linh duyệt được.'
+          : 'Không có quyền duyệt giảm giá.',
+      )
+    }
+    await checkVersion(tx, auth, row, version)
+    const [u] = await tx`
+      update orders set discount_approved_by = ${auth.userId}, discount_approval_hash = null
+      where id = ${id} and version = ${version} returning id`
+    await afterUpdate(tx, auth, id, u)
+    await audit(tx, auth, row, 'discount_approved')
+    return detailOf(tx, auth, await loadRow(tx, id))
+  })
+}
+
+export async function markReviewed(auth: Auth, id: string) {
+  return withUser(auth.userId, async (tx) => {
+    const row = await loadRow(tx, id, true)
+    if (!canFor(auth, row).markReviewed) throw forbidden()
+    await tx`update orders set reviewed_by = ${auth.userId}, reviewed_at = now() where id = ${id}`
+    await audit(tx, auth, row, 'reviewed')
+    return detailOf(tx, auth, await loadRow(tx, id))
+  })
+}
+
+// ---------------------------------------------------------------- Tạo đơn từ lịch (2.12; module §5.4, §10)
+
+export async function createOrderFromAppointment(
+  auth: Auth,
+  appointmentId: string,
+  input: { createRequestId: string; additional?: boolean },
+) {
+  if (!isUuid(appointmentId)) throw notFound('Không tìm thấy lịch.')
+  return withUser(auth.userId, async (tx) => {
+    const [a] = await tx<
+      {
+        id: string
+        branchId: string
+        status: string
+        customerId: string | null
+        customerDisplayName: string
+        phone: string | null
+      }[]
+    >`select id, branch_id, status, customer_id, customer_display_name, phone
+      from appointments where id = ${appointmentId} for update`
+    if (!a) throw notFound('Không tìm thấy lịch.')
+    if (
+      !hasPerm(auth, a.branchId, 'appointments.create_order') ||
+      !hasPerm(auth, a.branchId, 'order.create_draft')
+    )
+      throw forbidden('Không có quyền tạo đơn từ lịch.')
+
+    const hash = sha({ appointment: appointmentId, additional: !!input.additional })
+    const [mine] = await tx<OrderRow[]>`
+      select ${orderCols(tx)} from orders o
+      where o.created_by = ${auth.userId} and o.create_request_id = ${input.createRequestId}`
+    if (mine) {
+      if (mine.createRequestHash !== hash) throw invalid('Mã yêu cầu đã dùng cho đơn khác. Tải lại trang.')
+      return { order: await detailOf(tx, auth, mine), replayed: true }
+    }
+
+    if (!['pending', 'confirmed', 'arrived', 'in_progress'].includes(a.status))
+      throw invalid('Lịch đã huỷ, không đến hoặc đã hoàn thành. Dùng "+ Tạo đơn" để tạo đơn mới.')
+
+    // Bấm hai lần không ra hai đơn; lịch nhóm dùng "Tạo thêm đơn" (test 28)
+    const linked = (
+      await tx<{ id: string; code: number; status: OrderStatus; visible: boolean }[]>`
+        select id, code, status, visible from app.appointment_orders(${appointmentId})`
+    ).filter((o) => o.status !== 'cancelled')
+    if (linked.length > 0 && !input.additional) {
+      const v = linked.find((o) => o.visible)
+      if (v) return { order: await detailOf(tx, auth, await loadRow(tx, v.id)), replayed: true }
+      throw conflict(
+        `Lịch này đã có đơn ${codeLabel(linked[0]!.code)}. Bấm "Tạo thêm đơn" nếu là khách khác trong nhóm.`,
+      )
+    }
+
+    // Gắn hồ sơ khách: lịch đã có khách → dùng; có SĐT trùng tên → dùng hồ sơ đó; không thì tạo mới.
+    let customerId = a.customerId
+    if (!customerId) {
+      if (a.phone) {
+        const same = await tx<{ id: string; name: string }[]>`
+          select id, name from customers where phone = ${a.phone} order by created_at`
+        customerId =
+          same.find((c) => foldVietnamese(c.name) === foldVietnamese(a.customerDisplayName))?.id ?? null
+      }
+      customerId ??= (await insertCustomer(tx, auth, a.customerDisplayName, a.phone)).id
+      await tx`select app.appointment_link_customer(${appointmentId}, ${customerId})`
+    }
+
+    const today = toLocalDate(new Date(), await branchTz(tx, a.branchId))
+    const empty = computeOrder(
+      { items: [], discounts: [] },
+      { service: () => undefined, combo: () => undefined },
+    )
+    const [row] = await tx<{ id: string }[]>`
+      insert into orders (branch_id, customer_id, appointment_id, service_date, pricing_hash, created_by, updated_by,
+                          create_request_id, create_request_hash)
+      values (${a.branchId}, ${customerId}, ${appointmentId}, ${today}, ${pricingHash(empty)}, ${auth.userId},
+              ${auth.userId}, ${input.createRequestId}, ${hash})
+      on conflict (created_by, create_request_id) do nothing
+      returning id`
+    if (!row) throw conflict('Không tạo được đơn. Thử lại.')
+    await tx`select app.sync_appointment(${appointmentId})`
+    await audit(tx, auth, { id: row.id, branchId: a.branchId }, 'created_from_appointment', {
+      rev: 1,
+      after: { appointmentId, additional: !!input.additional },
+    })
+    return { order: await detailOf(tx, auth, await loadRow(tx, row.id)), replayed: false }
+  })
+}
+
+// ---------------------------------------------------------------- Danh sách (UI03)
+
+export type OrderListItem = {
+  id: string
+  codeLabel: string
+  customerName: string | null
+  phoneMasked: string | null
+  serviceDate: string
+  createdTime: string
+  staffNames: string[]
+  netAmount: number
+  paidAmount: number
+  status: OrderStatus
+  paymentStatus: PaymentStatus
+  needsApproval: boolean
+  flagged: boolean
+  needsOwnerReview: boolean
+  mine: boolean
+}
+
+export async function listOrders(
+  auth: Auth,
+  input: {
+    branchId?: string
+    from?: string
+    to?: string
+    filter?: OrderFilter
+    q?: string
+    staffId?: string
+    method?: 'cash' | 'transfer'
+    review?: boolean
+  },
+) {
+  const branch = requireBranch(auth, input.branchId)
+  if (!hasPerm(auth, branch.id, 'order.create_draft') && !hasPerm(auth, branch.id, 'order.read_all'))
+    throw forbidden()
+  const readAll = hasPerm(auth, branch.id, 'order.read_all')
+  const revenueAll = hasPerm(auth, branch.id, 'revenue.read_branch')
+  const filter = input.filter ?? 'all'
+
+  return withUser(auth.userId, async (tx) => {
+    const tz = await branchTz(tx, branch.id)
+    const today = toLocalDate(new Date(), tz)
+    const from = input.from ?? today
+    const to = input.to ?? from
+    if (!isIsoDate(from) || !isIsoDate(to)) throw invalid('Khoảng ngày không hợp lệ.')
+    if (to < from) throw invalid('Ngày kết thúc phải sau ngày bắt đầu.')
+    if (addDays(from, MAX_RANGE_DAYS) < to) throw invalid(`Mỗi lần xem tối đa ${MAX_RANGE_DAYS} ngày.`)
+
+    const q = foldVietnamese(input.q ?? '').slice(0, 100)
+    const codeQ = /^#?\d{1,6}$/.test(q) ? Number(q.replace('#', '')) : null
+    const like = q && codeQ === null ? `%${escapeLike(q)}%` : null
+    const staffId = input.staffId && isUuid(input.staffId) ? (readAll ? input.staffId : auth.userId) : null
+
+    const rows = await tx<(OrderRow & { customerName: string | null; customerPhone: string | null })[]>`
+      select ${orderCols(tx)}, c.name as customer_name, c.phone as customer_phone
+      from orders o left join customers c on c.id = o.customer_id
+      where o.branch_id = ${branch.id}
+        and o.service_date between ${from}::date and ${to}::date
+        and case ${filter}
+              when 'in_progress' then o.status = 'in_progress'
+              when 'awaiting_confirmation' then o.status = 'awaiting_confirmation'
+              when 'confirmed' then o.status = 'confirmed'
+              when 'cancelled' then o.status = 'cancelled'
+              when 'unpaid' then o.status in ('awaiting_confirmation', 'confirmed')
+                and o.net_amount > coalesce((select sum(p.amount) from payments p
+                                             where p.order_id = o.id and p.voided_at is null), 0)
+              else true end
+        and (${codeQ}::int is null or o.code = ${codeQ}::int)
+        and (${like}::text is null or c.search_norm like ${like} escape '\\')
+        and (${staffId}::uuid is null or exists (
+              select 1 from order_staff_allocations a
+              where a.order_id = o.id and a.rev = o.content_rev and a.staff_user_id = ${staffId}::uuid))
+        and (${input.method ?? null}::text is null or exists (
+              select 1 from payments p where p.order_id = o.id and p.voided_at is null and p.method = ${input.method ?? null}))
+        and (${!!input.review} = false or (o.needs_owner_review and o.reviewed_at is null))
+      order by o.service_date desc, o.created_at desc
+      limit ${MAX_ROWS}`
+
+    const ids = rows.map((r) => r.id)
+    const allocs = ids.length
+      ? await tx<{ orderId: string; staffUserId: string; amount: number }[]>`
+          select a.order_id, a.staff_user_id, sum(a.allocated_net_amount)::int as amount
+          from order_staff_allocations a join orders o on o.id = a.order_id and a.rev = o.content_rev
+          where a.order_id = any(${ids}::uuid[])
+          group by a.order_id, a.staff_user_id`
+      : []
+    const paidRows = ids.length
+      ? await tx<{ orderId: string; paid: number }[]>`
+          select order_id, sum(amount)::int as paid from payments
+          where order_id = any(${ids}::uuid[]) and voided_at is null group by order_id`
+      : []
+    const flags = ids.length
+      ? await tx<{ orderId: string; flagged: boolean }[]>`
+          select i.order_id, bool_or(i.out_of_range or i.line_type = 'custom' or i.below_amount > 0) as flagged
+          from order_items i join orders o on o.id = i.order_id and i.rev = o.content_rev
+          where i.order_id = any(${ids}::uuid[]) group by i.order_id`
+      : []
+    const n = await names(
+      tx,
+      allocs.map((a) => a.staffUserId),
+    )
+    const paid = new Map(paidRows.map((p) => [p.orderId, p.paid]))
+    const flagged = new Map(flags.map((f) => [f.orderId, f.flagged]))
+
+    const items: OrderListItem[] = rows.map((r) => {
+      const p = paid.get(r.id) ?? 0
+      return {
+        id: r.id,
+        codeLabel: codeLabel(r.code),
+        customerName: r.customerName,
+        phoneMasked: maskPhone(r.customerPhone),
+        serviceDate: r.serviceDate,
+        createdTime: toLocalTime(r.createdAt, tz),
+        staffNames: [
+          ...new Set(allocs.filter((a) => a.orderId === r.id).map((a) => n.get(a.staffUserId) ?? '—')),
+        ],
+        netAmount: r.netAmount,
+        paidAmount: p,
+        status: r.status,
+        paymentStatus: paymentStatus(r.netAmount, p),
+        needsApproval: levelAtLeast(r.requiredLevel, 'manager') && !approvalValid(r),
+        flagged: flagged.get(r.id) ?? false,
+        needsOwnerReview: r.needsOwnerReview && !r.reviewedAt,
+        mine: r.createdBy === auth.userId,
+      }
+    })
+
+    // Tổng: chỉ đơn Đã xác nhận vào doanh thu (Q01). Thợ chỉ thấy phần của mình (K09).
+    const confirmed = rows.filter((r) => r.status === 'confirmed')
+    const confirmedIds = new Set(confirmed.map((r) => r.id))
+    const byStaff = new Map<string, number>()
+    for (const a of allocs) {
+      if (!confirmedIds.has(a.orderId)) continue
+      if (!revenueAll && a.staffUserId !== auth.userId) continue
+      byStaff.set(a.staffUserId, (byStaff.get(a.staffUserId) ?? 0) + a.amount)
+    }
+    const summary = {
+      orderCount: confirmed.length,
+      awaitingCount: rows.filter((r) => r.status === 'awaiting_confirmation').length,
+      inProgressCount: rows.filter((r) => r.status === 'in_progress').length,
+      grossAmount: revenueAll ? confirmed.reduce((s, r) => s + r.grossAmount, 0) : null,
+      discountAmount: revenueAll ? confirmed.reduce((s, r) => s + r.discountAmount, 0) : null,
+      netAmount: revenueAll ? confirmed.reduce((s, r) => s + r.netAmount, 0) : null,
+      paidAmount: revenueAll ? confirmed.reduce((s, r) => s + (paid.get(r.id) ?? 0), 0) : null,
+      dueAmount: revenueAll
+        ? confirmed.reduce((s, r) => s + Math.max(0, r.netAmount - (paid.get(r.id) ?? 0)), 0)
+        : null,
+      byStaff: [...byStaff.entries()]
+        .map(([userId, amount]) => ({ userId, name: n.get(userId) ?? '—', amount }))
+        .sort((a, b) => b.amount - a.amount),
+    }
+    return { items, summary, from, to, today, readAll, revenueAll }
+  })
+}

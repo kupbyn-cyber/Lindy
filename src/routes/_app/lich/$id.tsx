@@ -55,6 +55,8 @@ const AUDIT_LABEL: Record<string, string> = {
   rescheduled: 'Đổi giờ',
   confirmed: 'Chốt lịch',
   arrived: 'Khách đã đến',
+  in_progress: 'Đang làm (đã tạo đơn)',
+  customer_linked: 'Gắn hồ sơ khách',
   no_show: 'Khách không đến',
   completed: 'Hoàn thành',
   cancelled: 'Huỷ lịch',

@@ -63,7 +63,7 @@ Chặn bước 2.20, 2.21.
 | Tính tiền | Hàm thuần dùng chung `src/lib/order-math.ts`: máy khách hiện tổng ngay khi tích chọn; server tính lại và **bỏ mọi số tiền máy gửi lên** [P26] | Chỉ tính ở server | Thợ thấy tổng ngay, không chờ mạng; server vẫn là nguồn đúng |
 | Kiểm bất biến ở DB | Constraint trigger `DEFERRABLE INITIALLY DEFERRED` trên `orders`, kiểm khi commit: Σ dòng = tổng đơn; chia thợ khớp; Σ thu ≤ phải thu; mức duyệt giảm giá; cơ sở hoa hồng | Chỉ kiểm ở code | Như Đợt 1: bắt lỗi quên kiểm trong code |
 | Bỏ dòng khi sửa đơn | Đánh dấu `removed_at`, không DELETE; lịch sử lưu ảnh chụp cả đơn trước/sau | Cho DELETE dòng của đơn chưa xác nhận | Giữ quy tắc `app_user` không có DELETE |
-| Danh mục | Dùng chung cả tổ chức. Nạp từ `data/*.csv` (nhúng vào bản build bằng `?raw`) trong `seedBase`, chạy cả trên hosting; chỉ thêm khi chưa có, **không ghi đè** giá Linh đã sửa | Nạp riêng ở local | Hosting không có dòng lệnh (K08) |
+| Danh mục | Dùng chung cả tổ chức. Nạp từ `data/*.csv` (sinh sẵn thành `src/server/ops/catalog-data.ts` bằng `scripts/gen-catalog.ts`) trong `seedBase`, chạy cả trên hosting; chỉ thêm khi chưa có, **không ghi đè** giá Linh đã sửa | Nạp riêng ở local | Hosting không có dòng lệnh (K08) |
 | Tìm dịch vụ | Lọc ở máy khách (khoảng 32 mục): bỏ dấu + chữ cái đầu ("tdc", "sgt") | Tìm ở server | Kết quả tức thì; không tốn request |
 | Khách | Bảng `customers` theo tổ chức (hồ sơ chung mọi cơ sở, test 26); đơn thuộc cơ sở | Theo cơ sở | Đúng test 26 |
 | Doanh thu | Tính từ đơn Đã xác nhận theo `service_date` bằng view SQL; chưa có bảng `revenue_entries` | Tạo `revenue_entries` ngay | Loại "cọc bỏ hẹn" có ở Đợt 3; thêm bảng khi cần |
@@ -177,27 +177,27 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   *Kiểm tra:* test đơn vị cho PRD 1, 4, 32, 46, 47, 48, 49, 50, 52; cơ sở hoa hồng của test 33 (500.000đ) và 34 (+50.000đ). Sinh ngẫu nhiên 1.000 đơn: tổng khớp từng đồng.
 - [x] **2.5 Khách.** Migration `0007_customers` như 7.2. Service + API: tìm theo tên/SĐT không dấu (tối đa 20 kết quả), tạo khách, nhắc "SĐT này đã có: …" (Q06).
   *Kiểm tra:* test 43; tìm `%` không khớp mọi khách; người ở CS2 thấy được hồ sơ khách (hồ sơ chung).
-- [ ] **2.6 Bảng đơn hàng.** Migration `0008_orders` như 7.3: bảng, 2 tài khoản tiền, bộ đếm mã đơn, `orders_guard`, constraint trigger, RLS theo K09, sửa `appointments_guard`, `pg_notify` loại `orders`.
+- [x] **2.6 Bảng đơn hàng.** Migration `0009_orders` (số 0008 dành cho sửa quyền gọi hàm, P37) như 7.3: bảng, 2 tài khoản tiền, bộ đếm mã đơn, `orders_guard`, constraint trigger, RLS theo K09, sửa `appointments_guard`, `pg_notify` loại `orders`.
   *Kiểm tra (SQL dưới `app_user`):* đổi cột bị cấm → lỗi; thợ sửa đơn Chờ xác nhận → lỗi; Σ chia ≠ thuần → commit lỗi; thu vượt → commit lỗi; không DELETE được; Trang không đọc được đơn ngoài K09.
-- [ ] **2.7 Luật quyền.** Thêm 3 quyền; `src/server/orders/policy.ts` (`orderCan`) cùng luật với trigger.
+- [x] **2.7 Luật quyền.** Thêm 3 quyền; `src/server/orders/policy.ts` (`orderCan`) cùng luật với trigger.
   *Kiểm tra:* bảng test 4 vai trò × mọi thao tác, chạy ở cả service và SQL.
-- [ ] **2.8 Tạo và lưu đơn.**
+- [x] **2.8 Tạo và lưu đơn.**
   - `POST /api/orders` (mã yêu cầu chống bấm hai lần); `PUT /api/orders/:id` (cả đơn + `version`, lệch → 409 kèm bản mới); `POST /api/orders/:id/done` (Làm xong); `POST /api/orders/:id/cancel` (lý do bắt buộc).
   - zod `.strict()`; mọi số tiền máy gửi lên bị bỏ, server tính lại [P26].
   *Kiểm tra:* test 15, 21, 49, 52; S20, S21, S28.
-- [ ] **2.9 Giảm giá và duyệt.** Áp giảm có lý do; duyệt: `POST /api/orders/:id/approve-discounts` (Nhung đến 20%, Linh mọi mức). Đổi nội dung dòng sau khi duyệt → mất duyệt, phải duyệt lại [P29].
+- [x] **2.9 Giảm giá và duyệt.** Áp giảm có lý do; duyệt: `POST /api/orders/:id/approve-discounts` (Nhung đến 20%, Linh mọi mức). Đổi nội dung dòng sau khi duyệt → mất duyệt, phải duyệt lại [P29].
   *Kiểm tra:* test 28, 32, 46, 47, 48; S22, S23.
-- [ ] **2.10 Xác nhận bill** `POST /api/orders/:id/confirm`.
+- [x] **2.10 Xác nhận bill** `POST /api/orders/:id/confirm`.
   - Chặn khi còn dòng chưa chia thợ (không có lý do) hoặc giảm giá chưa duyệt đúng cấp.
   - Ghi `warranty_until`. Người xác nhận có phần trong đơn và không có `review_queue.read` → `needs_owner_review` (Q04).
   - Lịch liên kết → Hoàn thành khi mọi đơn của lịch đã xác nhận.
   *Kiểm tra:* test 1, 4, 30, 31, 45, 50; module 27.
-- [ ] **2.11 Thu tiền.**
+- [x] **2.11 Thu tiền.**
   - `POST /api/orders/:id/payments`: tiền mặt → Tiền mặt cs HTK; chuyển khoản → Tài khoản cs HTK. `idempotency_key` bắt buộc; khoá dòng đơn khi kiểm Σ thu ≤ phải thu [P30].
   - `POST /api/payments/:id/void`: huỷ khoản nhập nhầm, có lý do, khi chưa đối soát.
   - Trạng thái thu tự tính.
   *Kiểm tra:* test 3, 17; S24, S25.
-- [ ] **2.12 Tạo đơn từ lịch.**
+- [~] **2.12 Tạo đơn từ lịch.** (server xong; nút và cảnh báo trên màn chi tiết lịch ở 2.15)
   - `POST /api/appointments/:id/create-order`: chống bấm hai lần, mang tên, SĐT, khách; dịch vụ dự kiến chỉ để tham khảo.
   - "Tạo thêm đơn" cho lịch đã có đơn, có hộp xác nhận.
   - Huỷ lịch có đơn liên kết → cảnh báo. Lịch đã có đơn → ẩn nút "Hoàn thành" bấm tay (§5.4).
@@ -294,6 +294,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 | P34 | 🟡 | Tìm khách hàng loạt để lấy SĐT | Tối đa 20 kết quả; giới hạn tần suất; kết quả tìm hiện SĐT che giữa (`0912•••678`), chỉ chi tiết khách mới trả đủ số (như lịch, P11) |
 | P35 | ⚪ | Đổi giá danh mục làm đổi đơn cũ | Dòng đơn lưu tên, giá lúc bán; lịch sử giá chỉ thêm |
 | P36 | ⚪ | Làm tròn khi chia giảm giá lệch vài đồng | Chia theo số nguyên, phần lệch vào dòng cuối; test 1.000 đơn ngẫu nhiên |
+| P37 | 🟡 | **Phát hiện khi làm (13/10):** lệnh thu quyền gọi hàm theo schema ở 0001 không có tác dụng; `app_user` gọi được hàm nội bộ Đợt 0 (`_emit`, `_revoke_user_access`, `_audit`, `emit_system_event`). Chỉ khai thác được qua lỗi code hoặc SQL injection | Migration `0008_function_grants`: thu EXECUTE của PUBLIC, đặt mặc định toàn cục, cấp lại đúng hàm cần; test trong `tests/security/orders.test.ts` |
 
 ## 12. Mặc định tôi tự đặt (không phải tham số nghiệp vụ, đổi được)
 
@@ -326,7 +327,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 ## 14. File sẽ tạo hoặc sửa
 
 **Tạo:**
-- `db/migrations/0006_catalog.sql`, `0007_customers.sql`, `0008_orders.sql`; 2B thêm `0009_service_tickets.sql`, `0010_revenue_views.sql`.
+- `db/migrations/0006_catalog.sql`, `0007_customers.sql`, `0008_function_grants.sql` (P37), `0009_orders.sql`; 2B thêm migration cho phiếu bảo hành, báo cáo.
 - `src/lib/order-math.ts`, `src/lib/catalog-search.ts`, `src/lib/orders.ts` (gọi API phía máy khách).
 - `src/server/catalog/`, `src/server/customers/`, `src/server/orders/` (`policy.ts`, `schema.ts`, `service.ts`, `payments.ts`), `src/server/reports/`.
 - `src/routes/api/catalog/…`, `api/customers/…`, `api/orders/…`, `api/payments/…`, `api/reports/…`.
