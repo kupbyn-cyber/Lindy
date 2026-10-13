@@ -20,6 +20,7 @@ import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiOverviewRouteImport } from './routes/api/overview'
+import { Route as ApiReviewRouteImport } from './routes/api/review'
 import { Route as AppDonHangIndexRouteImport } from './routes/_app/don-hang/index'
 import { Route as AppDonHangIdRouteImport } from './routes/_app/don-hang/$id'
 import { Route as AppDonHangTaoRouteImport } from './routes/_app/don-hang/tao'
@@ -42,6 +43,8 @@ import { Route as ApiAppointmentsIndexRouteImport } from './routes/api/appointme
 import { Route as ApiAppointmentsIdRouteImport } from './routes/api/appointments/$id'
 import { Route as ApiAppointmentsAttentionRouteImport } from './routes/api/appointments/attention'
 import { Route as ApiAppointmentsCheckRouteImport } from './routes/api/appointments/check'
+import { Route as ApiAttachmentsIndexRouteImport } from './routes/api/attachments/index'
+import { Route as ApiAttachmentsIdRouteImport } from './routes/api/attachments/$id'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthPasswordRouteImport } from './routes/api/auth/password'
@@ -68,6 +71,7 @@ import { Route as ApiStaffIndexRouteImport } from './routes/api/staff/index'
 import { Route as ApiTipsIndexRouteImport } from './routes/api/tips/index'
 import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
+import { Route as ApiAttachmentsIdActionRouteImport } from './routes/api/attachments/$id.$action'
 import { Route as ApiCustomersIdCompensationsRouteImport } from './routes/api/customers/$id.compensations'
 import { Route as ApiDepositsIdActionRouteImport } from './routes/api/deposits/$id.$action'
 import { Route as ApiExpensesIdActionRouteImport } from './routes/api/expenses/$id.$action'
@@ -131,6 +135,11 @@ const ApiMeRoute = ApiMeRouteImport.update({
 const ApiOverviewRoute = ApiOverviewRouteImport.update({
   id: '/api/overview',
   path: '/api/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReviewRoute = ApiReviewRouteImport.update({
+  id: '/api/review',
+  path: '/api/review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppDonHangIndexRoute = AppDonHangIndexRouteImport.update({
@@ -242,6 +251,16 @@ const ApiAppointmentsAttentionRoute =
 const ApiAppointmentsCheckRoute = ApiAppointmentsCheckRouteImport.update({
   id: '/api/appointments/check',
   path: '/api/appointments/check',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAttachmentsIndexRoute = ApiAttachmentsIndexRouteImport.update({
+  id: '/api/attachments/',
+  path: '/api/attachments/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAttachmentsIdRoute = ApiAttachmentsIdRouteImport.update({
+  id: '/api/attachments/$id',
+  path: '/api/attachments/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
@@ -376,6 +395,11 @@ const ApiAppointmentsIdActionRoute = ApiAppointmentsIdActionRouteImport.update({
   path: '/$action',
   getParentRoute: () => ApiAppointmentsIdRoute,
 } as any)
+const ApiAttachmentsIdActionRoute = ApiAttachmentsIdActionRouteImport.update({
+  id: '/$action',
+  path: '/$action',
+  getParentRoute: () => ApiAttachmentsIdRoute,
+} as any)
 const ApiCustomersIdCompensationsRoute =
   ApiCustomersIdCompensationsRouteImport.update({
     id: '/compensations',
@@ -439,6 +463,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
+  '/api/review': typeof ApiReviewRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
   '/don-hang/tao': typeof AppDonHangTaoRoute
   '/khach/$id': typeof AppKhachIdRoute
@@ -455,6 +480,7 @@ export interface FileRoutesByFullPath {
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
+  '/api/attachments/$id': typeof ApiAttachmentsIdRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
@@ -477,6 +503,7 @@ export interface FileRoutesByFullPath {
   '/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
+  '/api/attachments/': typeof ApiAttachmentsIndexRoute
   '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/expenses/': typeof ApiExpensesIndexRoute
@@ -487,6 +514,7 @@ export interface FileRoutesByFullPath {
   '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
+  '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/expenses/$id/$action': typeof ApiExpensesIdActionRoute
@@ -508,6 +536,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
+  '/api/review': typeof ApiReviewRoute
   '/': typeof AppIndexRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
   '/don-hang/tao': typeof AppDonHangTaoRoute
@@ -525,6 +554,7 @@ export interface FileRoutesByTo {
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
+  '/api/attachments/$id': typeof ApiAttachmentsIdRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
@@ -547,6 +577,7 @@ export interface FileRoutesByTo {
   '/them': typeof AppThemIndexRoute
   '/api/accounts': typeof ApiAccountsIndexRoute
   '/api/appointments': typeof ApiAppointmentsIndexRoute
+  '/api/attachments': typeof ApiAttachmentsIndexRoute
   '/api/catalog': typeof ApiCatalogIndexRoute
   '/api/customers': typeof ApiCustomersIndexRoute
   '/api/expenses': typeof ApiExpensesIndexRoute
@@ -557,6 +588,7 @@ export interface FileRoutesByTo {
   '/api/tips': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
+  '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/expenses/$id/$action': typeof ApiExpensesIdActionRoute
@@ -580,6 +612,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
+  '/api/review': typeof ApiReviewRoute
   '/_app/': typeof AppIndexRoute
   '/_app/don-hang/$id': typeof AppDonHangIdRoute
   '/_app/don-hang/tao': typeof AppDonHangTaoRoute
@@ -597,6 +630,7 @@ export interface FileRoutesById {
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
+  '/api/attachments/$id': typeof ApiAttachmentsIdRouteWithChildren
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
@@ -619,6 +653,7 @@ export interface FileRoutesById {
   '/_app/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
+  '/api/attachments/': typeof ApiAttachmentsIndexRoute
   '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/expenses/': typeof ApiExpensesIndexRoute
@@ -629,6 +664,7 @@ export interface FileRoutesById {
   '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
+  '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/expenses/$id/$action': typeof ApiExpensesIdActionRoute
@@ -653,6 +689,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/api/overview'
+    | '/api/review'
     | '/don-hang/$id'
     | '/don-hang/tao'
     | '/khach/$id'
@@ -669,6 +706,7 @@ export interface FileRouteTypes {
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
+    | '/api/attachments/$id'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
@@ -691,6 +729,7 @@ export interface FileRouteTypes {
     | '/them/'
     | '/api/accounts/'
     | '/api/appointments/'
+    | '/api/attachments/'
     | '/api/catalog/'
     | '/api/customers/'
     | '/api/expenses/'
@@ -701,6 +740,7 @@ export interface FileRouteTypes {
     | '/api/tips/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
+    | '/api/attachments/$id/$action'
     | '/api/customers/$id/compensations'
     | '/api/deposits/$id/$action'
     | '/api/expenses/$id/$action'
@@ -722,6 +762,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/api/overview'
+    | '/api/review'
     | '/'
     | '/don-hang/$id'
     | '/don-hang/tao'
@@ -739,6 +780,7 @@ export interface FileRouteTypes {
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
+    | '/api/attachments/$id'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
@@ -761,6 +803,7 @@ export interface FileRouteTypes {
     | '/them'
     | '/api/accounts'
     | '/api/appointments'
+    | '/api/attachments'
     | '/api/catalog'
     | '/api/customers'
     | '/api/expenses'
@@ -771,6 +814,7 @@ export interface FileRouteTypes {
     | '/api/tips'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
+    | '/api/attachments/$id/$action'
     | '/api/customers/$id/compensations'
     | '/api/deposits/$id/$action'
     | '/api/expenses/$id/$action'
@@ -793,6 +837,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/api/overview'
+    | '/api/review'
     | '/_app/'
     | '/_app/don-hang/$id'
     | '/_app/don-hang/tao'
@@ -810,6 +855,7 @@ export interface FileRouteTypes {
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
+    | '/api/attachments/$id'
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
@@ -832,6 +878,7 @@ export interface FileRouteTypes {
     | '/_app/them/'
     | '/api/accounts/'
     | '/api/appointments/'
+    | '/api/attachments/'
     | '/api/catalog/'
     | '/api/customers/'
     | '/api/expenses/'
@@ -842,6 +889,7 @@ export interface FileRouteTypes {
     | '/api/tips/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
+    | '/api/attachments/$id/$action'
     | '/api/customers/$id/compensations'
     | '/api/deposits/$id/$action'
     | '/api/expenses/$id/$action'
@@ -864,9 +912,11 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   ApiMeRoute: typeof ApiMeRoute
   ApiOverviewRoute: typeof ApiOverviewRoute
+  ApiReviewRoute: typeof ApiReviewRoute
   ApiAppointmentsIdRoute: typeof ApiAppointmentsIdRouteWithChildren
   ApiAppointmentsAttentionRoute: typeof ApiAppointmentsAttentionRoute
   ApiAppointmentsCheckRoute: typeof ApiAppointmentsCheckRoute
+  ApiAttachmentsIdRoute: typeof ApiAttachmentsIdRouteWithChildren
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthPasswordRoute: typeof ApiAuthPasswordRoute
@@ -885,6 +935,7 @@ export interface RootRouteChildren {
   ApiReportsKindRoute: typeof ApiReportsKindRoute
   ApiAccountsIndexRoute: typeof ApiAccountsIndexRoute
   ApiAppointmentsIndexRoute: typeof ApiAppointmentsIndexRoute
+  ApiAttachmentsIndexRoute: typeof ApiAttachmentsIndexRoute
   ApiCatalogIndexRoute: typeof ApiCatalogIndexRoute
   ApiCustomersIndexRoute: typeof ApiCustomersIndexRoute
   ApiExpensesIndexRoute: typeof ApiExpensesIndexRoute
@@ -980,6 +1031,13 @@ declare module '@tanstack/react-router' {
       path: '/api/overview'
       fullPath: '/api/overview'
       preLoaderRoute: typeof ApiOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/review': {
+      id: '/api/review'
+      path: '/api/review'
+      fullPath: '/api/review'
+      preLoaderRoute: typeof ApiReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/don-hang/': {
@@ -1134,6 +1192,20 @@ declare module '@tanstack/react-router' {
       path: '/api/appointments/check'
       fullPath: '/api/appointments/check'
       preLoaderRoute: typeof ApiAppointmentsCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/attachments/': {
+      id: '/api/attachments/'
+      path: '/api/attachments'
+      fullPath: '/api/attachments/'
+      preLoaderRoute: typeof ApiAttachmentsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/attachments/$id': {
+      id: '/api/attachments/$id'
+      path: '/api/attachments/$id'
+      fullPath: '/api/attachments/$id'
+      preLoaderRoute: typeof ApiAttachmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/login': {
@@ -1318,6 +1390,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAppointmentsIdActionRouteImport
       parentRoute: typeof ApiAppointmentsIdRoute
     }
+    '/api/attachments/$id/$action': {
+      id: '/api/attachments/$id/$action'
+      path: '/$action'
+      fullPath: '/api/attachments/$id/$action'
+      preLoaderRoute: typeof ApiAttachmentsIdActionRouteImport
+      parentRoute: typeof ApiAttachmentsIdRoute
+    }
     '/api/customers/$id/compensations': {
       id: '/api/customers/$id/compensations'
       path: '/compensations'
@@ -1448,6 +1527,17 @@ const ApiAppointmentsIdRouteChildren: ApiAppointmentsIdRouteChildren = {
 const ApiAppointmentsIdRouteWithChildren =
   ApiAppointmentsIdRoute._addFileChildren(ApiAppointmentsIdRouteChildren)
 
+interface ApiAttachmentsIdRouteChildren {
+  ApiAttachmentsIdActionRoute: typeof ApiAttachmentsIdActionRoute
+}
+
+const ApiAttachmentsIdRouteChildren: ApiAttachmentsIdRouteChildren = {
+  ApiAttachmentsIdActionRoute: ApiAttachmentsIdActionRoute,
+}
+
+const ApiAttachmentsIdRouteWithChildren =
+  ApiAttachmentsIdRoute._addFileChildren(ApiAttachmentsIdRouteChildren)
+
 interface ApiCustomersIdRouteChildren {
   ApiCustomersIdCompensationsRoute: typeof ApiCustomersIdCompensationsRoute
 }
@@ -1493,9 +1583,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiMeRoute: ApiMeRoute,
   ApiOverviewRoute: ApiOverviewRoute,
+  ApiReviewRoute: ApiReviewRoute,
   ApiAppointmentsIdRoute: ApiAppointmentsIdRouteWithChildren,
   ApiAppointmentsAttentionRoute: ApiAppointmentsAttentionRoute,
   ApiAppointmentsCheckRoute: ApiAppointmentsCheckRoute,
+  ApiAttachmentsIdRoute: ApiAttachmentsIdRouteWithChildren,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthPasswordRoute: ApiAuthPasswordRoute,
@@ -1514,6 +1606,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReportsKindRoute: ApiReportsKindRoute,
   ApiAccountsIndexRoute: ApiAccountsIndexRoute,
   ApiAppointmentsIndexRoute: ApiAppointmentsIndexRoute,
+  ApiAttachmentsIndexRoute: ApiAttachmentsIndexRoute,
   ApiCatalogIndexRoute: ApiCatalogIndexRoute,
   ApiCustomersIndexRoute: ApiCustomersIndexRoute,
   ApiExpensesIndexRoute: ApiExpensesIndexRoute,

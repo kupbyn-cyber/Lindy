@@ -9,6 +9,7 @@ import { type Tx, withUser } from '../db/client'
 import { forbidden, invalid } from '../http/errors'
 import { balancesOf } from '../money/service'
 import { reviewPending } from '../orders/service'
+import { reviewCount } from '../review/service'
 
 const n = (v: unknown) => Number(v ?? 0)
 
@@ -161,6 +162,8 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
         closesReview: isOwner ? n(x?.closesReview) : 0,
         /** Ngày chưa chốt quỹ sớm nhất, nếu trước hôm nay (quên chốt) */
         closeOverdue: manage && firstUnclosed && firstUnclosed < today ? firstUnclosed : null,
+        /** Tổng mục Cần xem lại của Linh (trang Thêm → Cần xem lại) */
+        reviewTotal: isOwner ? await reviewCount(tx, branch.id) : 0,
       },
     }
   })
@@ -201,6 +204,93 @@ async function appointmentStats(tx: Tx, branchId: string, tz: string, from: stri
     arrived: n(r?.arrived),
     cancelled: n(r?.cancelled),
     noShow: n(r?.noShow),
+  }
+}
+
+// Nhóm dòng tiền (PRD §7.5) theo loại bút toán; chuyển nội bộ hiện riêng, không cộng vào tổng thu chi
+const FLOW: Record<string, { key: string; label: string }> = {
+  payment: { key: 'customer', label: 'Thu tiền khách' },
+  payment_void: { key: 'customer', label: 'Thu tiền khách' },
+  deposit_in: { key: 'deposit_in', label: 'Nhận cọc' },
+  deposit_in_void: { key: 'deposit_in', label: 'Nhận cọc' },
+  tip_in: { key: 'tip_in', label: 'Tip khách chuyển (giữ hộ thợ)' },
+  tip_in_void: { key: 'tip_in', label: 'Tip khách chuyển (giữ hộ thợ)' },
+  other_income: { key: 'other_income', label: 'Thu khác' },
+  capital_in: { key: 'capital_in', label: 'Góp vốn' },
+  deposit_refund: { key: 'deposit_refund', label: 'Hoàn cọc' },
+  refund: { key: 'refund', label: 'Hoàn tiền đơn' },
+  expense_operating: { key: 'expense_operating', label: 'Chi vận hành' },
+  expense_staff: { key: 'expense_staff', label: 'Chi nhân sự (lương, thưởng)' },
+  tip_payout: { key: 'tip_payout', label: 'Trả tip cho thợ' },
+  capital_out: { key: 'capital_out', label: 'Rút vốn' },
+  cash_count_diff: { key: 'adjust', label: 'Chênh lệch quỹ, điều chỉnh' },
+  adjustment: { key: 'adjust', label: 'Chênh lệch quỹ, điều chỉnh' },
+}
+
+/**
+ * Dòng tiền (PRD §7.5, Đợt 3B-2 bước 3.20) từ sổ bút toán: số dư đầu/cuối từng tài khoản, thu chi theo nhóm, chi theo
+ * nhóm chi, theo ngày. Chỉ Linh, Nhung (RLS money_accounts.read_balance); chưa mở sổ → null. Số dư mở sổ tính vào đầu kỳ.
+ */
+async function cashflow(tx: Tx, branchId: string, from: string, to: string) {
+  const [book] = await tx<{ openingDate: string }[]>`
+    select opening_date::text as opening_date from money_books where branch_id = ${branchId}`
+  if (!book || book.openingDate > to) return null
+  const start = from > book.openingDate ? from : book.openingDate
+  const accounts = await tx<{ name: string; opening: string; closing: string }[]>`
+    select m.name,
+           coalesce(sum(e.amount) filter (where e.business_date < ${start}::date or e.entry_type = 'opening'), 0) as opening,
+           coalesce(sum(e.amount), 0) as closing
+    from money_accounts m
+    left join money_ledger_entries e on e.money_account_id = m.id
+      and e.business_date >= ${book.openingDate}::date and e.business_date <= ${to}::date
+    where m.branch_id = ${branchId} and m.is_active and app.can_view_account(m.id)
+    group by m.id order by case m.type when 'cash' then 0 else 1 end, m.code`
+  const groups = await tx<{ type: string; amount: string }[]>`
+    select case when e.entry_type = 'expense' then 'expense_' || coalesce(c.kind, 'operating') else e.entry_type end as type,
+           sum(e.amount) as amount
+    from money_ledger_entries e
+    left join expense_requests x on e.source_type = 'expense' and x.id = e.source_id
+    left join expense_categories c on c.code = x.category_code
+    where e.branch_id = ${branchId} and e.business_date between ${start}::date and ${to}::date and e.entry_type <> 'opening'
+    group by 1`
+  const byCategory = await tx<{ name: string; amount: string }[]>`
+    select c.name, sum(-e.amount) as amount
+    from money_ledger_entries e
+    join expense_requests x on e.source_type = 'expense' and x.id = e.source_id
+    join expense_categories c on c.code = x.category_code
+    where e.branch_id = ${branchId} and e.business_date between ${start}::date and ${to}::date
+    group by c.name, c.sort_order order by c.sort_order`
+  const days = await tx<{ date: string; inflow: string; outflow: string }[]>`
+    select business_date::text as date,
+           coalesce(sum(amount) filter (where amount > 0), 0) as inflow,
+           coalesce(sum(-amount) filter (where amount < 0), 0) as outflow
+    from money_ledger_entries
+    where branch_id = ${branchId} and business_date between ${start}::date and ${to}::date
+      and entry_type not in ('opening', 'transfer_in', 'transfer_out')
+    group by business_date order by business_date`
+  const lines = new Map<string, { key: string; label: string; amount: number }>()
+  let transfers = 0
+  for (const g of groups) {
+    if (g.type === 'transfer_out') transfers += -n(g.amount)
+    const f = FLOW[g.type]
+    if (!f) continue
+    const cur = lines.get(f.key) ?? { ...f, amount: 0 }
+    cur.amount += n(g.amount)
+    lines.set(f.key, cur)
+  }
+  const list = [...lines.values()].filter((l) => l.amount !== 0)
+  return {
+    from: start,
+    to,
+    accounts: accounts.map((a) => ({ name: a.name, opening: n(a.opening), closing: n(a.closing) })),
+    inflows: list.filter((l) => l.amount > 0),
+    outflows: list.filter((l) => l.amount < 0).map((l) => ({ ...l, amount: -l.amount })),
+    totalIn: list.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0),
+    totalOut: list.filter((l) => l.amount < 0).reduce((s, l) => s - l.amount, 0),
+    transfers,
+    customerReceipts: lines.get('customer')?.amount ?? 0,
+    byCategory: byCategory.map((c) => ({ name: c.name, amount: n(c.amount) })),
+    byDay: days.map((d) => ({ date: d.date, inflow: n(d.inflow), outflow: n(d.outflow) })),
   }
 }
 
@@ -267,8 +357,44 @@ export async function dayReport(auth: Auth, input: { branchId?: string; date?: s
       receipts: await receipts(tx, branch.id, tz, date, date),
       appointments: await appointmentStats(tx, branch.id, tz, date, date),
       deposits: await depositStats(tx, branch.id, tz, date, date),
+      cashflow: await cashflow(tx, branch.id, date, date),
+      dayClose: await dayCloseOf(tx, branch.id, date),
+      tipsHolding: await tipsHolding(tx, branch.id),
     }
   })
+}
+
+/** Bản chốt quỹ của ngày (nếu đã chốt; RLS: Linh, Nhung) */
+async function dayCloseOf(tx: Tx, branchId: string, date: string) {
+  const [c] = await tx<
+    {
+      expected: string
+      counted: string
+      difference: string
+      reason: string | null
+      closedByName: string | null
+    }[]
+  >`
+    select c.expected, c.counted, c.difference, c.reason, u.display_name as closed_by_name
+    from cash_day_closes c left join users u on u.id = c.closed_by
+    where c.branch_id = ${branchId} and c.business_date = ${date}::date`
+  return c
+    ? {
+        expected: n(c.expected),
+        counted: n(c.counted),
+        difference: n(c.difference),
+        reason: c.reason,
+        closedByName: c.closedByName,
+      }
+    : null
+}
+
+/** Tip giữ hộ chưa trả thợ (hiện tại) */
+async function tipsHolding(tx: Tx, branchId: string) {
+  const [t] = await tx<{ amount: string; count: string }[]>`
+    select coalesce(sum(amount), 0) as amount, count(*) as count from tip_holdings
+    where branch_id = ${branchId} and payout_id is null and voided_at is null`
+  return { amount: n(t?.amount), count: n(t?.count) }
 }
 
 export async function monthReport(auth: Auth, input: { branchId?: string; month?: string }) {
@@ -338,6 +464,7 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
       receipts: await receipts(tx, branch.id, tz, from, to),
       appointments: await appointmentStats(tx, branch.id, tz, from, to),
       deposits: await depositStats(tx, branch.id, tz, from, to),
+      cashflow: await cashflow(tx, branch.id, from, to),
       customers: {
         new: n(cust?.newCustomers),
         returning: n(cust?.returningCustomers),
