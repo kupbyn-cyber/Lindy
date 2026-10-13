@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 3 — Sổ tiền và cọc Tết
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 3A ĐÃ LÀM (kết quả mục 15); 3B-1 ĐÃ LÀM (mục 17); 3B-2 chưa làm (chuẩn bị ở mục 16). Q-C, Q-D, Q-E đã chốt 13/10/2026 theo phương án (a) → K16, K17, K18. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 3A ĐÃ LÀM (kết quả mục 15); 3B-1 ĐÃ LÀM (mục 17); 3B-2 ĐÃ LÀM (mục 18). Đợt 3 XONG phần code. Q-C, Q-D, Q-E đã chốt 13/10/2026 theo phương án (a) → K16, K17, K18. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (A02, A03, B01, C01–C04, K05, K09–K15); PRD v1.2 §4, §6.3, §6.6, §7, §11, §12, §13 (B, C, D), §14 (UI06, UI07, UI16), §17, §18; PRD v1.1 §7.3 (chứng từ, trạng thái phiếu chi), Q14–Q24, Q34; module lịch v1.2 §4, §5.1, §6, §9, §11, §12, §13 (test 29–36); kế hoạch Đợt 2 mục 6 (phần dời sang Đợt 3).
 
 Ký hiệu `[Pn]`: điểm phản biện số n ở mục 11 (nối tiếp P26–P45 của Đợt 2). `Sn`: test bảo mật ở mục 10.2.
@@ -200,21 +200,21 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   *Kiểm tra:* 375px; thợ chỉ thấy phiếu của mình.
 - [x] **3.14 Chuyển nội bộ, thu khác, góp/rút vốn, điều chỉnh.** Nhung, Linh chuyển nội bộ; Linh lập phiếu còn lại.
   *Kiểm tra:* test 6 (chuyển 2.000.000đ tiền mặt sang ngân hàng, tổng không đổi), 7 (góp vốn 20.000.000đ tăng quỹ, không tăng doanh thu); S42, S43.
-- [ ] **3.15 Tip giữ hộ.** Ghi khoản thu chuyển khoản có ô "Trong đó tip"; app chia theo phần tiền từng thợ, sửa được khi khách chỉ định (tổng phải khớp) → bút toán `tip_in`. Cuối ngày Nhung chọn thợ, trả tiền mặt → bút toán `tip_payout`. Thợ thấy tip của mình.
+- [x] **3.15 Tip giữ hộ.** Ghi khoản thu chuyển khoản có ô "Trong đó tip"; app chia theo phần tiền từng thợ, sửa được khi khách chỉ định (tổng phải khớp) → bút toán `tip_in`. Cuối ngày Nhung chọn thợ, trả tiền mặt → bút toán `tip_payout`. Thợ thấy tip của mình.
   *Kiểm tra:* test 44; S44.
-- [ ] **3.16 Hoàn tiền, huỷ đơn đã xác nhận.** Theo Q-E. Phiếu hoàn ≤ số đã thu còn lại; giảm doanh thu ngày làm dịch vụ và phần từng thợ theo tỷ lệ. Huỷ đơn đã xác nhận khi đã hoàn hết tiền thu. Sửa thông báo 422 ở bước 2.19 thành "Dùng Hoàn tiền".
+- [x] **3.16 Hoàn tiền, huỷ đơn đã xác nhận.** Theo Q-E. Phiếu hoàn ≤ số đã thu còn lại; giảm doanh thu ngày làm dịch vụ và phần từng thợ theo tỷ lệ. Huỷ đơn đã xác nhận khi đã hoàn hết tiền thu. Sửa thông báo 422 ở bước 2.19 thành "Dùng Hoàn tiền".
   *Kiểm tra:* test 5 phần kỳ mở; trạng thái thu Hoàn một phần / Hoàn toàn bộ; S45, S46.
 - [x] **3.17 Đối soát chuyển khoản.** Nhung, Linh đánh dấu khoản thu, cọc, tip chuyển khoản "đã khớp sao kê"; đã đối soát thì không huỷ được.
   *Kiểm tra:* huỷ khoản đã đối soát → chặn (API, SQL).
 - [x] **3.18 Chốt quỹ (UI07).** Màn Chốt ngày: tiền mặt đầu ngày, thu, chi, lý thuyết; việc còn treo (đơn chờ xác nhận, đơn thu thiếu, tip chưa trả, cọc chờ xác nhận, chuyển khoản chưa đối soát); nhập số đếm, lý do khi lệch; xử lý lệch theo Q-D. Mở từ giờ đóng cửa; mỗi ngày một lần; không sửa, không xoá.
   *Kiểm tra:* §13D; test 14 phần khoá ngày; chốt trước 21:00 → 422; chốt lần hai → 409; bút toán ghi sau khi chốt rơi vào ngày kế; S47.
-- [ ] **3.19 Chứng từ ảnh.** Migration `0015_attachments`. Chụp hoặc chọn ảnh trên iPhone, thu nhỏ, gửi lên; gắn vào phiếu chi, phiếu hoàn, phiếu Linh lập; xem theo quyền của phiếu.
+- [x] **3.19 Chứng từ ảnh.** Migration `0015_attachments`. Chụp hoặc chọn ảnh trên iPhone, thu nhỏ, gửi lên; gắn vào phiếu chi, phiếu hoàn, phiếu Linh lập; xem theo quyền của phiếu.
   *Kiểm tra:* test 5 phần chứng từ; S48.
-- [ ] **3.20 Báo cáo dòng tiền (§7.5) và báo cáo ngày (§11).** Tháng: số dư đầu/cuối từng tài khoản; thu khách, thu cọc, hoàn cọc, thu khác; chi theo nhóm; rút vốn; chuyển nội bộ hiện riêng, không cộng vào tổng; theo ngày; cảnh báo doanh thu lớn mà tiền thu nhỏ. Ngày: thêm thu chi, hoàn, tip giữ hộ, chốt quỹ.
+- [x] **3.20 Báo cáo dòng tiền (§7.5) và báo cáo ngày (§11).** Tháng: số dư đầu/cuối từng tài khoản; thu khách, thu cọc, hoàn cọc, thu khác; chi theo nhóm; rút vốn; chuyển nội bộ hiện riêng, không cộng vào tổng; theo ngày; cảnh báo doanh thu lớn mà tiền thu nhỏ. Ngày: thêm thu chi, hoàn, tip giữ hộ, chốt quỹ.
   *Kiểm tra:* test 18 (số dư cuối tháng = đầu + thu − chi từng tài khoản); Σ các ngày = số tháng.
-- [ ] **3.21 Tổng quan phần 3B.** Cần xử lý thêm: đề nghị chi chờ duyệt, tip chưa trả, hôm qua chưa chốt quỹ. Cần xem lại (Linh) thêm: phiếu chi Nhung tự duyệt, phiếu hoàn của Nhung (theo Q-E), lệch quỹ (theo Q-D), cọc xử lý trái gợi ý.
+- [x] **3.21 Tổng quan phần 3B.** Cần xử lý thêm: đề nghị chi chờ duyệt, tip chưa trả, hôm qua chưa chốt quỹ. Cần xem lại (Linh) thêm: phiếu chi Nhung tự duyệt, phiếu hoàn của Nhung (theo Q-E), lệch quỹ (theo Q-D), cọc xử lý trái gợi ý.
   *Kiểm tra:* đăng nhập 4 tài khoản, đối chiếu mục hiện ra với quyền ở mục 8.
-- [ ] **3.22 Chốt Đợt 3.** Phản biện lại toàn đợt (skill `phan-bien`); `bun run check`, build, `scan-bundle`, `check-upgrade`; cập nhật `CHAY_LOCAL.md`, `CLAUDE.md`, `OPEN_QUESTIONS.md`; danh sách việc còn thiếu; báo kết quả.
+- [x] **3.22 Chốt Đợt 3.** Phản biện lại toàn đợt (skill `phan-bien`); `bun run check`, build, `scan-bundle`, `check-upgrade`; cập nhật `CHAY_LOCAL.md`, `CLAUDE.md`, `OPEN_QUESTIONS.md`; danh sách việc còn thiếu; báo kết quả.
 
 ## 10. Kiểm thử
 
@@ -452,3 +452,39 @@ Mỗi phần chốt bằng `bun run check`, build, `scan-bundle`, `check-upgrade
 - Tổng quan có "Cần xử lý · thu chi": phiếu chờ duyệt, chờ chi, quên chốt quỹ, phiếu và lần chốt cần Linh xem lại.
 
 **Chưa kiểm:** thử tay đủ 4 tài khoản trên điện thoại thật (Trang đề nghị chi, Nhung duyệt và chi, Linh duyệt phiếu trên mức).
+## 18. Kết quả 3B-2 và chốt Đợt 3 (13/10/2026)
+
+**Đã làm:** bước 3.15, 3.16, 3.19–3.22. Migration `0014_tips_refunds`, `0015_attachments`.
+
+| Kiểm | Kết quả |
+|---|---|
+| `bun run check` (lint, typecheck, test) | Đạt: 250/250 (22 file). Mới: `tests/acceptance/tip-hoan.test.ts` (6), `tests/acceptance/dong-tien.test.ts` (4) |
+| PRD §18 test 5 (kỳ mở), 18, 44 | Đạt (tự động). Test 25, 41 (hoàn sau khoá kỳ lương) ở Đợt 4 |
+| S44, S45, S46, S48 | Đạt (tự động) |
+| `bun run build`, `scan-bundle` | Đạt; 52 file trình duyệt không có bí mật |
+| `check-upgrade --from=0012` và `--from=0005` | Đạt (thêm bước tip, hoàn tiền, ảnh chứng từ) |
+| Thử trên trình duyệt 375×812 | Nhung hoàn 20.000đ (chia trừ Chin, Trang theo tỷ lệ), ghi tip 30.000đ (chia theo phần tiền), gắn ảnh chứng từ vào phiếu hoàn (ảnh thu nhỏ 2400 → 1600px); Linh xem trang Cần xem lại, bấm Đã xem; báo cáo tháng có dòng tiền khớp tính tay |
+
+**Thiết kế chốt khi làm:**
+- Tip ghi kèm khoản thu chuyển khoản (ô "Tip khách chuyển thêm") hoặc riêng ("Ghi tip"); mã nhóm tip = mã thu tiền. Trả tip ở màn Chốt quỹ.
+- Phiếu hoàn: tiền đã thu gồm cả khoản trừ cọc; doanh thu thuần, doanh thu theo thợ, theo ngày trừ phần hoàn theo `revenue_date`. Doanh thu theo dịch vụ chưa trừ hoàn (ghi chú trên màn).
+- Huỷ đơn đã xác nhận khi đã thu − đã hoàn = 0; Nhung huỷ → Cần xem lại.
+- Ảnh chứng từ: máy thu nhỏ bằng `createImageBitmap` (dự phòng thẻ img); server kiểm byte đầu JPEG/PNG, ≤ 1MB, ≤ 3 ảnh/phiếu. Màn hình mới gắn ảnh cho phiếu chi và phiếu hoàn; phiếu Linh lập có API, chưa có nút trên màn.
+- Tổng quan: một dòng "N mục cần Linh xem lại" thay các dòng xem lại rời; thợ thấy tip chờ nhận.
+
+**Phản biện cuối đợt (đọc lại code Đợt 3 theo cách kẻ phá: quyền, đầu vào, bí mật, nghiệp vụ, lạm dụng):**
+
+| Điểm | Mức | Vấn đề | Xử lý |
+|---|---|---|---|
+| P59 | 🟡 | `app.order_net_collected` trả số đã thu của mọi đơn, kể cả đơn thợ không được xem (lộ số tiền, trái K09) | **Đã sửa**: chỉ trả khi xem được đơn; có test |
+| P60 | 🟡 | Khoản ghi sổ đúng lúc đang chốt quỹ có thể mang ngày vừa chốt [P54] | **Đã sửa**: ghi sổ chờ khoá dòng cơ sở của lần chốt rồi mới tính ngày |
+| P61 | 🟡 | Thợ tạo nhiều đề nghị chi và gắn ảnh (3 ảnh × 1MB mỗi phiếu, 30 thao tác/phút) làm DB phình | Chưa sửa. Đề xuất: theo dõi dung lượng DB trên Vibe Host; nếu cần thì thêm hạn mức ảnh mỗi ngày (chờ anh quyết) |
+| P62 | 🟡 | Tip ghi khống rồi trả tiền mặt cho thợ trước khi đối soát sao kê | Giảm nhẹ: tip chỉ ghi vào tài khoản ngân hàng, hiện ở "chuyển khoản chưa đối soát" khi chốt quỹ. Chặn trả tip chưa đối soát thì quy trình cuối ngày chậm hơn — chờ anh quyết |
+| P63 | ⚪ | Chia nhỏ phiếu chi dưới 1.000.000đ (P51) | Giữ như kế hoạch: Linh xem danh sách phiếu chi; chưa có cảnh báo tự động |
+| P64 | ⚪ | Phiếu hoàn chia theo phần thợ lúc hoàn; sửa đơn sau đó không chia lại | Ghi nhận; Đợt 4 tính hoa hồng dùng đúng phần đã ghi |
+
+**Chưa kiểm / còn lại:**
+- Thử tay trên iPhone thật: chụp ảnh chứng từ (Safari thường đổi HEIC sang JPEG khi chọn ảnh), thông báo cọc (cần `VAPID_SUBJECT`).
+- Hub SSE chỉ gửi sự kiện tiền cho người xem số dư: kiểm bằng đọc code, chưa có test tự động.
+- Phiếu Linh lập: chưa có nút gắn ảnh trên màn.
+- Đợt 4: khoá kỳ lương, hoàn tiền sau khoá kỳ (Q34), tạm ứng, lợi nhuận.

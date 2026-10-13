@@ -245,6 +245,12 @@ describe('3.16 — hoàn tiền, huỷ đơn đã xác nhận (K18)', () => {
       ),
       ['42501', '22P02'],
     )
+    // Thợ không có phần trong đơn không đọc được số đã thu qua hàm (K09)
+    const [leak] = await withUser(
+      uid('trang'),
+      (tx) => tx<{ n: string | null }[]>`select app.order_net_collected(${o.id}) as n`,
+    )
+    expect(leak!.n).toBeNull()
     // Linh lập phiếu → không cần xem lại; huỷ khoản thu đã hoàn một phần làm hoàn > thu → chặn
     expect((await getOrder(auth('linh'), o.id)).refunds[0]!.needsOwnerReview).toBe(false)
     const pay = (await getOrder(auth('linh'), o.id)).payments[0]!

@@ -67,6 +67,15 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 3. Linh, Nhung → **Sổ tiền**: **Chuyển nội bộ**; Linh có thêm **Thu khác, vốn, điều chỉnh**. Khoản của tài khoản ngân hàng có nút **Khớp sao kê** (đã khớp thì khoản gốc không huỷ được).
 4. Nhung → **Thêm → Chốt quỹ**: chọn ngày (hôm nay từ 21:00, hoặc hôm qua), xem tiền mặt lý thuyết và việc còn treo, nhập tiền đếm được → **Chốt quỹ**. Lệch thì ghi lý do; app ghi khoản chênh lệch và Linh xem lại. Khoản ghi sau khi chốt tính vào ngày hôm sau.
 
+## Thử tip, hoàn tiền, chứng từ, báo cáo (Đợt 3B-2)
+
+1. `nhung@lindy.test` → đơn đã xác nhận → **Ghi tiền thu** chuyển khoản, ô **Tip khách chuyển thêm** (chia theo phần tiền hoặc khách chỉ định); hoặc **Ghi tip khách chuyển khoản**.
+2. Nhung → **Thêm → Chốt quỹ** → khối **Tip giữ hộ chờ trả thợ** → **Trả tiền mặt**. Thợ thấy tip chờ nhận ở Tổng quan.
+3. Nhung → đơn đã xác nhận → **Hoàn tiền cho khách** (số tiền, tiền mặt/chuyển khoản, lý do) → phiếu hoàn có **Thêm ảnh chứng từ**. Hoàn hết tiền thu thì **Huỷ đơn** được.
+4. Phiếu chi (Thêm → Thu chi → mở phiếu) có **Thêm ảnh chứng từ**.
+5. `linh@lindy.test` → **Thêm → Cần xem lại**: mọi việc người khác tự làm (tự xác nhận, phiếu hoàn của Nhung, phiếu chi Nhung tự duyệt, lệch quỹ, cọc khác gợi ý) → **Đã xem**.
+6. Linh → **Thêm → Báo cáo**: Tháng có **Dòng tiền tháng**, chi theo nhóm, theo ngày; Ngày có chốt quỹ, tip giữ hộ.
+
 Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0012` nếu đã có Đợt 2 + 3A).
 
 ## Quản trị tài khoản (CLI, chưa có màn hình)

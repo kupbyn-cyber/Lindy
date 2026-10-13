@@ -222,12 +222,43 @@ create trigger refund_alloc_append_only before update or delete on order_refund_
 create trigger refund_alloc_no_truncate before truncate on order_refund_allocations
   for each statement execute function app.forbid_mutation();
 
--- Tiền đã thu (kể cả trừ cọc) trừ đã hoàn
+-- Tiền đã thu (kể cả trừ cọc) trừ đã hoàn. Người dùng app chỉ hỏi được đơn mình xem được (K09); không có người
+-- thao tác (hệ thống, chủ DB) thì luôn trả.
 create function app.order_net_collected(p_order uuid) returns bigint
 language sql stable security definer set search_path = pg_catalog, public as $$
-  select (select coalesce(sum(amount), 0) from payments where order_id = p_order and voided_at is null)
-       - (select coalesce(sum(amount), 0) from order_refunds where order_id = p_order)
+  select case when app.uid() is null or app.order_visible(p_order) then
+    (select coalesce(sum(amount), 0) from payments where order_id = p_order and voided_at is null)
+    - (select coalesce(sum(amount), 0) from order_refunds where order_id = p_order)
+  end
 $$;
+
+-- Ghi sổ chờ lần chốt quỹ đang chạy của cơ sở (close_day khoá dòng cơ sở) rồi mới tính ngày, để khoản ghi đúng lúc chốt
+-- không rơi vào ngày vừa chốt [P54]
+create or replace function app._ledger_post(
+  p_branch uuid, p_account uuid, p_type text, p_amount bigint, p_source_type text, p_source_id uuid,
+  p_actor uuid, p_note text default null, p_reverses bigint default null, p_group uuid default null,
+  p_business_date date default null
+) returns bigint
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare
+  v_id bigint;
+begin
+  if not exists (select 1 from money_accounts m where m.id = p_account and m.branch_id = p_branch) then
+    raise exception 'Tài khoản tiền không thuộc cơ sở này.' using errcode = 'P0001';
+  end if;
+  perform 1 from branches where id = p_branch for share;
+  insert into money_ledger_entries (branch_id, money_account_id, entry_type, amount, business_date, source_type,
+                                    source_id, reverses_entry_id, transfer_group, note, created_by)
+  values (p_branch, p_account, p_type, p_amount, coalesce(p_business_date, app.ledger_business_date(p_branch)),
+          p_source_type, p_source_id, p_reverses, p_group, left(p_note, 500), p_actor)
+  on conflict (source_type, source_id, entry_type) do nothing
+  returning id into v_id;
+  if v_id is null then
+    select id into v_id from money_ledger_entries
+    where source_type = p_source_type and source_id = p_source_id and entry_type = p_type;
+  end if;
+  return v_id;
+end $$;
 
 create function app.refund_order(p_order uuid, p_amount bigint, p_method text, p_reason text, p_key uuid)
 returns uuid
