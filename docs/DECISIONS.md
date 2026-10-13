@@ -156,3 +156,9 @@ Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-3-so-tien-coc.m
 | **K16** | Lịch tạo trong mùa cọc mà khách chưa chuyển cọc (Q-C) | **Lưu được.** Lịch có nhãn **"Chưa cọc"** và nằm trong Cần xử lý của Linh, Nhung, Chin cho đến khi có khoản cọc. | Làm rõ test 30 module lịch ("Form yêu cầu cọc"): form hiện phần cọc và số gợi ý, nhưng không chặn lưu. |
 | **K17** | Chốt quỹ lệch tiền đếm (Q-D) | App ghi bút toán **"chênh lệch kiểm quỹ"** đúng bằng số lệch, kèm lý do, để **số dư tiền mặt trong app bằng tiền thật trong két**. Mọi lần lệch khác 0 vào **Cần xem lại của Linh**. | Tiền mặt đầu ngày hôm sau = số đếm khi chốt. Bút toán lệch chỉ thêm, không sửa. |
 | **K18** | Ai làm phiếu hoàn tiền, huỷ đơn đã xác nhận (Q-E) | **Nhung, Linh.** Phiếu hoàn và huỷ do Nhung làm vào **Cần xem lại của Linh** (như K15). | Quyền `order.refund` cho Linh, Nhung; kiểm ở API và DB. Hoàn phải có lý do; huỷ đơn đã xác nhận chỉ khi đã hoàn hết tiền thu. |
+
+## K19 — Sau phản biện Đợt 3 (13/10/2026, anh chốt)
+
+| Mã | Chủ đề | Đã chốt | Áp dụng trong app |
+|---|---|---|---|
+| **K19** | Ảnh chứng từ làm DB phình (P61) | **Giữ như hiện tại, không thêm hạn mức ảnh mỗi ngày.** Dung lượng do Vibe Host Mắt Bão xử lý. | Giữ giới hạn sẵn có: tối đa 3 ảnh mỗi phiếu, mỗi ảnh ≤ 1MB, app thu nhỏ ảnh trước khi gửi. |

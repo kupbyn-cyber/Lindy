@@ -478,7 +478,7 @@ Mỗi phần chốt bằng `bun run check`, build, `scan-bundle`, `check-upgrade
 |---|---|---|---|
 | P59 | 🟡 | `app.order_net_collected` trả số đã thu của mọi đơn, kể cả đơn thợ không được xem (lộ số tiền, trái K09) | **Đã sửa**: chỉ trả khi xem được đơn; có test |
 | P60 | 🟡 | Khoản ghi sổ đúng lúc đang chốt quỹ có thể mang ngày vừa chốt [P54] | **Đã sửa**: ghi sổ chờ khoá dòng cơ sở của lần chốt rồi mới tính ngày |
-| P61 | 🟡 | Thợ tạo nhiều đề nghị chi và gắn ảnh (3 ảnh × 1MB mỗi phiếu, 30 thao tác/phút) làm DB phình | Chưa sửa. Đề xuất: theo dõi dung lượng DB trên Vibe Host; nếu cần thì thêm hạn mức ảnh mỗi ngày (chờ anh quyết) |
+| P61 | 🟡 | Thợ tạo nhiều đề nghị chi và gắn ảnh (3 ảnh × 1MB mỗi phiếu, 30 thao tác/phút) làm DB phình | Anh chốt K19: giữ như hiện tại, không thêm hạn mức; dung lượng do Vibe Host xử lý |
 | P62 | 🟡 | Tip ghi khống rồi trả tiền mặt cho thợ trước khi đối soát sao kê | Giảm nhẹ: tip chỉ ghi vào tài khoản ngân hàng, hiện ở "chuyển khoản chưa đối soát" khi chốt quỹ. Chặn trả tip chưa đối soát thì quy trình cuối ngày chậm hơn — chờ anh quyết |
 | P63 | ⚪ | Chia nhỏ phiếu chi dưới 1.000.000đ (P51) | Giữ như kế hoạch: Linh xem danh sách phiếu chi; chưa có cảnh báo tự động |
 | P64 | ⚪ | Phiếu hoàn chia theo phần thợ lúc hoàn; sửa đơn sau đó không chia lại | Ghi nhận; Đợt 4 tính hoa hồng dùng đúng phần đã ghi |
