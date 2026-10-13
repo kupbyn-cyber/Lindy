@@ -38,6 +38,8 @@ Máy anh (code)  ──Push (GitHub Desktop)──▶  GitHub (repo riêng tư)
 | 10 | Em không đẩy được code lên GitHub | Máy không có git trong PATH, không có đăng nhập GitHub cho dòng lệnh | Anh đăng nhập một lần bằng mã thiết bị (github.com/login/device); từ đó em push được | Môi trường máy |
 | 11 | Triển khai lại báo "Dung lượng lưu trữ đã vượt hạn mức" | Nixpacks giữ cả `node_modules` (~370 MB đồ nghề lập trình) và bộ dựng trong ảnh: 1,2 GB > 1 GB của gói; app chạy thật chỉ cần 3,7 MB | `Dockerfile` 2 tầng như CEN WORK (ảnh ~250 MB), xoá website rồi tạo lại | Em không tham khảo CEN từ đầu |
 | 12 | (Phát hiện khi thử trước) Chép nguyên Dockerfile CEN thì Lindy sập ngay | Dựng bằng Bun làm Nitro tự chọn bản chạy cho Bun; ảnh chạy bằng Node | Cố định `preset: 'node-server'` trong `vite.config.ts` | Bẫy của công cụ |
+| 13 | Tạo lại website: "Tạo DB tự động thất bại: Vượt số lượng dịch vụ" dù chỉ còn 1 DB | Gói tính **cả website** là dịch vụ: website + `linhdy-db` = 2/2 | Gắn `linhdy-db` có sẵn vào website mới (không làm mới DB được) | Chưa biết cách gói tính |
+| 14 | v2, v3 sập liên tục: `[release] Lỗi other_EACCES` | Mã nguồn hosting kéo về chỉ cho root đọc; app chạy bằng user `node` không đọc được file migration. Máy local không có lỗi này nên giả lập không bắt được | `COPY --chown=node:node` trong Dockerfile (v4 chạy) | Em chưa lường quyền file |
 
 ## 3. Bài học cho anh
 
@@ -82,7 +84,7 @@ Migration DB chạy lúc container khởi động, trước khi bật server. L�
 
 - [ ] `VAPID_SUBJECT` sai dạng (health báo `badEnv`). Đặt `mailto:` + email thật của quán, ví dụ `mailto:lindy@gmail.com`. Cần trước khi thử thông báo trên iPhone.
 - [x] DB thừa `postgresql-instance`: đã xoá.
-- [ ] Tạo lại website bằng `Dockerfile` (13/10/2026, anh duyệt: **làm mới DB**). Sau khi chạy ổn, anh xoá `linhdy-db` cũ.
+- [x] Tạo lại website bằng `Dockerfile` (13/10/2026): v4 chạy, dùng 5% dung lượng. Dùng lại `linhdy-db` (gói không cho tạo DB thứ hai), nên giữ dữ liệu và tài khoản cũ.
 - [ ] Sau khi Linh đổi mật khẩu: xoá `INITIAL_OWNER_PASSWORD` khỏi biến môi trường.
 - [ ] Bật sao lưu tự động (mục **Sao lưu**), giữ ít bản; xem trang **Dung lượng** mỗi tháng.
 - [ ] Dịch vụ Vibe Hosting Nhân Hòa: anh quyết huỷ hay giữ.

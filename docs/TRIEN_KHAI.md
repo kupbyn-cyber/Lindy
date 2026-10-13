@@ -9,8 +9,8 @@ Cập nhật 13/10/2026: dựng bằng `Dockerfile` riêng theo cách của CEN 
 | Bảng quản lý | https://v2.tinhgon.xyz (mục **Triển khai website**) |
 | Địa chỉ app | **https://lindy.n2.tinhgon.xyz** (SSL tự cấp) |
 | Mã nguồn | GitHub `kupbyn-cyber/Lindy` (riêng tư), nhánh `main`. Chưa bật tự triển khai: push xong phải bấm **Triển khai lại** |
-| Gói | Vibe Host Starter: 2 dịch vụ (mỗi DB là 1), **1 GB lưu trữ tính chung** ảnh website, DB và bản sao lưu; website 0,3 nhân, 512 MB RAM |
-| Database | PostgreSQL 16 của Vibe Host, chỉ có địa chỉ nội bộ. Vibe Host tự tạo và gắn khi tạo website (nếu gói còn chỗ), rồi tự điền `DATABASE_URL` |
+| Gói | Vibe Host Starter: **2 dịch vụ tính cả website** (website Lindy + 1 DB là hết), **1 GB lưu trữ tính chung** ảnh website, DB và bản sao lưu; website 0,3 nhân, 512 MB RAM |
+| Database | PostgreSQL 16 `linhdy-db`, chỉ có địa chỉ nội bộ, gắn vào website ở trang DB → Website sử dụng; Vibe Host tự điền `DATABASE_URL`. Tạo lại website thì phải gắn lại (không còn chỗ để Vibe Host tự tạo DB) |
 
 ## Ảnh Docker (`Dockerfile`)
 
