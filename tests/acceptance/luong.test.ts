@@ -387,6 +387,13 @@ describe('4.15 — bảng lương, quyền xem (PRD 12, Q39, Q40)', () => {
         tx<{ userId: string }[]>`select user_id from app.payroll_view(${cs6}, ${`${thisMonth}-01`}::date)`,
     )
     expect(rows.map((r) => r.userId)).toEqual([uid('trang')])
+    // Doanh thu toàn quán không lộ cho thợ (chỉ người xem lương toàn quán hoặc có thưởng KPI)
+    const shop = await withUser(
+      uid('trang'),
+      (tx) => tx<{ shopRevenue: string }[]>`
+        select shop_revenue from app.payroll_view(${cs6}, ${`${thisMonth}-01`}::date)`,
+    )
+    expect(Number(shop[0]!.shopRevenue)).toBe(0)
     const adv = await withUser(
       uid('trang'),
       (tx) => tx<{ userId: string }[]>`select user_id from employee_advances where branch_id = ${cs6}`,
@@ -499,9 +506,36 @@ describe('4.16–4.17 — khoá bảng lương, trả lương', () => {
       status: 'worked',
       note: 'Quên vào ca',
     })
+    // P74: Mai có hồ sơ trong tháng nhưng chưa có chính sách lương → không khoá được, có cảnh báo
+    await owner`
+      insert into user_branch_roles (user_id, branch_id, role_id, granted_by_label)
+      select ${uid('mai')}, ${cs6}, id, 'test' from roles where code = 'staff'`
+    await saveProfile(auth('linh'), {
+      branchId: cs6,
+      userId: uid('mai'),
+      startDate: `${M}-01`,
+      endDate: null,
+      payMethod: 'cash',
+    })
+    const w = await payrollMonth(auth('linh'), { branchId: cs6, month: M })
+    expect(w.warnings.missingPolicy).toEqual(['Mai'])
+    expect(w.can.lock).toBe(false)
+    const e = await err(lockMonth(auth('linh'), { branchId: cs6, month: M }))
+    expect(e.message).toMatch(/chính sách lương của: Mai/)
+    await savePolicy(auth('linh'), {
+      branchId: cs6,
+      userId: uid('mai'),
+      effectiveMonth: `${M}-01`,
+      baseSalary: 3_000_000,
+      commissionBps: 2500,
+      leaveDays: 3,
+      managerKpi: false,
+    })
+    await fill('mai', M)
+    await fill('mai', M1)
     const m = await lockMonth(auth('linh'), { branchId: cs6, month: M })
     expect(m.status).toBe('locked')
-    expect(m.lines).toHaveLength(4)
+    expect(m.lines).toHaveLength(5)
     const linh = m.lines.find((l) => l.userId === uid('linh'))!
     expect(linh.grossPay).toBeLessThan(0)
     expect(linh).toMatchObject({ payable: 0, carriedOut: -linh.grossPay })

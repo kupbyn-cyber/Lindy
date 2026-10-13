@@ -41,6 +41,20 @@ language sql security definer set search_path = pg_catalog, public as $$
   select pg_advisory_xact_lock_shared(hashtextextended('payroll:' || p_branch::text, 0))
 $$;
 
+-- Sửa công, nghỉ, ngày đóng cửa, chính sách cũng lấy khoá chia sẻ, để không chen vào đúng lúc Linh khoá tháng đó [P73]
+create or replace function app._require_open(p_branch uuid, p_date date) returns void
+language plpgsql security definer set search_path = pg_catalog, public as $$
+declare
+  v_until date;
+begin
+  perform app._payroll_share_lock(p_branch);
+  v_until := app.payroll_locked_until(p_branch);
+  if p_date is not null and v_until is not null and p_date <= v_until then
+    raise exception 'Tháng %/% đã khoá bảng lương: không sửa được công, ngày nghỉ, ngày đóng cửa, chính sách của tháng này.',
+      to_char(p_date, 'MM'), to_char(p_date, 'YYYY') using errcode = 'P0001';
+  end if;
+end $$;
+
 create function app._vnd(p bigint) returns text
 language sql immutable as $$
   select case when p < 0 then '-' else '' end || replace(to_char(abs(p), 'FM999,999,999,999,990'), ',', '.') || 'đ'
@@ -667,6 +681,7 @@ declare
   v_uid uuid := app.uid();
   v_start date;
   v_pending int;
+  v_missing text;
   v_n int;
   v_next date := (p_month + interval '1 month')::date;
 begin
@@ -699,6 +714,15 @@ begin
   select coalesce(sum(pending_days), 0) into v_pending from app._payroll_rows(p_branch, p_month);
   if v_pending > 0 then
     raise exception 'Còn % ngày công chưa duyệt. Duyệt hết công của tháng rồi mới khoá.', v_pending
+      using errcode = 'P0001';
+  end if;
+  -- Người có hồ sơ trong tháng mà chưa có chính sách lương thì không có phiếu lương → không khoá để khỏi sót [P74]
+  select string_agg(u.display_name, ', ' order by u.display_name) into v_missing
+  from staff_profiles sp join users u on u.id = sp.user_id
+  where sp.branch_id = p_branch and sp.start_date < v_next and (sp.end_date is null or sp.end_date >= p_month)
+    and app._base_salary(p_branch, sp.user_id, p_month) is null;
+  if v_missing is not null then
+    raise exception 'Chưa có chính sách lương của: %. Nhập ở Thêm → Nhân viên rồi mới khoá.', v_missing
       using errcode = 'P0001';
   end if;
 
@@ -799,7 +823,8 @@ begin
     return query
       select l.user_id, true, l.pay_method, l.days_in_month, l.leave_allowance, l.standard_days, l.absent_days, 0,
              l.closed_days, l.base_salary, l.attendance_adjustment, l.commission_bps, l.commission_base, l.commission,
-             l.manager_kpi, l.shop_revenue, l.kpi_bps, l.kpi_bonus, l.bonus, l.deduction, l.carry_in, l.gross_pay,
+             l.manager_kpi, case when v_all or l.manager_kpi then l.shop_revenue else 0 end, l.kpi_bps, l.kpi_bonus,
+             l.bonus, l.deduction, l.carry_in, l.gross_pay,
              l.advances, l.carried_out, l.payable,
              coalesce((select sum(p.amount) from payroll_payouts p where p.branch_id = p_branch
                        and p.payroll_month = p_month and p.user_id = l.user_id), 0)::bigint
@@ -809,7 +834,9 @@ begin
     return query
       select r.user_id, false, r.pay_method, r.days_in_month, r.leave_allowance, r.standard_days, r.absent_days,
              r.pending_days, r.closed_days, r.base_salary, r.attendance_adjustment, r.commission_bps,
-             r.commission_base, r.commission, r.manager_kpi, r.shop_revenue, r.kpi_bps, r.kpi_bonus, r.bonus,
+             r.commission_base, r.commission, r.manager_kpi,
+             -- Doanh thu toàn quán chỉ cho người xem lương toàn quán hoặc người có thưởng KPI
+             case when v_all or r.manager_kpi then r.shop_revenue else 0 end, r.kpi_bps, r.kpi_bonus, r.bonus,
              r.deduction, r.carry_in, r.gross_pay, r.advances, greatest(r.advances - r.gross_pay, 0),
              greatest(r.gross_pay - r.advances, 0), 0::bigint
       from app._payroll_rows(p_branch, p_month) r

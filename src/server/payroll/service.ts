@@ -138,15 +138,20 @@ export async function payrollMonth(auth: Auth, input: { branchId?: string; month
     const lines = status === 'before_start' ? [] : await viewRows(tx, branch.id, first)
     const pendingDays = lines.reduce((a, l) => a + l.pendingDays, 0)
     // Cảnh báo trước khi khoá (Linh, Nhung): tạm ứng đã duyệt chưa chi, đơn chưa xác nhận của tháng
-    let warnings = { advancesUnpaid: 0, ordersOpen: 0 }
+    let warnings = { advancesUnpaid: 0, ordersOpen: 0, missingPolicy: [] as string[] }
     if (all && status !== 'before_start' && !locked) {
-      const [w] = await tx<{ advances: string; orders: string }[]>`
+      const [w] = await tx<{ advances: string; orders: string; missing: string[] | null }[]>`
         select (select count(*) from employee_advances where branch_id = ${branch.id} and status = 'approved'
                   and request_month = ${first}::date) as advances,
                (select count(*) from orders where branch_id = ${branch.id}
                   and status in ('in_progress', 'awaiting_confirmation')
-                  and service_date between ${first}::date and ${last}::date) as orders`
-      warnings = { advancesUnpaid: n(w?.advances), ordersOpen: n(w?.orders) }
+                  and service_date between ${first}::date and ${last}::date) as orders,
+               (select array_agg(u.display_name order by u.display_name)
+                from staff_profiles sp join users u on u.id = sp.user_id
+                where sp.branch_id = ${branch.id} and sp.start_date <= ${last}::date
+                  and (sp.end_date is null or sp.end_date >= ${first}::date)
+                  and app._base_salary(${branch.id}, sp.user_id, ${first}::date) is null) as missing`
+      warnings = { advancesUnpaid: n(w?.advances), ordersOpen: n(w?.orders), missingPolicy: w?.missing ?? [] }
     }
     // Q40: mọi lần xem bảng lương toàn quán ghi audit
     if (all && lines.length > 0) {
@@ -159,6 +164,7 @@ export async function payrollMonth(auth: Auth, input: { branchId?: string; month
       hasPerm(auth, branch.id, 'payroll.approve_lock') &&
       status === 'draft' &&
       pendingDays === 0 &&
+      warnings.missingPolicy.length === 0 &&
       (first === s.startMonth || !!lk?.prevLocked)
     return {
       month: ym,

@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 4 — Công và lương
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 4A ĐÃ LÀM (kết quả mục 14); 4B chưa làm. Q-F, Q-G, Q-H đã chốt 13/10/2026 theo phương án (a) → K20, K21, K22. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 4A ĐÃ LÀM (kết quả mục 14); 4B ĐÃ LÀM (mục 15). Đợt 4 XONG phần code. Q-F, Q-G, Q-H đã chốt 13/10/2026 theo phương án (a) → K20, K21, K22. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (D04, D08, D09, D13, A01, A05, C04, C05, K09–K19); PRD v1.2 §4, §6.1 (D04), §6.3 (Q34), §8, §9, §11, §12, §14 (UI08, UI09, UI10, UI16), §17, §18; PRD v1.1 §8, §9 (Q25–Q41, chi tiết hơn bản 1.2); `data/staff.csv`; kế hoạch Đợt 2, Đợt 3 (phần dời sang Đợt 4).
 
 Ký hiệu `[Pn]`: điểm phản biện ở mục 11 (nối tiếp P64 của Đợt 3). `Sn`: test bảo mật ở mục 10.2 (nối tiếp S48).
@@ -195,23 +195,23 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 ### 4B — Lương
 
-- [ ] **4.11 Sổ doanh thu tính lương.** Migration `0017_payroll` phần sổ: bảng, trigger khi commit trên đơn và phiếu hoàn, ghi bù, sửa `refund_order` theo Q34.
+- [x] **4.11 Sổ doanh thu tính lương.** Migration `0017_payroll` phần sổ: bảng, trigger khi commit trên đơn và phiếu hoàn, ghi bù, sửa `refund_order` theo Q34.
   *Kiểm tra:* xác nhận đơn → dòng đúng từng thợ và dòng quán; sửa đơn đã xác nhận, đổi ngày sang tháng khác, huỷ → đảo đúng, tổng theo đơn khớp; chạy lại không ghi đôi; `app_user` ghi thẳng bảng → lỗi; S55.
-- [ ] **4.12 Tính lương.** `app.payroll_compute` + `GET /api/payroll?month=` (lương tạm tính tháng này, bản nháp tháng trước).
+- [x] **4.12 Tính lương.** `app.payroll_compute` + `GET /api/payroll?month=` (lương tạm tính tháng này, bản nháp tháng trước).
   *Kiểm tra:* test 9, 10, 11, 38, 39; Q35 (Chin vào 16/10 → 2.285.714đ); test 33 (hoa hồng Chin 125.000đ), 34 (+12.500đ), 36 (cọc bỏ hẹn không đổi hoa hồng Linh, KPI Nhung); test 23 phần lương; S56.
-- [ ] **4.13 Tạm ứng.** Đề nghị (mọi người), duyệt / từ chối (Linh), Đã chi (Linh, Nhung; chọn tài khoản) → bút toán `advance`; theo Q-G.
+- [x] **4.13 Tạm ứng.** Đề nghị (mọi người), duyệt / từ chối (Linh), Đã chi (Linh, Nhung; chọn tài khoản) → bút toán `advance`; theo Q-G.
   *Kiểm tra:* test 42, 53; chi hai lần → một bút toán; S57, S58.
-- [ ] **4.14 Màn Tạm ứng (UI16, phần tạm ứng).** Thêm → Tạm ứng: form (số tiền, lý do; hiện hạn mức còn lại và lương tạm tính để tham khảo), danh sách theo trạng thái, nút theo quyền.
+- [x] **4.14 Màn Tạm ứng (UI16, phần tạm ứng).** Thêm → Tạm ứng: form (số tiền, lý do; hiện hạn mức còn lại và lương tạm tính để tham khảo), danh sách theo trạng thái, nút theo quyền.
   *Kiểm tra:* 375px; thợ chỉ thấy phiếu của mình.
-- [ ] **4.15 Màn Bảng lương (UI10).** Thêm → Lương: chọn tháng; Linh, Nhung: bảng mọi người (phải trả, tạm ứng, đã trả, còn lại) và tổng; mở một người: phiếu lương đủ tham số (công, hoa hồng theo đơn, KPI, điều chỉnh từ tháng trước). Thợ: phiếu của mình. Linh: thêm thưởng thêm / khấu trừ có lý do.
+- [x] **4.15 Màn Bảng lương (UI10).** Thêm → Lương: chọn tháng; Linh, Nhung: bảng mọi người (phải trả, tạm ứng, đã trả, còn lại) và tổng; mở một người: phiếu lương đủ tham số (công, hoa hồng theo đơn, KPI, điều chỉnh từ tháng trước). Thợ: phiếu của mình. Linh: thêm thưởng thêm / khấu trừ có lý do.
   *Kiểm tra:* test 12 (thợ chỉ đọc của mình; Nhung đọc toàn bộ, không sửa, khoá, trả); mở bảng toàn quán → audit log.
-- [ ] **4.16 Khoá bảng lương.** Từ ngày 5 tháng sau, Linh bấm **Khoá bảng lương** (hộp xác nhận hiện tổng tiền); theo Q-F, Q-H. Khoá xong: phiếu lương cố định; công, nghỉ, ngày đóng cửa, chính sách của tháng đó không sửa được; việc mới vào tháng đang mở.
+- [x] **4.16 Khoá bảng lương.** Từ ngày 5 tháng sau, Linh bấm **Khoá bảng lương** (hộp xác nhận hiện tổng tiền); theo Q-F, Q-H. Khoá xong: phiếu lương cố định; công, nghỉ, ngày đóng cửa, chính sách của tháng đó không sửa được; việc mới vào tháng đang mở.
   *Kiểm tra:* test 13, 14 (khoá lương), 25, 41; D04 (đơn làm 31/10 xác nhận sau khi khoá tháng 10 → hoa hồng vào tháng 11, doanh thu báo cáo vẫn tháng 10); khoá trước ngày 5 → 422; khoá hai lần → 409; S59, S60.
-- [ ] **4.17 Trả lương.** Phiếu lương đã khoá có **Trả lương** (Linh): số tiền mặc định = còn lại, tài khoản theo cách nhận lương → bút toán `payroll`. Trả nhiều lần được, không quá còn lại.
+- [x] **4.17 Trả lương.** Phiếu lương đã khoá có **Trả lương** (Linh): số tiền mặc định = còn lại, tài khoản theo cách nhận lương → bút toán `payroll`. Trả nhiều lần được, không quá còn lại.
   *Kiểm tra:* bấm hai lần → một bút toán; trả vượt → 422; Nhung trả → 403; S61.
-- [ ] **4.18 Tổng quan, báo cáo phần 4B.** Thợ: lương tạm tính tháng này (Q39). Cần xử lý: tạm ứng chờ duyệt (Linh), tạm ứng chờ chi (Linh, Nhung), bảng lương chờ khoá (Linh, từ ngày 5), còn người chưa trả lương (Linh, từ ngày 10). Báo cáo dòng tiền: tạm ứng dòng riêng, chi lương vào chi nhân sự. Báo cáo tháng: lương phải trả, đã trả, tạm ứng, KPI quản lý (§11).
+- [x] **4.18 Tổng quan, báo cáo phần 4B.** Thợ: lương tạm tính tháng này (Q39). Cần xử lý: tạm ứng chờ duyệt (Linh), tạm ứng chờ chi (Linh, Nhung), bảng lương chờ khoá (Linh, từ ngày 5), còn người chưa trả lương (Linh, từ ngày 10). Báo cáo dòng tiền: tạm ứng dòng riêng, chi lương vào chi nhân sự. Báo cáo tháng: lương phải trả, đã trả, tạm ứng, KPI quản lý (§11).
   *Kiểm tra:* số trên báo cáo khớp bảng lương và sổ tiền; S62.
-- [ ] **4.19 Chốt Đợt 4.** Phản biện lại toàn đợt; `bun run check`, build, `scan-bundle`, `check-upgrade`; test gom vào `tests/acceptance/luong.test.ts`, `tests/security/luong.test.ts`; cập nhật `CHAY_LOCAL.md`, `CLAUDE.md`, `OPEN_QUESTIONS.md`; báo kết quả.
+- [x] **4.19 Chốt Đợt 4.** Phản biện lại toàn đợt; `bun run check`, build, `scan-bundle`, `check-upgrade`; test gom vào `tests/acceptance/luong.test.ts`, `tests/security/luong.test.ts`; cập nhật `CHAY_LOCAL.md`, `CLAUDE.md`, `OPEN_QUESTIONS.md`; báo kết quả.
 
 ## 10. Kiểm thử
 
@@ -295,3 +295,32 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 - Test bảo mật S49–S54 gom chung file nghiệm thu `cham-cong.test.ts`.
 - Ngày công không có số phiên bản: hai người cùng duyệt một ngày thì lần ghi sau thắng; mọi lần quyết đều có audit (người, trước, sau, lý do).
 - Quyền `advance.request` để sang 4B (bước 4.13) cùng tạm ứng.
+
+## 15. Kết quả 4B và chốt Đợt 4 (13/10/2026)
+
+**Đã làm:** migration `0017_payroll`: sổ doanh thu tính lương (đơn đã xác nhận, phiếu hoàn; sửa, đổi ngày, huỷ thì đảo; tháng đã khoá thì vào tháng đang mở — D04, Q34; ghi bù đơn cũ), phiếu hoàn sau khoá ghi doanh thu ngày hoàn (Q34), công thức §9.1 (`app._payroll_rows`), tạm ứng (K21; bút toán `advance`), thưởng thêm / khấu trừ, khoá lần lượt từ ngày nháp (K20, K22), phiếu lương chụp đủ tham số, trả lương (bút toán `payroll`). Màn **Thêm → Lương**, **Thêm → Tạm ứng**; Tổng quan có lương tạm tính và **Cần xử lý · lương**; báo cáo tháng có lương; dòng tiền tách tạm ứng, chi lương vào chi nhân sự; quyền `advance.request`.
+
+**Kiểm tra:**
+- `bun run check`: 299/299 test (thêm 28 test ở `tests/acceptance/luong.test.ts`: PRD 1 (số tiền hoa hồng), 9, 10, 11, 12, 13, 14, 23, 25, 34, 36, 38, 39, 41, 42, 53; Q35 (2.285.714đ); D04; K20, K21, K22; S55–S61). Build chạy được; `scan-bundle` sạch (58 file).
+- `check-upgrade --from=0016` và `--from=0005` đạt: ghi bù sổ doanh thu tính lương cho đơn cũ đúng 150.000đ; tạm ứng, lương tạm tính chạy sau nâng cấp.
+- Thử trên trình duyệt 375×812: Chin đề nghị tạm ứng (vượt hạn mức thì nút bị khoá), xem phiếu lương; Linh duyệt, chi tạm ứng; bảng lương cả quán; thêm thưởng; khoá bảng lương tháng 9 (DB dev dựng đủ công) và trả lương Trang. Không cuộn ngang, không lỗi console, không lỗi server.
+- **Chưa kiểm:** giao diện tối và iPhone thật; chạy song song với bảng lương Sheets (việc vận hành sau triển khai).
+
+**Phản biện cuối đợt (đọc lại code Đợt 4 theo cách kẻ phá):**
+
+| Mã | Mức | Điểm yếu | Kết quả |
+|---|---|---|---|
+| P65 | ⚪ | Thợ vào ca ở nhà | Giữ như kế hoạch: không kiểm vị trí; Nhung duyệt công |
+| P66 | ⚪ | Nhung tự duyệt công, nghỉ của mình | Giữ: mọi lần quyết công, nghỉ có audit |
+| P67 | 🟠 | Xác nhận đơn, hoàn tiền, chi tạm ứng, thêm điều chỉnh đúng lúc khoá → lọt vào tháng đã khoá | Đã chặn: khoá chia sẻ / loại trừ theo cơ sở; test D04, Q34 |
+| P68 | 🟡 | Sửa đơn đã xác nhận của tháng đã khoá | Đã chặn: dòng đảo và dòng mới vào tháng đang mở |
+| P69 | 🟡 | Đổi chính sách lùi về tháng đã khoá | Đã chặn (test 13, S59) |
+| P70 | 🟡 | Hai đề nghị tạm ứng song song vượt hạn mức | Đã chặn: khoá theo người (S58) |
+| P71 | 🟡 | Bấm trả lương hai lần, trả vượt | Đã chặn: mã chống gửi trùng, khoá dòng phiếu lương (S61) |
+| P72 | ⚪ | Nhung chụp màn hình bảng lương | Không chặn được bằng app; mỗi lần xem toàn quán có audit (Q40) |
+| P73 | 🟡 | Duyệt công, nghỉ, ngày đóng cửa, chính sách đúng lúc Linh khoá tháng đó → lọt vào tháng vừa khoá | **Đã sửa:** kiểm tháng khoá giờ cũng lấy khoá chia sẻ kỳ lương |
+| P74 | 🟠 | Người có hồ sơ mà chưa có chính sách lương bị bỏ khỏi bảng lương khi khoá | **Đã sửa:** không khoá được, màn Lương có cảnh báo tên người thiếu (test) |
+| P75 | 🟡 | Thợ gọi thẳng hàm tính lương thấy doanh thu toàn quán | **Đã sửa:** chỉ người xem lương toàn quán hoặc có thưởng KPI thấy (test) |
+| P76 | ⚪ | Đơn của tháng trước tháng bắt đầu tính lương xác nhận muộn: hoa hồng ghi vào tháng đó (làm trên Sheets), app không tính | Ghi nhận: tháng trước tháng bắt đầu làm lương trên Sheets |
+
+**Còn thiếu so với PRD (ngoài phạm vi Đợt 4, đã ghi ở mục 6):** hệ số ngày lễ, ca nửa ngày, xuất file bảng lương, lợi nhuận ước tính → Đợt 5 hoặc khi chủ chốt thêm.

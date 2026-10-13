@@ -136,6 +136,16 @@ function Page() {
                   vào tháng đang mở.
                 </Note>
               ) : null}
+              {d.warnings.missingPolicy.length ? (
+                <Note tone="warning">
+                  Chưa có chính sách lương của {d.warnings.missingPolicy.join(', ')} (có hồ sơ trong tháng).
+                  Nhập ở{' '}
+                  <Link to="/them/nhan-vien" className="text-accent">
+                    Thêm → Nhân viên
+                  </Link>{' '}
+                  rồi mới khoá được.
+                </Note>
+              ) : null}
               {d.warnings.advancesUnpaid ? (
                 <Note tone="warning">
                   {d.warnings.advancesUnpaid} tạm ứng đã duyệt chưa chi. Chi sau khi khoá thì trừ vào lương

@@ -1,6 +1,6 @@
 # Chạy LINDY OS ở local
 
-Cập nhật 13/10/2026, sau Đợt 0 đến Đợt 3 (sổ tiền, cọc, thu chi, chốt quỹ, tip, hoàn tiền) và Đợt 4A (nhân viên, chấm công). Máy: Windows 11, Node 24, Bun 1.4.
+Cập nhật 13/10/2026, sau Đợt 0 đến Đợt 3 (sổ tiền, cọc, thu chi, chốt quỹ, tip, hoàn tiền) và Đợt 4 (nhân viên, chấm công, lương, tạm ứng). Máy: Windows 11, Node 24, Bun 1.4.
 
 ## Chạy hằng ngày
 
@@ -86,7 +86,17 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 4. `nhung@lindy.test` → **Lịch → Chấm công → Duyệt công**: **Duyệt N người đã vào ca**; chạm từng người để ghi Đi làm / Nghỉ có phép / Không phép (bổ sung công không có giờ vào ca, đổi quyết định cần lý do); duyệt đơn nghỉ. **Bảng công**: lưới cả tháng, chạm một ngày để mở Duyệt công ngày đó.
 5. Tổng quan của Nhung, Linh có **Cần xử lý · chấm công**: ngày công chưa duyệt (trước hôm nay), đơn nghỉ chờ duyệt.
 
-Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0015` nếu đã có Đợt 3).
+## Thử lương và tạm ứng (Đợt 4B)
+
+Demo có tháng bắt đầu tính lương = tháng này và một đề nghị tạm ứng của Chin.
+
+1. `chin@lindy.test` → **Tổng quan**: thẻ **Lương tạm tính tháng này**. **Thêm → Lương**: phiếu lương đủ tham số (công chuẩn, ngày vắng, lương ngày, hoa hồng theo đơn). **Thêm → Tạm ứng**: hạn mức tháng (tổng ≤ lương cứng), **+ Đề nghị tạm ứng**.
+2. `linh@lindy.test` → **Thêm → Tạm ứng**: **Duyệt** → **Đã chi** (Nhung cũng chi được tạm ứng đã duyệt). Tạm ứng trừ vào lương tháng xin.
+3. Linh → **Thêm → Lương**: bảng lương cả quán; mở một người: **Thưởng thêm / Khấu trừ**. Nhung chỉ xem.
+4. Khoá: từ ngày 5 tháng sau, khi mọi ngày công đã duyệt và ai có hồ sơ cũng có chính sách lương → **Khoá bảng lương** → **Trả lương** từng người. Muốn thử khoá trên DB dev: đặt tháng bắt đầu là tháng trước và duyệt đủ công tháng đó.
+5. Sau khi khoá: đơn tháng đó xác nhận muộn, phiếu hoàn → hoa hồng, KPI vào tháng đang mở (phiếu lương ghi "dời từ tháng đã khoá").
+
+Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0017` nếu đã có Đợt 4).
 
 ## Quản trị tài khoản (CLI, chưa có màn hình)
 
