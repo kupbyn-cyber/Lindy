@@ -1,7 +1,9 @@
-// Cài đặt lịch (bước 1.15): chỉ người có booking_settings.manage (Linh). Mùa cọc Tết (Đợt 3, bước 3.4).
+// Cài đặt lịch (bước 1.15): chỉ người có booking_settings.manage (Linh). Mùa cọc Tết (Đợt 3, bước 3.4). Ngày quán
+// đóng cửa (Đợt 4, bước 4.4).
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useState } from 'react'
+import { ClosedDays } from '~/components/lich/ClosedDays'
 import { DepositSeasons } from '~/components/lich/DepositSeasons'
 import { Button, Note, TextField, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
@@ -96,9 +98,13 @@ function Page() {
           Lưu cài đặt
         </Button>
       </form>
-      <section className="flex flex-col gap-2 border-t border-line pt-3 pb-4">
+      <section className="flex flex-col gap-2 border-t border-line pt-3">
         <h2 className="overline m-0 text-ink-muted">Mùa cọc Tết</h2>
         <DepositSeasons />
+      </section>
+      <section className="flex flex-col gap-2 border-t border-line pt-3 pb-4">
+        <h2 className="overline m-0 text-ink-muted">Ngày quán đóng cửa</h2>
+        <ClosedDays />
       </section>
     </section>
   )

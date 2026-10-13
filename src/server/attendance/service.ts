@@ -18,19 +18,22 @@ type GridRow = {
   checkInAt: Date | null
   checkOutAt: Date | null
   note: string | null
+  decidedStatus: 'worked' | 'leave' | 'unexcused' | null
   leaveId: string | null
   closedReason: string | null
 }
 
 async function grid(tx: Tx, branchId: string, from: string, to: string) {
   return tx<GridRow[]>`
-    select user_id, work_date::text, status, check_in_at, check_out_at, note, leave_id, closed_reason
+    select user_id, work_date::text, status, check_in_at, check_out_at, note, decided_status, leave_id, closed_reason
     from app.attendance_grid(${branchId}, ${from}::date, ${to}::date)`
 }
 
 const dayOf = (r: GridRow) => ({
   date: r.workDate,
   status: r.status,
+  /** Quyết định của Nhung, Linh trên ngày này (null = chưa quyết; nghỉ đã duyệt qua đơn không tính) */
+  decided: r.decidedStatus,
   checkIn: iso(r.checkInAt),
   checkOut: iso(r.checkOutAt),
   note: r.note,

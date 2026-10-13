@@ -56,6 +56,16 @@ function MorePage() {
             hint="Việc người khác tự duyệt, tự xác nhận, hoàn tiền"
           />
         ) : null}
+        {can('attendance.own') || can('attendance.approve') ? (
+          <Row to="/lich/cham-cong" label="Chấm công" hint="Vào ca, ra ca, đăng ký nghỉ, bảng công" />
+        ) : null}
+        {can('payroll.read_all_branch') || can('payroll.edit') ? (
+          <Row
+            to="/them/nhan-vien"
+            label="Nhân viên"
+            hint="Ngày vào làm, cách nhận lương, lương cứng, hoa hồng theo tháng"
+          />
+        ) : null}
         {can('expense.request') ? (
           <Row to="/them/thu-chi" label="Thu chi" hint="Đề nghị chi, duyệt chi, đã chi" />
         ) : null}
@@ -75,7 +85,7 @@ function MorePage() {
           <Row
             to="/them/cai-dat-lich"
             label="Cài đặt lịch"
-            hint="Giờ mở cửa, thời lượng mặc định, mùa cọc Tết"
+            hint="Giờ mở cửa, thời lượng mặc định, mùa cọc Tết, ngày đóng cửa"
           />
         ) : null}
       </div>

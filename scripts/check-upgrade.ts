@@ -1,7 +1,8 @@
 // Giả lập nâng cấp DB như trên hosting trước khi triển khai (BAI_HOC_TRIEN_KHAI 4.3).
 // DB tạm ở trạng thái bản đang chạy (migration đến --from, có tài khoản chủ, lịch hẹn; từ 0009 có đơn và khoản thu),
 // rồi chạy bước chuẩn bị DB của bản mới (runRelease, như lúc app khởi động trên hosting) và thử luồng chính bằng service
-// của app: đơn từ lịch, thu tiền; bút toán ghi bù; cọc Tết trừ vào bill; mở sổ và số dư.
+// của app: đơn từ lịch, thu tiền; bút toán ghi bù; cọc Tết trừ vào bill; mở sổ và số dư; thu chi; tip, hoàn tiền,
+// chứng từ; nhân viên, chấm công.
 //   bun scripts/check-upgrade.ts --from=0010
 // Chỉ chạy với PostgreSQL local; DB tạm bị xoá khi xong.
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
@@ -283,6 +284,58 @@ try {
     )
     if (bal3.cash !== 950000 || bal3.bank !== bankExpected + 20000 + 320000 || att.items.length !== 1)
       throw new Error('Tip, hoàn tiền sai.')
+
+    // Nhân viên, chấm công (0016): cơ sở cũ có sẵn cài đặt lương, mốc KPI; hồ sơ + chính sách Linh; Vào ca, duyệt công;
+    // ngày đóng cửa ngày mai; đơn nghỉ ngày kia
+    const { saveProfile, savePolicy, listPeople } = await import('../src/server/staff/service')
+    const { checkIn, approveCheckedIn, myMonth } = await import('../src/server/attendance/service')
+    const { addClosedDays } = await import('../src/server/attendance/closed-days')
+    const { createLeave } = await import('../src/server/attendance/leave')
+    const [ps] = await db<{ settings: number; kpi: number }[]>`
+      select (select count(*)::int from payroll_settings where branch_id = ${branch!.id}) as settings,
+             (select count(*)::int from kpi_policy_versions where branch_id = ${branch!.id}) as kpi`
+    if (ps!.settings !== 1 || ps!.kpi !== 1) throw new Error('Thiếu cài đặt lương hoặc mốc KPI của cơ sở cũ.')
+    const month = `${today.slice(0, 8)}01`
+    await saveProfile(auth, {
+      userId: linh!.id,
+      startDate: month,
+      endDate: null,
+      payMethod: 'transfer',
+    })
+    await savePolicy(auth, {
+      userId: linh!.id,
+      effectiveMonth: month,
+      baseSalary: 3500000,
+      commissionBps: 2500,
+      leaveDays: 3,
+      managerKpi: false,
+    })
+    await checkIn(auth)
+    const ap = await approveCheckedIn(auth, { date: today })
+    await addClosedDays(auth, {
+      fromDate: addDays(today, 1),
+      toDate: addDays(today, 1),
+      reason: 'Thử nâng cấp',
+    })
+    const lv = await createLeave(auth, {
+      createRequestId: crypto.randomUUID(),
+      fromDate: addDays(today, 2),
+      toDate: addDays(today, 2),
+      reason: 'Thử nâng cấp',
+    })
+    const mm = await myMonth(auth, { month: today.slice(0, 7) })
+    const st = (d: string) => mm.days.find((x) => x.date === d)?.status ?? '(tháng sau)'
+    const people = await listPeople(auth)
+    log(
+      `Chấm công: duyệt ${ap.approved} người; hôm nay ${st(today)}, mai ${st(addDays(today, 1))}, ngày kia ${st(addDays(today, 2))}; đơn nghỉ ${lv.status}; lương cứng ${people.people[0]?.current?.baseSalary}đ`,
+    )
+    if (
+      ap.approved !== 1 ||
+      st(today) !== 'worked' ||
+      lv.status !== 'approved' ||
+      people.people[0]?.current?.baseSalary !== 3500000
+    )
+      throw new Error('Chấm công sai.')
 
     const [n] = await db<Record<string, number>[]>`
       select (select count(*)::int from schema_migrations) as migrations,

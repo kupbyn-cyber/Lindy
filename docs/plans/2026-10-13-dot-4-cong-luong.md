@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 4 — Công và lương
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. Đang làm 4A. Q-F, Q-G, Q-H đã chốt 13/10/2026 theo phương án (a) → K20, K21, K22. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 4A ĐÃ LÀM (kết quả mục 14); 4B chưa làm. Q-F, Q-G, Q-H đã chốt 13/10/2026 theo phương án (a) → K20, K21, K22. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (D04, D08, D09, D13, A01, A05, C04, C05, K09–K19); PRD v1.2 §4, §6.1 (D04), §6.3 (Q34), §8, §9, §11, §12, §14 (UI08, UI09, UI10, UI16), §17, §18; PRD v1.1 §8, §9 (Q25–Q41, chi tiết hơn bản 1.2); `data/staff.csv`; kế hoạch Đợt 2, Đợt 3 (phần dời sang Đợt 4).
 
 Ký hiệu `[Pn]`: điểm phản biện ở mục 11 (nối tiếp P64 của Đợt 3). `Sn`: test bảo mật ở mục 10.2 (nối tiếp S48).
@@ -175,23 +175,23 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 ### 4A — Nhân viên và chấm công
 
 - [x] **4.1 Chốt Q-F, Q-G, Q-H.** Ghi vào `DECISIONS.md` (K20–K22).
-- [ ] **4.2 Bảng nhân viên, chính sách.** Migration `0016_attendance` phần hồ sơ, chính sách, `payroll_settings`, mốc KPI, RLS. Dữ liệu dev: hồ sơ, chính sách 4 người theo `data/staff.csv` (chỉ DB `lindy_dev`).
+- [x] **4.2 Bảng nhân viên, chính sách.** Migration `0016_attendance` phần hồ sơ, chính sách, `payroll_settings`, mốc KPI, RLS. Dữ liệu dev: hồ sơ, chính sách 4 người theo `data/staff.csv` (chỉ DB `lindy_dev`).
   *Kiểm tra:* test 40 (hiệu lực 15/11 → 422; 01/12 → được); Nhung, thợ sửa chính sách → 403 (API, SQL); thợ đọc chính sách người khác → 0 dòng.
-- [ ] **4.3 Màn Nhân viên (UI09, phần hồ sơ).** Thêm → Nhân viên: danh sách người trong cơ sở; mở một người: ngày vào, ngày nghỉ việc, cách nhận lương; chính sách theo tháng (lương cứng, % hoa hồng, ngày nghỉ hưởng, thưởng KPI quản lý) có lịch sử. Mốc KPI, tháng bắt đầu tính lương. Linh sửa; Nhung chỉ xem.
+- [x] **4.3 Màn Nhân viên (UI09, phần hồ sơ).** Thêm → Nhân viên: danh sách người trong cơ sở; mở một người: ngày vào, ngày nghỉ việc, cách nhận lương; chính sách theo tháng (lương cứng, % hoa hồng, ngày nghỉ hưởng, thưởng KPI quản lý) có lịch sử. Mốc KPI, tháng bắt đầu tính lương. Linh sửa; Nhung chỉ xem.
   *Kiểm tra:* 375px, sáng và tối; Nhung không thấy nút sửa và API trả 403.
-- [ ] **4.4 Ngày quán đóng cửa.** Cài đặt lịch thêm khối "Ngày quán đóng cửa" (thêm một ngày hoặc một khoảng ngày, lý do; gỡ).
+- [x] **4.4 Ngày quán đóng cửa.** Cài đặt lịch thêm khối "Ngày quán đóng cửa" (thêm một ngày hoặc một khoảng ngày, lý do; gỡ).
   *Kiểm tra:* Nhung thêm → 403; trùng ngày → một dòng.
-- [ ] **4.5 Vào ca / Ra ca.** API ghi giờ theo server; thẻ trên Tổng quan cho người có hồ sơ: "Vào ca" / "Đã vào 8:57 · Ra ca"; Lịch → **Chấm công**: tháng của tôi (từng ngày: giờ vào/ra, trạng thái, số ngày đã nghỉ / được hưởng).
+- [x] **4.5 Vào ca / Ra ca.** API ghi giờ theo server; thẻ trên Tổng quan cho người có hồ sơ: "Vào ca" / "Đã vào 8:57 · Ra ca"; Lịch → **Chấm công**: tháng của tôi (từng ngày: giờ vào/ra, trạng thái, số ngày đã nghỉ / được hưởng).
   *Kiểm tra:* vào ca hai lần → một dòng; vào ca hộ người khác → 403; quên vào ca → ngày "chưa duyệt", không phải ngày vắng (test 23 phần công); S49, S50.
-- [ ] **4.6 Đăng ký nghỉ.** Mọi người đăng ký ngày nghỉ (từ ngày, đến ngày, lý do), huỷ khi chưa duyệt; Nhung, Linh duyệt / từ chối; Nhung tự duyệt của mình → audit log.
+- [x] **4.6 Đăng ký nghỉ.** Mọi người đăng ký ngày nghỉ (từ ngày, đến ngày, lý do), huỷ khi chưa duyệt; Nhung, Linh duyệt / từ chối; Nhung tự duyệt của mình → audit log.
   *Kiểm tra:* thợ tự duyệt → 403; duyệt ngày thuộc tháng đã khoá → chặn (kiểm lại ở 4B); S51.
-- [ ] **4.7 Duyệt công (UI08).** Lịch → Chấm công (Nhung, Linh): chọn ngày → mọi người: giờ vào/ra, nghỉ đã duyệt; **Duyệt tất cả người đã vào ca**; người thiếu chấm: **Đi làm** (cần lý do) hoặc **Nghỉ không phép**; đổi quyết định có lý do, có lịch sử.
+- [x] **4.7 Duyệt công (UI08).** Lịch → Chấm công (Nhung, Linh): chọn ngày → mọi người: giờ vào/ra, nghỉ đã duyệt; **Duyệt tất cả người đã vào ca**; người thiếu chấm: **Đi làm** (cần lý do) hoặc **Nghỉ không phép**; đổi quyết định có lý do, có lịch sử.
   *Kiểm tra:* thợ duyệt → 403 (API, SQL); bổ sung công không lý do → 422; Nhung tự duyệt → có audit log; S52.
-- [ ] **4.8 Bảng công tháng (UI09).** Lưới ngày × người: đi làm, nghỉ có phép, không phép, đóng cửa, chưa duyệt, ngoài thời gian làm; cộng ngày vắng, ngày chưa duyệt. Thợ chỉ thấy dòng mình.
+- [x] **4.8 Bảng công tháng (UI09).** Lưới ngày × người: đi làm, nghỉ có phép, không phép, đóng cửa, chưa duyệt, ngoài thời gian làm; cộng ngày vắng, ngày chưa duyệt. Thợ chỉ thấy dòng mình.
   *Kiểm tra:* đếm khớp tay cho tháng mẫu (31 ngày, 2 ngày nghỉ, 1 ngày đóng cửa).
-- [ ] **4.9 Tổng quan phần 4A.** Cần xử lý (Nhung, Linh): ngày chưa duyệt công (trước hôm nay), đơn nghỉ chờ duyệt.
+- [x] **4.9 Tổng quan phần 4A.** Cần xử lý (Nhung, Linh): ngày chưa duyệt công (trước hôm nay), đơn nghỉ chờ duyệt.
   *Kiểm tra:* đăng nhập 4 tài khoản, đối chiếu với quyền ở mục 8.
-- [ ] **4.10 Chốt 4A.** `bun run check`, build, `scan-bundle`, `check-upgrade --from=0015` và `--from=0005`; test gom vào `tests/acceptance/cham-cong.test.ts`, `tests/security/cham-cong.test.ts`; dữ liệu demo có chấm công; `CHAY_LOCAL.md`; báo kết quả. Triển khai 4A riêng được (khi anh yêu cầu).
+- [x] **4.10 Chốt 4A.** `bun run check`, build, `scan-bundle`, `check-upgrade --from=0015` và `--from=0005`; test gom vào `tests/acceptance/cham-cong.test.ts`, `tests/security/cham-cong.test.ts`; dữ liệu demo có chấm công; `CHAY_LOCAL.md`; báo kết quả. Triển khai 4A riêng được (khi anh yêu cầu).
 
 ### 4B — Lương
 
@@ -280,3 +280,18 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 | Trigger khi commit làm chậm xác nhận đơn | Mỗi lần chỉ xử lý một đơn; có chỉ mục theo đơn | Tối ưu truy vấn, không đổi luật |
 | Migration lỗi khi triển khai | Sao lưu DB trước khi triển khai; `check-upgrade` | Khôi phục bản sao lưu, triển khai lại bản trước |
 | Tháng lương đầu tiên thiếu dữ liệu (đơn, công nhập chưa đủ) | Tháng bắt đầu tính lương do Linh chọn; tháng trước đó vẫn dùng Sheets | Đổi tháng bắt đầu khi chưa khoá kỳ nào |
+
+## 14. Kết quả 4A (13/10/2026)
+
+**Đã làm:** migration `0016_attendance` (hồ sơ, chính sách lương theo tháng, mốc KPI, tháng bắt đầu tính lương, ngày đóng cửa, chấm công, đơn nghỉ, bảng `payroll_periods` để chặn sửa tháng đã khoá ngay từ 4A); quyền `attendance.own` cho mọi vai trò; màn **Thêm → Nhân viên** (Linh sửa, Nhung xem), **Lịch → Chấm công** (Của tôi / Duyệt công / Bảng công), khối **Ngày quán đóng cửa** trong Cài đặt lịch, thẻ **Chấm công hôm nay** và mục **Cần xử lý · chấm công** trên Tổng quan; dữ liệu demo (hồ sơ, chính sách theo `data/staff.csv`, chấm công hôm qua, một đơn nghỉ chờ duyệt).
+
+**Kiểm tra:**
+- `bun run check`: 271/271 test (thêm 21 test ở `tests/acceptance/cham-cong.test.ts`: PRD 40, 23 phần công, Q27, Q28, Q29, Q35, K20, S49–S54, S59 phần 4A). Build chạy được, `scan-bundle` sạch (55 file).
+- `check-upgrade --from=0015` và `--from=0005` đạt: cơ sở cũ có sẵn cài đặt lương, mốc KPI; hồ sơ, chính sách, Vào ca, duyệt công, ngày đóng cửa, đơn nghỉ chạy đúng sau nâng cấp.
+- Thử trên trình duyệt 375×812 (sáng): Trang Vào ca 1 chạm từ Tổng quan, đăng ký nghỉ; Nhung "Duyệt 1 người đã vào ca", ghi Nghỉ không phép, duyệt đơn nghỉ, Bảng công (lưới 7 cột), màn Nhân viên chỉ xem; Linh thêm chính sách từ tháng sau, thêm và gỡ ngày đóng cửa. Không cuộn ngang. Duyệt công cả quán từ Tổng quan: 3 chạm (Cần xử lý → Duyệt công → Duyệt N người).
+- **Chưa kiểm:** giao diện tối và iPhone thật (khung trình duyệt đang ẩn nên chưa chụp màn hình).
+
+**Khác kế hoạch:**
+- Test bảo mật S49–S54 gom chung file nghiệm thu `cham-cong.test.ts`.
+- Ngày công không có số phiên bản: hai người cùng duyệt một ngày thì lần ghi sau thắng; mọi lần quyết đều có audit (người, trước, sau, lý do).
+- Quyền `advance.request` để sang 4B (bước 4.13) cùng tạm ứng.

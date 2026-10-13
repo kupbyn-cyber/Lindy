@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
+import { AttendanceCard } from '~/components/cong/AttendanceCard'
 import { TodaySummary } from '~/components/lich/TodaySummary'
 import { Money, SegmentedControl, SummaryCard } from '~/components/ui'
 import { api } from '~/lib/api'
@@ -52,6 +53,8 @@ function Overview() {
           onChange={(v) => setPeriod(v as 'day' | 'month')}
         />
       </div>
+
+      <AttendanceCard />
 
       {r ? (
         <SummaryCard
@@ -170,6 +173,26 @@ function Overview() {
             ) : null}
             {d?.money && a.tipsPending ? (
               <PageLink to="/them/chot-ngay" text={`Tip giữ hộ chưa trả thợ: ${formatVND(a.tipsPending)}`} />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {a && (a.pendingDays || a.leavesPending) ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 text-ink-muted">Cần xử lý · chấm công</h2>
+          <div className="-mx-4 border-t border-line">
+            {a.pendingDays ? (
+              <Link to="/lich/cham-cong" search={{ tab: 'bang' }} className="lo-row lo-row-action">
+                <span className="body">{a.pendingDays} ngày công chưa duyệt</span>
+                <span className="label text-accent">Xem</span>
+              </Link>
+            ) : null}
+            {a.leavesPending ? (
+              <Link to="/lich/cham-cong" search={{ tab: 'duyet' }} className="lo-row lo-row-action">
+                <span className="body">{a.leavesPending} đơn nghỉ chờ duyệt</span>
+                <span className="label text-accent">Xem</span>
+              </Link>
             ) : null}
           </div>
         </section>

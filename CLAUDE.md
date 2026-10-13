@@ -8,7 +8,7 @@ App quản lý nội bộ cho Lindy Nailash Studio. Web mobile-first/PWA, ưu ti
 
 **Nền tảng đã chốt (T01, `docs/TECH_STACK.md`):** kiến trúc như CEN WORK — TanStack Start (React 19, SSR), TanStack Router/Query, Vite, Tailwind v4, Nitro, PostgreSQL 16, phiên cookie tự viết, RLS qua transaction đặt role, migration runner SQL, Web Push qua outbox. Code nằm ngay tại thư mục này. **Chạy local trước**; đồng bộ GitHub và triển khai lên Vibe Host Mắt Bão (T03, thay Nhân Hòa ở T02) chỉ khi người dùng yêu cầu. Hướng dẫn: `docs/TRIEN_KHAI.md`.
 
-Đợt 0, Đợt 1, Đợt 2 (đơn hàng) và Đợt 3 (sổ tiền, cọc Tết, thu chi, chốt quỹ, tip, hoàn tiền, chứng từ, dòng tiền; kế hoạch `docs/plans/2026-10-13-dot-3-so-tien-coc.md`) đã có code (13/10/2026). Đợt tiếp theo: Đợt 4 (công và lương), chưa lập kế hoạch. Cách chạy, kiểm tra: `docs/CHAY_LOCAL.md`. Đợt mới: báo kế hoạch trước, chưa code khi chưa được duyệt.
+Đợt 0, Đợt 1, Đợt 2 (đơn hàng) và Đợt 3 (sổ tiền, cọc Tết, thu chi, chốt quỹ, tip, hoàn tiền, chứng từ, dòng tiền; kế hoạch `docs/plans/2026-10-13-dot-3-so-tien-coc.md`) đã có code (13/10/2026). Đợt 4 (công và lương, kế hoạch `docs/plans/2026-10-13-dot-4-cong-luong.md`, đã duyệt): 4A (nhân viên, chấm công) đã có code; 4B (lương) chưa làm. Cách chạy, kiểm tra: `docs/CHAY_LOCAL.md`. Đợt mới: báo kế hoạch trước, chưa code khi chưa được duyệt.
 
 ## Nguồn yêu cầu, theo thứ tự ưu tiên
 

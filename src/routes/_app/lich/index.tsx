@@ -1,6 +1,6 @@
 // UI15 — Màn lịch chính (module §7.1): Ngày / Tuần / Danh sách, lọc trạng thái, tìm tên hoặc SĐT, Cần xử lý.
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Search as SearchIcon, X } from 'lucide-react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Clock, Search as SearchIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AppointmentForm } from '~/components/lich/AppointmentForm'
 import { AttentionPanel } from '~/components/lich/AttentionPanel'
@@ -60,6 +60,11 @@ function SchedulePage() {
     <section className="flex flex-col gap-2 pt-1">
       <div className="flex items-center gap-2 px-4">
         <h1 className="screen-title m-0 flex-1">Lịch hẹn</h1>
+        {can('attendance.own') || can('attendance.approve') ? (
+          <Link to="/lich/cham-cong" className="lo-icon-btn" aria-label="Chấm công">
+            <Clock size={22} strokeWidth={1.7} />
+          </Link>
+        ) : null}
         <IconButton
           label={searchOpen ? 'Đóng tìm kiếm' : 'Tìm theo tên hoặc SĐT'}
           onClick={() => setSearchOpen((x) => !x)}
