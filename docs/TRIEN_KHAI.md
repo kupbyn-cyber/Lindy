@@ -9,7 +9,7 @@ Cập nhật 13/10/2026. Trước đó dùng Vibe Hosting Nhân Hòa (T02); các
 | Bảng quản lý | https://v2.tinhgon.xyz (mục **Đưa website lên mạng**) |
 | Địa chỉ app | Tên miền Vibe Host cấp, dạng `https://<tên>.n2.tinhgon.xyz` (SSL tự cấp) |
 | Mã nguồn | GitHub `kupbyn-cyber/Lindy` (riêng tư), nhánh `main`, nguồn **Git URL** + mã truy cập GitHub |
-| Build | `vite build`; chạy `npm start` = `node .output/server/index.mjs`, cổng `PORT` (mặc định **3000**) |
+| Build | Nixpacks, Node theo `engines.node`: `vite build`. Vibe Host nhận diện "vite" nên chạy **`npm run preview`** (= `npm start` = `node .output/server/index.mjs`), cổng `PORT` (mặc định **3000**). Thiếu script `preview` thì app chết ngay (crash-loop). |
 | Database | PostgreSQL của Vibe Host `linhdy-db`, chỉ có địa chỉ nội bộ. **Gắn vào website** ở trang DB → Website sử dụng → chọn Lindy: Vibe Host tự đặt `DATABASE_URL` và sao lưu cả dữ liệu. Không gắn thì lúc dựng nó cố tạo DB mới và hỏng vì gói Starter chỉ có 2 dịch vụ. |
 
 ## Khi app khởi động
