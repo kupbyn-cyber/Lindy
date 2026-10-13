@@ -127,3 +127,8 @@ Nguồn: kế hoạch `docs/plans/2026-10-12-dot-0-dot-1.md` mục 11, sau phả
 |---|---|---|---|
 | **K07** | Thử iPhone | **Bỏ mkcert** (thay K01). Thử Web Push trên iPhone thật ngay ở `https://lindy.vibe.vnws.com` (hosting tự cấp HTTPS). | Không cài chứng chỉ gốc lên iPhone. |
 | **K08** | Tài khoản trên hosting | Hosting không có dòng lệnh → app tự chuẩn bị DB khi khởi động (role, migration, dữ liệu nền, tài khoản Chủ đầu tiên từ biến môi trường) và có màn **Thêm → Tài khoản** cho Chủ. | Quyền mới `users.manage`, chỉ vai trò Chủ. Chi tiết: `docs/TRIEN_KHAI.md`. |
+
+## T03 — Chuyển sang Vibe Host Mắt Bão (13/10/2026, anh chốt)
+
+- **Hosting chạy thật: Vibe Host của Mắt Bão** (bảng quản lý `https://v2.tinhgon.xyz`), thay Nhân Hòa ở T02. Nguồn code giữ repo `github.com/kupbyn-cyber/Lindy`, nhánh `main`, kết nối bằng Git URL + mã truy cập.
+- Tên miền tạm do Vibe Host cấp, dạng `*.n2.tinhgon.xyz`. K07 áp dụng cho tên miền này.

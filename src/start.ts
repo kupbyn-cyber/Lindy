@@ -18,7 +18,8 @@ const serverSetup = createMiddleware().server(async ({ next, request }) => {
   try {
     applySecurityHeaders(result.response.headers, {
       path: new URL(request.url).pathname,
-      dev: process.env.NODE_ENV !== 'production',
+      // Theo bản build, không theo NODE_ENV (hosting có thể không đặt).
+      dev: import.meta.env.DEV,
     })
   } catch {
     // Response có header bất biến (hiếm) — bỏ qua.

@@ -6,7 +6,7 @@ Hướng dẫn cho AI lập trình khi làm việc trong thư mục này. Trao �
 
 App quản lý nội bộ cho Lindy Nailash Studio. Web mobile-first/PWA, ưu tiên Safari trên iPhone (toàn bộ nhân sự dùng iPhone). Giao diện tiếng Việt.
 
-**Nền tảng đã chốt (T01, `docs/TECH_STACK.md`):** kiến trúc như CEN WORK — TanStack Start (React 19, SSR), TanStack Router/Query, Vite, Tailwind v4, Nitro, PostgreSQL 16, phiên cookie tự viết, RLS qua transaction đặt role, migration runner SQL, Web Push qua outbox. Code nằm ngay tại thư mục này. **Chạy local trước**; đồng bộ GitHub và triển khai lên Vibe Hosting Nhân Hòa (T02, thay Mắt Bão) chỉ khi người dùng yêu cầu.
+**Nền tảng đã chốt (T01, `docs/TECH_STACK.md`):** kiến trúc như CEN WORK — TanStack Start (React 19, SSR), TanStack Router/Query, Vite, Tailwind v4, Nitro, PostgreSQL 16, phiên cookie tự viết, RLS qua transaction đặt role, migration runner SQL, Web Push qua outbox. Code nằm ngay tại thư mục này. **Chạy local trước**; đồng bộ GitHub và triển khai lên Vibe Host Mắt Bão (T03, thay Nhân Hòa ở T02) chỉ khi người dùng yêu cầu. Hướng dẫn: `docs/TRIEN_KHAI.md`.
 
 Đợt 0 và Đợt 1 đã có code (13/10/2026). Cách chạy, kiểm tra: `docs/CHAY_LOCAL.md`. Đợt mới: báo kế hoạch trước, chưa code khi chưa được duyệt.
 
@@ -24,7 +24,7 @@ Giao diện theo `design/design-system/README.md` và `tokens.json`. Dữ liệu
 
 ## Quy tắc không được tự thay đổi
 
-- Các quyết định D01–D17, Q01–Q44, G01–G26, A01–A05, B01–B15, C01–C16, T01, K01–K06 đã chốt, không hỏi lại, không tự sửa.
+- Các quyết định D01–D17, Q01–Q44, G01–G26, A01–A05, B01–B15, C01–C16, T01–T03, K01–K08 đã chốt, không hỏi lại, không tự sửa.
 - **Không tự đoán tham số còn thiếu** (giờ ca, thời lượng dịch vụ, sức chứa, giá còn trống, hạn mức chưa có). Xem `docs/OPEN_QUESTIONS.md`; thiếu thì hỏi.
 - Tiền lưu bằng **số nguyên VND**. Hiển thị `8.450.000đ`. Múi giờ `Asia/Ho_Chi_Minh`.
 - Chỉ đơn **Đã xác nhận** mới vào doanh thu, hoa hồng, KPI; doanh thu ghi theo ngày làm dịch vụ.

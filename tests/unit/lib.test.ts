@@ -6,7 +6,29 @@ import { normalizePhone } from '../../src/lib/phone'
 import { escapeLike, foldVietnamese } from '../../src/lib/text'
 import { addDays, fromLocal, startOfWeek, toLocalDate, toLocalTime, weekdayShort } from '../../src/lib/time'
 import { fromDbError } from '../../src/server/http/errors'
-import { classifyReleaseError } from '../../src/server/ops/release'
+import { classifyReleaseError, pickAdminUrl } from '../../src/server/ops/release'
+
+describe('Chọn chuỗi kết nối quản trị DB trên hosting', () => {
+  const admin = 'postgres://dbadmin:mk@db:5432/lindy'
+  const app = 'postgres://lindy_app:mk@db:5432/lindy'
+  const from = (vars: Record<string, string>) => (k: string) => vars[k]
+
+  it('DATABASE_ADMIN_URL thắng; local không có thì bỏ qua', () => {
+    expect(pickAdminUrl(from({ DATABASE_ADMIN_URL: admin, DATABASE_URL: app }), false)?.source).toBe(
+      'DATABASE_ADMIN_URL',
+    )
+    expect(pickAdminUrl(from({ DATABASE_URL: admin }), false)).toBeNull()
+  })
+  it('production: hosting tự điền DATABASE_URL bằng tài khoản quản trị → dùng nó', () => {
+    expect(pickAdminUrl(from({ DATABASE_URL: admin }), true)).toEqual({ url: admin, source: 'DATABASE_URL' })
+    expect(pickAdminUrl(from({ DATABASE_URL: app, MIGRATE_DATABASE_URL: admin }), true)?.source).toBe(
+      'MIGRATE_DATABASE_URL',
+    )
+  })
+  it('production: chỉ có lindy_app → không chuẩn bị lại', () => {
+    expect(pickAdminUrl(from({ DATABASE_URL: app }), true)).toBeNull()
+  })
+})
 
 describe('Lỗi khi chuẩn bị DB trên hosting → mã cho /api/health, không lộ bí mật', () => {
   it('phân loại lỗi kết nối, sai mật khẩu, lỗi lạ', () => {
