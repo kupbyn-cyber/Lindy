@@ -29,6 +29,7 @@ import { Route as AppLichIdRouteImport } from './routes/_app/lich/$id'
 import { Route as AppThemIndexRouteImport } from './routes/_app/them/index'
 import { Route as AppThemBaoCaoRouteImport } from './routes/_app/them/bao-cao'
 import { Route as AppThemCaiDatLichRouteImport } from './routes/_app/them/cai-dat-lich'
+import { Route as AppThemDanhMucRouteImport } from './routes/_app/them/danh-muc'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
 import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoan'
 import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
@@ -41,6 +42,7 @@ import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthPasswordRouteImport } from './routes/api/auth/password'
 import { Route as ApiCatalogIndexRouteImport } from './routes/api/catalog/index'
+import { Route as ApiCatalogKindRouteImport } from './routes/api/catalog/$kind'
 import { Route as ApiCustomersIndexRouteImport } from './routes/api/customers/index'
 import { Route as ApiCustomersIdRouteImport } from './routes/api/customers/$id'
 import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
@@ -161,6 +163,11 @@ const AppThemCaiDatLichRoute = AppThemCaiDatLichRouteImport.update({
   path: '/them/cai-dat-lich',
   getParentRoute: () => AppRoute,
 } as any)
+const AppThemDanhMucRoute = AppThemDanhMucRouteImport.update({
+  id: '/them/danh-muc',
+  path: '/them/danh-muc',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppThemDoiMatKhauRoute = AppThemDoiMatKhauRouteImport.update({
   id: '/them/doi-mat-khau',
   path: '/them/doi-mat-khau',
@@ -220,6 +227,11 @@ const ApiAuthPasswordRoute = ApiAuthPasswordRouteImport.update({
 const ApiCatalogIndexRoute = ApiCatalogIndexRouteImport.update({
   id: '/api/catalog/',
   path: '/api/catalog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCatalogKindRoute = ApiCatalogKindRouteImport.update({
+  id: '/api/catalog/$kind',
+  path: '/api/catalog/$kind',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCustomersIndexRoute = ApiCustomersIndexRouteImport.update({
@@ -342,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/lich/$id': typeof AppLichIdRoute
   '/them/bao-cao': typeof AppThemBaoCaoRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
+  '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
@@ -351,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
@@ -395,6 +409,7 @@ export interface FileRoutesByTo {
   '/lich/$id': typeof AppLichIdRoute
   '/them/bao-cao': typeof AppThemBaoCaoRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
+  '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
@@ -404,6 +419,7 @@ export interface FileRoutesByTo {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
@@ -450,6 +466,7 @@ export interface FileRoutesById {
   '/_app/lich/$id': typeof AppLichIdRoute
   '/_app/them/bao-cao': typeof AppThemBaoCaoRoute
   '/_app/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
+  '/_app/them/danh-muc': typeof AppThemDanhMucRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/_app/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/_app/them/thong-bao': typeof AppThemThongBaoRoute
@@ -459,6 +476,7 @@ export interface FileRoutesById {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
@@ -505,6 +523,7 @@ export interface FileRouteTypes {
     | '/lich/$id'
     | '/them/bao-cao'
     | '/them/cai-dat-lich'
+    | '/them/danh-muc'
     | '/them/doi-mat-khau'
     | '/them/tai-khoan'
     | '/them/thong-bao'
@@ -514,6 +533,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
+    | '/api/catalog/$kind'
     | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
@@ -558,6 +578,7 @@ export interface FileRouteTypes {
     | '/lich/$id'
     | '/them/bao-cao'
     | '/them/cai-dat-lich'
+    | '/them/danh-muc'
     | '/them/doi-mat-khau'
     | '/them/tai-khoan'
     | '/them/thong-bao'
@@ -567,6 +588,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
+    | '/api/catalog/$kind'
     | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
@@ -612,6 +634,7 @@ export interface FileRouteTypes {
     | '/_app/lich/$id'
     | '/_app/them/bao-cao'
     | '/_app/them/cai-dat-lich'
+    | '/_app/them/danh-muc'
     | '/_app/them/doi-mat-khau'
     | '/_app/them/tai-khoan'
     | '/_app/them/thong-bao'
@@ -621,6 +644,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
+    | '/api/catalog/$kind'
     | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
@@ -665,6 +689,7 @@ export interface RootRouteChildren {
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthPasswordRoute: typeof ApiAuthPasswordRoute
+  ApiCatalogKindRoute: typeof ApiCatalogKindRoute
   ApiCustomersIdRoute: typeof ApiCustomersIdRouteWithChildren
   ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
   ApiNotificationsUnreadCountRoute: typeof ApiNotificationsUnreadCountRoute
@@ -828,6 +853,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppThemCaiDatLichRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/them/danh-muc': {
+      id: '/_app/them/danh-muc'
+      path: '/them/danh-muc'
+      fullPath: '/them/danh-muc'
+      preLoaderRoute: typeof AppThemDanhMucRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/them/doi-mat-khau': {
       id: '/_app/them/doi-mat-khau'
       path: '/them/doi-mat-khau'
@@ -910,6 +942,13 @@ declare module '@tanstack/react-router' {
       path: '/api/catalog'
       fullPath: '/api/catalog/'
       preLoaderRoute: typeof ApiCatalogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/catalog/$kind': {
+      id: '/api/catalog/$kind'
+      path: '/api/catalog/$kind'
+      fullPath: '/api/catalog/$kind'
+      preLoaderRoute: typeof ApiCatalogKindRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/customers/': {
@@ -1064,6 +1103,7 @@ interface AppRouteChildren {
   AppLichIdRoute: typeof AppLichIdRoute
   AppThemBaoCaoRoute: typeof AppThemBaoCaoRoute
   AppThemCaiDatLichRoute: typeof AppThemCaiDatLichRoute
+  AppThemDanhMucRoute: typeof AppThemDanhMucRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
   AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
   AppThemThongBaoRoute: typeof AppThemThongBaoRoute
@@ -1082,6 +1122,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppLichIdRoute: AppLichIdRoute,
   AppThemBaoCaoRoute: AppThemBaoCaoRoute,
   AppThemCaiDatLichRoute: AppThemCaiDatLichRoute,
+  AppThemDanhMucRoute: AppThemDanhMucRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
   AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
   AppThemThongBaoRoute: AppThemThongBaoRoute,
@@ -1154,6 +1195,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthPasswordRoute: ApiAuthPasswordRoute,
+  ApiCatalogKindRoute: ApiCatalogKindRoute,
   ApiCustomersIdRoute: ApiCustomersIdRouteWithChildren,
   ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
   ApiNotificationsUnreadCountRoute: ApiNotificationsUnreadCountRoute,

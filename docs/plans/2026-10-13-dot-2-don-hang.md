@@ -233,7 +233,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   *Kiểm tra:* số khớp báo cáo cùng ngày; S29.
 - [x] **2.21 Báo cáo doanh thu (UI13, phần doanh thu).** Ngày: đơn đã xác nhận / chờ / huỷ, lượt khách, doanh thu gộp, giảm giá, thuần, theo thợ, tiền thu theo tài khoản, còn phải thu. Tháng: theo ngày, theo dịch vụ, theo thợ.
   *Kiểm tra:* test 30, 31 ở mức báo cáo; Σ các ngày = số tháng.
-- [ ] **2.22 Cài đặt danh mục (UI14, Linh).** Thêm, sửa, ngừng bán dịch vụ, combo; đổi giá có lịch sử.
+- [x] **2.22 Cài đặt danh mục (UI14, Linh).** Thêm, sửa, ngừng bán dịch vụ, combo; đổi giá có lịch sử.
   *Kiểm tra:* thêm mục mới → tìm thấy ngay khi tạo đơn; đổi giá không đổi đơn cũ; Nhung gọi API → 403.
 - [ ] **2.23 Chốt Đợt 2.** Phản biện lại toàn đợt (skill `phan-bien`); `bun run check`, build, `scan-bundle`; S30; cập nhật `CHAY_LOCAL.md`, `CLAUDE.md`; danh sách việc còn thiếu; báo kết quả.
 

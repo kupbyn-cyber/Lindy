@@ -16,11 +16,13 @@ describe('2.2 Danh mục', () => {
     expect(SEED_SERVICES).toHaveLength(28)
     expect(SEED_COMBOS).toHaveLength(4)
     const [n] = await owner<{ s: number; c: number; i: number }[]>`
-      select (select count(*)::int from services) as s, (select count(*)::int from combos) as c,
-             (select count(*)::int from combo_items) as i`
+      select (select count(*)::int from services where code !~ '^DV') as s,
+             (select count(*)::int from combos where code !~ '^CBX') as c,
+             (select count(*)::int from combo_items ci join combos x on x.id = ci.combo_id where x.code !~ '^CBX') as i`
     expect(n).toEqual({ s: 28, c: 4, i: 15 })
     const rows = await owner<{ code: string; hasHardening: boolean }[]>`
-      select c.code, h.has_hardening from combos c join combo_hardening h on h.combo_id = c.id order by c.code`
+      select c.code, h.has_hardening from combos c join combo_hardening h on h.combo_id = c.id
+      where c.code !~ '^CBX' order by c.code`
     expect(Object.fromEntries(rows.map((r) => [r.code, r.hasHardening]))).toEqual({
       CBO139: true,
       CBO179: false,
@@ -37,8 +39,9 @@ describe('2.2 Danh mục', () => {
     try {
       await owner.begin((tx) => seedBase(tx))
       const [n] = await owner<{ s: number; c: number; i: number }[]>`
-        select (select count(*)::int from services) as s, (select count(*)::int from combos) as c,
-               (select count(*)::int from combo_items) as i`
+        select (select count(*)::int from services where code !~ '^DV') as s,
+               (select count(*)::int from combos where code !~ '^CBX') as c,
+               (select count(*)::int from combo_items ci join combos x on x.id = ci.combo_id where x.code !~ '^CBX') as i`
       expect(n).toEqual({ s: 28, c: 4, i: 15 })
       const [mi] = await owner<{ priceMin: string }[]>`select price_min from services where code = 'MI02'`
       expect(Number(mi!.priceMin)).toBe(230000)
@@ -49,7 +52,10 @@ describe('2.2 Danh mục', () => {
 
   it('thợ đọc được danh mục; không sửa, không xoá được', async () => {
     const trang = seed().users.trang!.id
-    const [r] = await withUser(trang, (tx) => tx<{ n: number }[]>`select count(*)::int as n from services`)
+    const [r] = await withUser(
+      trang,
+      (tx) => tx<{ n: number }[]>`select count(*)::int as n from services where code !~ '^DV'`,
+    )
     expect(r!.n).toBe(28)
     await expectPgError(
       withUser(trang, (tx) => tx`update services set price_min = 1 where code = 'CB01'`),
@@ -79,7 +85,7 @@ describe('2.2 Danh mục', () => {
   it('người ở cơ sở 2 cùng tổ chức đọc được danh mục chung', async () => {
     const [r] = await withUser(
       seed().users.mai!.id,
-      (tx) => tx<{ n: number }[]>`select count(*)::int as n from combos`,
+      (tx) => tx<{ n: number }[]>`select count(*)::int as n from combos where code !~ '^CBX'`,
     )
     expect(r!.n).toBe(4)
   })

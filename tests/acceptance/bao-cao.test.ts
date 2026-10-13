@@ -5,7 +5,7 @@ import type { ItemInput } from '../../src/lib/order-math'
 import { addDays, toLocalDate } from '../../src/lib/time'
 import { createCustomer } from '../../src/server/customers/service'
 import { closeSql } from '../../src/server/db/client'
-import { AppError } from '../../src/server/http/errors'
+import type { AppError } from '../../src/server/http/errors'
 import { recordPayment } from '../../src/server/orders/payments'
 import { confirmOrder, createOrder, markDone } from '../../src/server/orders/service'
 import { dayReport, monthReport, overview } from '../../src/server/reports/service'
@@ -20,7 +20,8 @@ const today = toLocalDate(new Date())
 
 beforeAll(async () => {
   for (const k of ['linh', 'nhung', 'trang'] as const) S[k] = await sessionOf(k)
-  for (const r of await owner<{ id: string; code: string }[]>`select id, code from services`) svcId[r.code] = r.id
+  for (const r of await owner<{ id: string; code: string }[]>`select id, code from services`)
+    svcId[r.code] = r.id
 })
 afterAll(async () => {
   await owner.end()
@@ -55,7 +56,14 @@ describe('Báo cáo ngày (PRD §11)', () => {
     const b = await order(day, [svc('CB02', 'nhung')])
     await markDone(auth('nhung'), b.id, b.version) // chờ xác nhận: chưa vào doanh thu
     const r = await dayReport(auth('linh'), { date: day })
-    expect(r.revenue).toMatchObject({ orders: 1, guests: 1, net: 220000, paid: 200000, due: 20000, unpaidOrders: 1 })
+    expect(r.revenue).toMatchObject({
+      orders: 1,
+      guests: 1,
+      net: 220000,
+      paid: 200000,
+      due: 20000,
+      unpaidOrders: 1,
+    })
     expect(r.orders).toMatchObject({ confirmed: 1, awaiting: 1 })
     expect(r.byStaff).toEqual([{ userId: uid('trang'), name: 'Trang', amount: 220000, orders: 1 }])
     // Tiền thu ghi theo ngày nhận tiền (hôm nay), không theo ngày làm dịch vụ
