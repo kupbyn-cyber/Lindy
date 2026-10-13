@@ -117,13 +117,13 @@ function CatalogPage() {
         </div>
       </div>
       <ServiceSheet
-        key={editService === 'new' ? 'new' : (editService?.id ?? 'none')}
+        key={`service-${editService === 'new' ? 'new' : (editService?.id ?? 'none')}`}
         value={editService}
         categories={categories}
         onClose={() => setEditService(null)}
       />
       <ComboSheet
-        key={editCombo === 'new' ? 'new' : (editCombo?.id ?? 'none')}
+        key={`combo-${editCombo === 'new' ? 'new' : (editCombo?.id ?? 'none')}`}
         value={editCombo}
         services={services}
         onClose={() => setEditCombo(null)}

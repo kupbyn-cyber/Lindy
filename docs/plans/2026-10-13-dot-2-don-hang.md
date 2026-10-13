@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 2 — Đơn hàng
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026 (Q-A chọn a → K12, Q-B chọn a → K13), đang làm. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026 (Q-A chọn a → K12, Q-B chọn a → K13). ĐÃ LÀM 2A và 2B ngày 13/10/2026; kết quả ở mục 15–17. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (mới nhất: K09–K11); PRD v1.2 §4, §5, §6, §10, §11, §12, §13, §14, §17, §18; module lịch v1.2 §5.3, §5.4, §10, §12, §13 (test 26–28); `data/services.csv`, `data/combos.csv`; `design/design-system/` (Fab, Money, SummaryCard, OrderRow).
 
 Ký hiệu `[Pn]`: điểm phản biện số n ở mục 11 (nối tiếp P1–P25 của Đợt 0–1). `Sn`: test bảo mật ở mục 10.2.
@@ -235,7 +235,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   *Kiểm tra:* test 30, 31 ở mức báo cáo; Σ các ngày = số tháng.
 - [x] **2.22 Cài đặt danh mục (UI14, Linh).** Thêm, sửa, ngừng bán dịch vụ, combo; đổi giá có lịch sử.
   *Kiểm tra:* thêm mục mới → tìm thấy ngay khi tạo đơn; đổi giá không đổi đơn cũ; Nhung gọi API → 403.
-- [ ] **2.23 Chốt Đợt 2.** Phản biện lại toàn đợt (skill `phan-bien`); `bun run check`, build, `scan-bundle`; S30; cập nhật `CHAY_LOCAL.md`, `CLAUDE.md`; danh sách việc còn thiếu; báo kết quả.
+- [x] **2.23 Chốt Đợt 2.** (phản biện xong; các điểm P38–P45 ở mục 17 chờ chủ chọn sửa) Phản biện lại toàn đợt (skill `phan-bien`); `bun run check`, build, `scan-bundle`; S30; cập nhật `CHAY_LOCAL.md`, `CLAUDE.md`; danh sách việc còn thiếu; báo kết quả.
 
 ## 10. Kiểm thử
 
@@ -371,3 +371,45 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 - 2B (bước 2.17–2.23): tab Khách, phiếu bảo hành và ưu đãi bù khiếu nại, sửa đơn đã xác nhận, Tổng quan có số tiền, báo cáo, cài đặt danh mục.
 - Chưa thử trên iPhone thật; chưa đẩy lên GitHub/hosting.
+
+## 16. Kết quả 2B (13/10/2026)
+
+### Đã kiểm bằng bằng chứng
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `bun run check` | Đạt. 201/201 test, 16 file (gồm 103 test Đợt 0–1, 77 test 2A) |
+| Test PRD §18: 16 (lịch sử khách, không tự gộp trùng tên), 33 (ưu đãi bù khiếu nại 20% → doanh thu 400.000đ, cơ sở hoa hồng 500.000đ), 50 (bảo hành trên phiếu xử lý), 30, 31 ở mức báo cáo | Đạt, tự động (`tests/acceptance/don-hang-2b.test.ts`, `bao-cao.test.ts`, `tests/integration/customers.test.ts`) |
+| S27 (sửa đơn đã xác nhận thêm phần của mình → Cần xem lại), kể cả khi sửa thẳng DB | Đạt |
+| Phiếu ưu đãi chỉ dùng một lần, đúng khách, đúng %; phiếu đã dùng không huỷ được | Đạt (service và constraint trigger, khoá dòng phiếu khi commit) |
+| Cài đặt danh mục: thêm dịch vụ tìm thấy ngay; đổi giá không đổi đơn cũ, có lịch sử giá; Nhung, thợ bị chặn | Đạt (`tests/integration/catalog-manage.test.ts`) |
+| `bun run build` + `scan-bundle` | Build được; 47 file trình duyệt không chứa bí mật |
+| Giao diện 375px (Linh, dữ liệu demo) | Tổng quan có số tiền, Cần xử lý đơn; Báo cáo ngày; Danh mục; Khách; lập phiếu xử lý sửa miễn phí; sửa đơn đã xác nhận (thiếu lý do bị chặn, có lý do lưu được, hiện "Sửa sau xác nhận" và lịch sử thao tác). Không cuộn ngang. Sửa một lỗi trùng `key` React ở trang danh mục |
+
+### Mặc định tôi tự đặt ở 2B (đổi được)
+
+| Việc | Mặc định |
+|---|---|
+| Phiếu xử lý | Chỉ Nhung, Linh lập. "Tính phí" ghi kết quả trên phiếu; đơn tính phí tạo như đơn thường (chưa liên kết ngược về phiếu) |
+| Ưu đãi bù khiếu nại | Chỉ cho lỗi kỹ thuật và khách có hồ sơ; chọn 10%, 15% hoặc 20%; áp cả bill, một lần, cùng cơ sở |
+| Sửa đơn đã xác nhận | Nhung, Linh; lý do bắt buộc; bị chặn nếu thành tiền mới nhỏ hơn số đã thu (hoàn tiền ở Đợt 3) |
+| Danh mục | Mã tự sinh `DV001…`, combo `CBX01…`; thành phần combo không sửa sau khi tạo; không xoá, chỉ ngừng bán |
+| Báo cáo | Tiền thu theo ngày nhận tiền và tài khoản; doanh thu theo ngày làm dịch vụ; khách mới = lần làm đầu tiên rơi vào tháng |
+
+### Khác với kế hoạch
+
+- Phiếu xử lý, sửa đơn đã xác nhận gộp vào migration `0009_orders` (chưa đẩy đi đâu); thêm `0010_catalog_manage`. DB dev dựng lại một lần nữa bằng dữ liệu mẫu.
+- Báo cáo tính bằng truy vấn trực tiếp, không cần view riêng.
+
+## 17. Phản biện sau khi làm (13/10/2026) — chưa sửa, chờ chủ chọn
+
+| Điểm | Mức | Vấn đề | Đề xuất |
+|---|---|---|---|
+| P38 | 🟡 | Thợ lấy được SĐT khách hàng loạt: tìm khách (20 kết quả, SĐT che) rồi mở từng hồ sơ (đủ SĐT); đọc không giới hạn tần suất, không ghi audit (`src/server/customers/service.ts` `getCustomer`) | Giới hạn số lần mở hồ sơ mỗi phút và ghi audit lần xem SĐT. B08 vẫn cho xem SĐT nên chỉ hạn chế được tốc độ |
+| P39 | 🟡 | Người được chia phần sửa được cả đơn Đang làm: Chin tạo đơn, chia một dòng cho Trang → Trang thấy đơn (K09) và chuyển tiền dòng của Chin sang mình trước khi Làm xong (`0009_orders.sql` `orders_guard` nhánh `in_progress`). Có lịch sử nhưng Nhung không có nhãn cảnh báo khi xác nhận | Quy tắc nghiệp vụ, cần chủ chọn: chỉ người tạo + Nhung, Linh sửa đơn Đang làm; hoặc giữ như hiện tại và gắn nhãn "phần chia bị người khác sửa" |
+| P40 | 🟡 | Nhung tự lập phiếu ưu đãi bù khiếu nại (tối đa 20%, quán chịu) rồi tự duyệt ở bill sau; không qua Linh, không vào Cần xem lại (`src/server/orders/tickets.ts`) | Phiếu ưu đãi do người không phải chủ lập → vào Cần xem lại của Linh |
+| P41 | 🟡 | Đơn Chờ xác nhận ngày cũ dễ bị quên: danh sách đơn mặc định chỉ hôm nay; Tổng quan đếm 31 ngày. Đơn chưa xác nhận thì chưa vào doanh thu | Lọc "Chờ xác nhận" không giới hạn ngày; Tổng quan đếm mọi ngày |
+| P42 | ⚪ | Tầng DB kiểm tổng tiền khớp nhau và mức duyệt, nhưng không kiểm giá dòng với danh mục. Ai chạy được SQL tuỳ ý dưới `app_user` ghi được dòng giá thấp không qua duyệt | Cùng giới hạn đã nêu ở P13; hiện không có đường SQL injection (chỉ tagged template, lint cấm `sql.unsafe`). Ghi nhận, chưa cần sửa |
+| P43 | ⚪ | Chưa có test ngẫu nhiên so mức duyệt tính ở TypeScript với SQL (chỉ có test theo ca); lệch thì lưu đơn báo "Mức duyệt không khớp" | Cần kiểm tra thêm: thêm test sinh đơn ngẫu nhiên chạy qua DB |
+| P44 | ⚪ | `app_user` tự thêm được dòng lịch sử đơn dưới tên mình cho đơn mình thấy (chỉ qua SQL trực tiếp) | Chuyển ghi lịch sử vào hàm/trigger, bỏ quyền INSERT trực tiếp |
+| P45 | ⚪ | Hai người cùng thêm dịch vụ mới một lúc có thể trùng mã `DVxxx` → lỗi chung "Dữ liệu đã tồn tại"; bấm lại là được | Khoá khi sinh mã hoặc thử lại tự động |

@@ -1,6 +1,6 @@
 # Chạy LINDY OS ở local
 
-Cập nhật 13/10/2026, sau Đợt 0, Đợt 1 và Đợt 2A (đơn hàng). Máy: Windows 11, Node 24, Bun 1.4.
+Cập nhật 13/10/2026, sau Đợt 0, Đợt 1 và Đợt 2 (đơn hàng). Máy: Windows 11, Node 24, Bun 1.4.
 
 ## Chạy hằng ngày
 
@@ -38,12 +38,15 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 | `bun run db:status` | Migration nào đã chạy |
 | `bun run db:reset -- --confirm=lindy_dev` | Xoá sạch DB dev và chạy lại migration (chỉ DB localhost tên `_dev`/`_test`) |
 
-## Thử đơn hàng (Đợt 2A)
+## Thử đơn hàng (Đợt 2)
 
 1. Đăng nhập `trang@lindy.test` → nút tròn **+** (Tạo đơn) → Thêm dịch vụ → tích chọn (gõ “tdc”, “son gel”, “mat meo”) → Thêm → **Làm xong**. Khách lẻ, thợ mặc định là người tạo.
 2. Đăng nhập `nhung@lindy.test` → Đơn hàng → mở đơn Chờ xác nhận → **Xác nhận bill** → ô ghi tiền thu mở sẵn → Lưu.
 3. Từ lịch: mở một lịch hôm nay → **Khách đã đến · Tạo đơn** → đơn mở sẵn với tên, SĐT khách; lịch sang Đang làm; xác nhận đơn → lịch Hoàn thành.
 4. Thợ chỉ thấy đơn mình tạo hoặc có phần mình (K09); sau Làm xong chỉ Nhung, Linh sửa được (K10).
+5. Đăng nhập `linh@lindy.test`: **Tổng quan** (Hôm nay/Tháng, doanh thu thợ, Cần xử lý đơn); **Thêm → Báo cáo doanh thu**; **Thêm → Danh mục dịch vụ** (thêm, sửa giá, ngừng bán).
+6. Đơn đã xác nhận: **Lập phiếu xử lý** (sửa miễn phí trong hạn, tính phí, ưu đãi bill sau); **Sửa đơn** cần lý do. Ưu đãi bù khiếu nại hiện ở đơn sau của khách đó, bấm "Áp ưu đãi".
+7. Tab **Khách**: tìm tên/SĐT, hồ sơ, lịch sử đơn; Nhung, Linh sửa tên/SĐT. Form lịch có "Chọn khách có sẵn".
 
 ## Quản trị tài khoản (CLI, chưa có màn hình)
 
