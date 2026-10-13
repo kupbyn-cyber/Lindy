@@ -26,6 +26,11 @@ export type OrderCan = {
   createTicket: boolean
   /** K15: Linh đánh dấu đã xem phiếu ưu đãi do người khác lập */
   reviewTicket: boolean
+  /** K18: phiếu hoàn cho đơn đã xác nhận (Nhung, Linh); còn cần số đã thu − đã hoàn > 0 */
+  refund: boolean
+  /** Ghi tip khách chuyển khoản (Nhung, Linh — cashbook.manage) */
+  recordTip: boolean
+  voidTip: boolean
 }
 
 export function orderCan(
@@ -61,14 +66,19 @@ export function orderCan(
     confirm: canConfirmRole && !confirmBlocked,
     confirmBlocked,
     approveDiscount: open && needsApproval && levelAtLeast(mine, o.requiredLevel),
+    // Đơn đã xác nhận: Nhung, Linh huỷ khi đã hoàn hết tiền thu (K18, DB kiểm)
     cancel:
-      open &&
-      (has('order.confirm') ||
-        (o.status === 'in_progress' && o.createdBy === userId && has('order.create_draft'))),
+      (open &&
+        (has('order.confirm') ||
+          (o.status === 'in_progress' && o.createdBy === userId && has('order.create_draft')))) ||
+      (o.status === 'confirmed' && has('order.refund')),
     recordPayment: (o.status === 'awaiting_confirmation' || o.status === 'confirmed') && has('order.confirm'),
     voidPayment: has('order.confirm'),
     markReviewed: o.needsOwnerReview && !o.reviewedAt && has('review_queue.read'),
     createTicket: o.status === 'confirmed' && has('order.confirm'),
     reviewTicket: has('review_queue.read'),
+    refund: o.status === 'confirmed' && has('order.refund'),
+    recordTip: (o.status === 'awaiting_confirmation' || o.status === 'confirmed') && has('cashbook.manage'),
+    voidTip: has('cashbook.manage'),
   }
 }

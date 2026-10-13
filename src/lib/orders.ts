@@ -26,12 +26,16 @@ export const PAYMENT_LABEL: Record<PaymentStatus, string> = {
   unpaid: 'Chưa thu',
   partial: 'Thu một phần',
   paid: 'Đã thu đủ',
+  refund_partial: 'Hoàn một phần',
+  refund_full: 'Hoàn toàn bộ',
 }
 
 export const PAYMENT_TONE: Record<PaymentStatus, ChipTone> = {
   unpaid: 'danger',
   partial: 'warning',
   paid: 'success',
+  refund_partial: 'warning',
+  refund_full: 'neutral',
 }
 
 export const LEVEL_NOTE: Record<Level, string | null> = {

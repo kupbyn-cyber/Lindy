@@ -1,11 +1,19 @@
-// POST /api/orders/:id/done | confirm | cancel | approve-discounts | review | payments | tickets
+// POST /api/orders/:id/done | confirm | cancel | approve-discounts | review | payments | tickets | refunds | tips
 // GET  /api/orders/:id/audit
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '~/server/auth/context'
 import { notFound } from '~/server/http/errors'
 import { handle, limitWrites, readBody } from '~/server/http/route'
 import { recordPayment } from '~/server/orders/payments'
-import { CancelOrderBody, PaymentBody, TicketBody, VersionBody } from '~/server/orders/schema'
+import { refundOrder } from '~/server/orders/refunds'
+import {
+  CancelOrderBody,
+  PaymentBody,
+  RefundBody,
+  TicketBody,
+  TipBody,
+  VersionBody,
+} from '~/server/orders/schema'
 import {
   approveDiscounts,
   cancelOrder,
@@ -15,6 +23,7 @@ import {
   orderAudit,
 } from '~/server/orders/service'
 import { createTicket } from '~/server/orders/tickets'
+import { recordTip } from '~/server/orders/tips'
 
 export const Route = createFileRoute('/api/orders/$id/$action')({
   server: {
@@ -53,6 +62,14 @@ export const Route = createFileRoute('/api/orders/$id/$action')({
               })
             case 'tickets':
               return Response.json(await createTicket(auth, id, await readBody(request, TicketBody)), {
+                status: 201,
+              })
+            case 'refunds':
+              return Response.json(await refundOrder(auth, id, await readBody(request, RefundBody)), {
+                status: 201,
+              })
+            case 'tips':
+              return Response.json(await recordTip(auth, id, await readBody(request, TipBody)), {
                 status: 201,
               })
             default:

@@ -65,6 +65,7 @@ import { Route as ApiPushSubscriptionsRouteImport } from './routes/api/push/subs
 import { Route as ApiPushTestRouteImport } from './routes/api/push/test'
 import { Route as ApiReportsKindRouteImport } from './routes/api/reports/$kind'
 import { Route as ApiStaffIndexRouteImport } from './routes/api/staff/index'
+import { Route as ApiTipsIndexRouteImport } from './routes/api/tips/index'
 import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
 import { Route as ApiCustomersIdCompensationsRouteImport } from './routes/api/customers/$id.compensations'
@@ -74,7 +75,9 @@ import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notific
 import { Route as ApiOrdersIdActionRouteImport } from './routes/api/orders/$id.$action'
 import { Route as ApiPaymentsIdActionRouteImport } from './routes/api/payments/$id.$action'
 import { Route as ApiPushSubscriptionsIdRouteImport } from './routes/api/push/subscriptions.$id'
+import { Route as ApiRefundsIdActionRouteImport } from './routes/api/refunds/$id.$action'
 import { Route as ApiTicketsIdActionRouteImport } from './routes/api/tickets/$id.$action'
+import { Route as ApiTipsIdActionRouteImport } from './routes/api/tips/$id.$action'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -358,6 +361,11 @@ const ApiStaffIndexRoute = ApiStaffIndexRouteImport.update({
   path: '/api/staff/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTipsIndexRoute = ApiTipsIndexRouteImport.update({
+  id: '/api/tips/',
+  path: '/api/tips/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAccountsIdActionRoute = ApiAccountsIdActionRouteImport.update({
   id: '/api/accounts/$id/$action',
   path: '/api/accounts/$id/$action',
@@ -404,9 +412,19 @@ const ApiPushSubscriptionsIdRoute = ApiPushSubscriptionsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiPushSubscriptionsRoute,
 } as any)
+const ApiRefundsIdActionRoute = ApiRefundsIdActionRouteImport.update({
+  id: '/api/refunds/$id/$action',
+  path: '/api/refunds/$id/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTicketsIdActionRoute = ApiTicketsIdActionRouteImport.update({
   id: '/api/tickets/$id/$action',
   path: '/api/tickets/$id/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTipsIdActionRoute = ApiTipsIdActionRouteImport.update({
+  id: '/api/tips/$id/$action',
+  path: '/api/tips/$id/$action',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -466,6 +484,7 @@ export interface FileRoutesByFullPath {
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
+  '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
@@ -475,7 +494,9 @@ export interface FileRoutesByFullPath {
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
+  '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
+  '/api/tips/$id/$action': typeof ApiTipsIdActionRoute
 }
 export interface FileRoutesByTo {
   '/dang-nhap': typeof DangNhapRoute
@@ -533,6 +554,7 @@ export interface FileRoutesByTo {
   '/api/notifications': typeof ApiNotificationsIndexRoute
   '/api/orders': typeof ApiOrdersIndexRoute
   '/api/staff': typeof ApiStaffIndexRoute
+  '/api/tips': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
@@ -542,7 +564,9 @@ export interface FileRoutesByTo {
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
+  '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
+  '/api/tips/$id/$action': typeof ApiTipsIdActionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -602,6 +626,7 @@ export interface FileRoutesById {
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
+  '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
@@ -611,7 +636,9 @@ export interface FileRoutesById {
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
+  '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
+  '/api/tips/$id/$action': typeof ApiTipsIdActionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -671,6 +698,7 @@ export interface FileRouteTypes {
     | '/api/notifications/'
     | '/api/orders/'
     | '/api/staff/'
+    | '/api/tips/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/customers/$id/compensations'
@@ -680,7 +708,9 @@ export interface FileRouteTypes {
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
     | '/api/push/subscriptions/$id'
+    | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
+    | '/api/tips/$id/$action'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dang-nhap'
@@ -738,6 +768,7 @@ export interface FileRouteTypes {
     | '/api/notifications'
     | '/api/orders'
     | '/api/staff'
+    | '/api/tips'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/customers/$id/compensations'
@@ -747,7 +778,9 @@ export interface FileRouteTypes {
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
     | '/api/push/subscriptions/$id'
+    | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
+    | '/api/tips/$id/$action'
   id:
     | '__root__'
     | '/_app'
@@ -806,6 +839,7 @@ export interface FileRouteTypes {
     | '/api/notifications/'
     | '/api/orders/'
     | '/api/staff/'
+    | '/api/tips/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/customers/$id/compensations'
@@ -815,7 +849,9 @@ export interface FileRouteTypes {
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
     | '/api/push/subscriptions/$id'
+    | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
+    | '/api/tips/$id/$action'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -856,12 +892,15 @@ export interface RootRouteChildren {
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   ApiOrdersIndexRoute: typeof ApiOrdersIndexRoute
   ApiStaffIndexRoute: typeof ApiStaffIndexRoute
+  ApiTipsIndexRoute: typeof ApiTipsIndexRoute
   ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
   ApiDepositsIdActionRoute: typeof ApiDepositsIdActionRoute
   ApiExpensesIdActionRoute: typeof ApiExpensesIdActionRoute
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
   ApiPaymentsIdActionRoute: typeof ApiPaymentsIdActionRoute
+  ApiRefundsIdActionRoute: typeof ApiRefundsIdActionRoute
   ApiTicketsIdActionRoute: typeof ApiTicketsIdActionRoute
+  ApiTipsIdActionRoute: typeof ApiTipsIdActionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1258,6 +1297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStaffIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tips/': {
+      id: '/api/tips/'
+      path: '/api/tips'
+      fullPath: '/api/tips/'
+      preLoaderRoute: typeof ApiTipsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/accounts/$id/$action': {
       id: '/api/accounts/$id/$action'
       path: '/api/accounts/$id/$action'
@@ -1321,11 +1367,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushSubscriptionsIdRouteImport
       parentRoute: typeof ApiPushSubscriptionsRoute
     }
+    '/api/refunds/$id/$action': {
+      id: '/api/refunds/$id/$action'
+      path: '/api/refunds/$id/$action'
+      fullPath: '/api/refunds/$id/$action'
+      preLoaderRoute: typeof ApiRefundsIdActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/tickets/$id/$action': {
       id: '/api/tickets/$id/$action'
       path: '/api/tickets/$id/$action'
       fullPath: '/api/tickets/$id/$action'
       preLoaderRoute: typeof ApiTicketsIdActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tips/$id/$action': {
+      id: '/api/tips/$id/$action'
+      path: '/api/tips/$id/$action'
+      fullPath: '/api/tips/$id/$action'
+      preLoaderRoute: typeof ApiTipsIdActionRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -1461,12 +1521,15 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   ApiOrdersIndexRoute: ApiOrdersIndexRoute,
   ApiStaffIndexRoute: ApiStaffIndexRoute,
+  ApiTipsIndexRoute: ApiTipsIndexRoute,
   ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
   ApiDepositsIdActionRoute: ApiDepositsIdActionRoute,
   ApiExpensesIdActionRoute: ApiExpensesIdActionRoute,
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
   ApiPaymentsIdActionRoute: ApiPaymentsIdActionRoute,
+  ApiRefundsIdActionRoute: ApiRefundsIdActionRoute,
   ApiTicketsIdActionRoute: ApiTicketsIdActionRoute,
+  ApiTipsIdActionRoute: ApiTipsIdActionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

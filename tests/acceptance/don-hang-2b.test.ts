@@ -117,7 +117,7 @@ describe('2.19 Sửa đơn đã xác nhận (D04)', () => {
     })
   })
 
-  it('thợ không sửa được đơn đã xác nhận; tổng mới nhỏ hơn số đã thu → 422 (cần phiếu hoàn ở Đợt 3)', async () => {
+  it('thợ không sửa được đơn đã xác nhận; tổng mới nhỏ hơn số đã thu → 422 (dùng Hoàn tiền, Đợt 3)', async () => {
     const o = await confirmed({ items: [svc('MG03', ['trang'])] })
     expect(
       (
@@ -145,7 +145,7 @@ describe('2.19 Sửa đơn đã xác nhận (D04)', () => {
       }),
     )
     expect(e.status).toBe(422)
-    expect(e.message).toMatch(/phiếu hoàn/)
+    expect(e.message).toMatch(/Hoàn tiền/)
   })
 
   it('S27 — Nhung sửa đơn đã xác nhận để thêm phần của mình → vào lại Cần xem lại của Linh', async () => {

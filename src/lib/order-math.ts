@@ -465,8 +465,10 @@ export function warrantyUntil(serviceDate: string, hasHardening: boolean) {
   return addDays(serviceDate, hasHardening ? 7 : 3)
 }
 
-export type PaymentStatus = 'unpaid' | 'partial' | 'paid'
-export function paymentStatus(net: number, paid: number): PaymentStatus {
+export type PaymentStatus = 'unpaid' | 'partial' | 'paid' | 'refund_partial' | 'refund_full'
+/** Trạng thái thu (PRD §6.3): tự tính từ phải thu, đã thu (kể cả trừ cọc), đã hoàn (Đợt 3). */
+export function paymentStatus(net: number, paid: number, refunded = 0): PaymentStatus {
+  if (refunded > 0) return refunded >= paid ? 'refund_full' : 'refund_partial'
   if (paid >= net) return 'paid'
   return paid > 0 ? 'partial' : 'unpaid'
 }
@@ -475,4 +477,20 @@ export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   unpaid: 'Chưa thu',
   partial: 'Thu một phần',
   paid: 'Đã thu đủ',
+  refund_partial: 'Hoàn một phần',
+  refund_full: 'Hoàn toàn bộ',
+}
+
+/**
+ * Chia tip cho thợ theo phần tiền của từng người trên đơn (Q15); phần lẻ do làm tròn vào người có phần lớn nhất.
+ * Khách chỉ định thì nhập tay, không dùng hàm này.
+ */
+export function splitTip(amount: number, shares: { userId: string; amount: number }[]) {
+  const total = shares.reduce((s, x) => s + x.amount, 0)
+  if (amount <= 0 || total <= 0) return []
+  const sorted = [...shares].filter((s) => s.amount > 0).sort((a, b) => b.amount - a.amount)
+  const parts = sorted.map((s) => ({ userId: s.userId, amount: Math.floor((amount * s.amount) / total) }))
+  const rest = amount - parts.reduce((s, x) => s + x.amount, 0)
+  if (parts[0]) parts[0].amount += rest
+  return parts.filter((p) => p.amount > 0)
 }

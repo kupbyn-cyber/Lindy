@@ -303,6 +303,31 @@ export type PaymentView = {
   voidedByName: string | null
 }
 
+export type RefundView = {
+  id: string
+  amount: number
+  method: 'cash' | 'transfer'
+  accountName: string
+  reason: string
+  refundedByName: string | null
+  refundedAt: string
+  needsOwnerReview: boolean
+  /** Phần trừ vào doanh thu từng thợ */
+  allocations: { name: string; amount: number }[]
+}
+
+export type TipView = {
+  id: string
+  staffUserId: string
+  staffName: string
+  amount: number
+  recordedByName: string | null
+  recordedAt: string
+  paid: boolean
+  voided: boolean
+  voidReason: string | null
+}
+
 export type TicketView = {
   id: string
   issue: string
@@ -356,6 +381,12 @@ export type OrderDetail = {
   dueAmount: number
   /** Cọc đã xác nhận của lịch chưa trừ vào bill nào (module §10) */
   depositAvailable: number
+  /** Đã hoàn (phiếu hoàn, Đợt 3) */
+  refundedAmount: number
+  /** Đã thu − đã hoàn: số còn hoàn được tối đa; bằng 0 thì huỷ được đơn đã xác nhận */
+  refundable: number
+  refunds: RefundView[]
+  tips: TipView[]
   paymentStatus: PaymentStatus
   requiredLevel: Level
   approval: { byName: string | null; level: Level | null; at: string | null; valid: boolean } | null
@@ -447,6 +478,46 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
            p.received_at, p.recorded_by, p.voided_at, p.void_reason, p.voided_by
     from payments p left join money_accounts m on m.id = p.money_account_id
     where p.order_id = ${o.id} order by p.received_at`
+  const refundRows = await tx<
+    {
+      id: string
+      amount: string
+      method: 'cash' | 'transfer'
+      accountName: string
+      reason: string
+      refundedByName: string | null
+      refundedAt: Date
+      needsOwnerReview: boolean
+      reviewedAt: Date | null
+    }[]
+  >`
+    select r.id, r.amount, r.method, m.name as account_name, r.reason, u.display_name as refunded_by_name,
+           r.refunded_at, r.needs_owner_review, r.reviewed_at
+    from order_refunds r join money_accounts m on m.id = r.money_account_id left join users u on u.id = r.refunded_by
+    where r.order_id = ${o.id} order by r.refunded_at`
+  const refundAllocs = refundRows.length
+    ? await tx<{ refundId: string; name: string; amount: string }[]>`
+        select a.refund_id, u.display_name as name, a.amount
+        from order_refund_allocations a join users u on u.id = a.staff_user_id
+        where a.order_id = ${o.id} order by a.amount desc`
+    : []
+  const tipRows = await tx<
+    {
+      id: string
+      staffUserId: string
+      staffName: string
+      amount: string
+      recordedByName: string | null
+      recordedAt: Date
+      payoutId: string | null
+      voidedAt: Date | null
+      voidReason: string | null
+    }[]
+  >`
+    select t.id, t.staff_user_id, us.display_name as staff_name, t.amount, ur.display_name as recorded_by_name,
+           t.recorded_at, t.payout_id, t.voided_at, t.void_reason
+    from tip_holdings t join users us on us.id = t.staff_user_id left join users ur on ur.id = t.recorded_by
+    where t.order_id = ${o.id} order by t.recorded_at`
   // Cọc đã xác nhận của lịch còn chưa trừ (app tự trừ khi bấm Làm xong hoặc xác nhận)
   const [dep] = o.appointmentId
     ? await tx<{ available: string }[]>`
@@ -514,6 +585,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
   ])
   const get = (id: string | null) => (id ? (n.get(id) ?? null) : null)
   const paid = payments.filter((p) => !p.voidedAt).reduce((a, p) => a + p.amount, 0)
+  const refunded = refundRows.reduce((a, r) => a + Number(r.amount), 0)
 
   return {
     id: o.id,
@@ -590,7 +662,33 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     paidAmount: paid,
     dueAmount: Math.max(0, o.netAmount - paid),
     depositAvailable: Number(dep?.available ?? 0),
-    paymentStatus: paymentStatus(o.netAmount, paid),
+    refundedAmount: refunded,
+    refundable: Math.max(0, paid - refunded),
+    refunds: refundRows.map((r) => ({
+      id: r.id,
+      amount: Number(r.amount),
+      method: r.method,
+      accountName: r.accountName,
+      reason: r.reason,
+      refundedByName: r.refundedByName,
+      refundedAt: new Date(r.refundedAt).toISOString(),
+      needsOwnerReview: r.needsOwnerReview && !r.reviewedAt,
+      allocations: refundAllocs
+        .filter((a) => a.refundId === r.id)
+        .map((a) => ({ name: a.name, amount: Number(a.amount) })),
+    })),
+    tips: tipRows.map((t) => ({
+      id: t.id,
+      staffUserId: t.staffUserId,
+      staffName: t.staffName,
+      amount: Number(t.amount),
+      recordedByName: t.recordedByName,
+      recordedAt: new Date(t.recordedAt).toISOString(),
+      paid: !!t.payoutId,
+      voided: !!t.voidedAt,
+      voidReason: t.voidReason,
+    })),
+    paymentStatus: paymentStatus(o.netAmount, paid, refunded),
     requiredLevel: o.requiredLevel,
     approval: o.discountApprovedBy
       ? {
@@ -872,7 +970,7 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
         select coalesce(sum(amount), 0)::int as paid from payments where order_id = ${id} and voided_at is null`
       if (computed.netAmount < (p?.paid ?? 0))
         throw invalid(
-          `Thành tiền mới ${formatVND(computed.netAmount)} nhỏ hơn số đã thu ${formatVND(p!.paid)}. Cần phiếu hoàn (có ở Đợt 3).`,
+          `Thành tiền mới ${formatVND(computed.netAmount)} nhỏ hơn số đã thu ${formatVND(p!.paid)}. Giữ thành tiền cũ và dùng Hoàn tiền cho phần trả lại khách.`,
         )
       const stillApproved =
         row.discountApprovalHash === pricingHash(computed) &&
@@ -999,13 +1097,22 @@ export async function cancelOrder(auth: Auth, id: string, version: number, reaso
     if (!canFor(auth, row).cancel) {
       throw forbidden(
         row.status === 'confirmed'
-          ? 'Đơn đã xác nhận; huỷ và hoàn tiền có ở Đợt 3.'
+          ? 'Chỉ Nhung, Linh huỷ được đơn đã xác nhận.'
           : 'Không huỷ được đơn này. Báo Nhung hoặc Linh.',
       )
     }
     await checkVersion(tx, auth, row, version)
-    const [paid] = await tx`select 1 from payments where order_id = ${id} and voided_at is null limit 1`
-    if (paid) throw invalid('Đơn đã có khoản thu. Huỷ khoản thu trước khi huỷ đơn.')
+    if (row.status === 'confirmed') {
+      // K18: huỷ đơn đã xác nhận khi tiền đã thu (kể cả trừ cọc) đã hoàn hết
+      const [c] = await tx<{ n: string }[]>`select app.order_net_collected(${id}) as n`
+      if (Number(c?.n ?? 0) !== 0)
+        throw invalid(
+          'Đơn còn tiền đã thu chưa hoàn. Hoàn tiền (hoặc huỷ khoản trừ cọc để cọc về lịch) trước khi huỷ đơn.',
+        )
+    } else {
+      const [paid] = await tx`select 1 from payments where order_id = ${id} and voided_at is null limit 1`
+      if (paid) throw invalid('Đơn đã có khoản thu. Huỷ khoản thu trước khi huỷ đơn.')
+    }
     const [u] = await tx`
       update orders set status = 'cancelled', cancel_reason = ${reason.trim()}
       where id = ${id} and version = ${version} returning id`
@@ -1140,7 +1247,9 @@ export async function createOrderFromAppointment(
 export const reviewPending = (tx: Tx) => tx`(
   (o.needs_owner_review and o.reviewed_at is null)
   or exists (select 1 from order_service_tickets t where t.order_id = o.id and t.needs_owner_review
-             and t.reviewed_at is null and t.voided_at is null))`
+             and t.reviewed_at is null and t.voided_at is null)
+  or exists (select 1 from order_refunds r where r.order_id = o.id and r.needs_owner_review
+             and r.reviewed_at is null))`
 
 export type OrderListItem = {
   id: string
@@ -1236,6 +1345,17 @@ export async function listOrders(
           select order_id, sum(amount)::int as paid from payments
           where order_id = any(${ids}::uuid[]) and voided_at is null group by order_id`
       : []
+    // Phiếu hoàn (Đợt 3): trừ vào doanh thu đơn và phần từng thợ
+    const refundRows = ids.length
+      ? await tx<{ orderId: string; refunded: number }[]>`
+          select order_id, sum(amount)::int as refunded from order_refunds
+          where order_id = any(${ids}::uuid[]) group by order_id`
+      : []
+    const refundAllocs = ids.length
+      ? await tx<{ orderId: string; staffUserId: string; amount: number }[]>`
+          select order_id, staff_user_id, sum(amount)::int as amount from order_refund_allocations
+          where order_id = any(${ids}::uuid[]) group by order_id, staff_user_id`
+      : []
     const flags = ids.length
       ? await tx<{ orderId: string; flagged: boolean }[]>`
           select i.order_id, bool_or(i.out_of_range or i.line_type = 'custom' or i.below_amount > 0) as flagged
@@ -1247,10 +1367,12 @@ export async function listOrders(
       allocs.map((a) => a.staffUserId),
     )
     const paid = new Map(paidRows.map((p) => [p.orderId, p.paid]))
+    const refunded = new Map(refundRows.map((p) => [p.orderId, p.refunded]))
     const flagged = new Map(flags.map((f) => [f.orderId, f.flagged]))
 
     const items: OrderListItem[] = rows.map((r) => {
       const p = paid.get(r.id) ?? 0
+      const rf = refunded.get(r.id) ?? 0
       return {
         id: r.id,
         codeLabel: codeLabel(r.code),
@@ -1264,7 +1386,7 @@ export async function listOrders(
         netAmount: r.netAmount,
         paidAmount: p,
         status: r.status,
-        paymentStatus: paymentStatus(r.netAmount, p),
+        paymentStatus: paymentStatus(r.netAmount, p, rf),
         needsApproval: levelAtLeast(r.requiredLevel, 'manager') && !approvalValid(r),
         flagged: flagged.get(r.id) ?? false,
         needsOwnerReview: r.reviewPending,
@@ -1281,13 +1403,22 @@ export async function listOrders(
       if (!revenueAll && a.staffUserId !== auth.userId) continue
       byStaff.set(a.staffUserId, (byStaff.get(a.staffUserId) ?? 0) + a.amount)
     }
+    for (const a of refundAllocs) {
+      if (!confirmedIds.has(a.orderId)) continue
+      if (!revenueAll && a.staffUserId !== auth.userId) continue
+      byStaff.set(a.staffUserId, (byStaff.get(a.staffUserId) ?? 0) - a.amount)
+    }
     const summary = {
       orderCount: confirmed.length,
       awaitingCount: rows.filter((r) => r.status === 'awaiting_confirmation').length,
       inProgressCount: rows.filter((r) => r.status === 'in_progress').length,
       grossAmount: revenueAll ? confirmed.reduce((s, r) => s + r.grossAmount, 0) : null,
       discountAmount: revenueAll ? confirmed.reduce((s, r) => s + r.discountAmount, 0) : null,
-      netAmount: revenueAll ? confirmed.reduce((s, r) => s + r.netAmount, 0) : null,
+      // Doanh thu thuần = tiền thuần đơn − phần đã hoàn
+      netAmount: revenueAll
+        ? confirmed.reduce((s, r) => s + r.netAmount - (refunded.get(r.id) ?? 0), 0)
+        : null,
+      refundedAmount: revenueAll ? confirmed.reduce((s, r) => s + (refunded.get(r.id) ?? 0), 0) : null,
       paidAmount: revenueAll ? confirmed.reduce((s, r) => s + (paid.get(r.id) ?? 0), 0) : null,
       dueAmount: revenueAll
         ? confirmed.reduce((s, r) => s + Math.max(0, r.netAmount - (paid.get(r.id) ?? 0)), 0)

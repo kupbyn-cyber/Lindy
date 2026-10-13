@@ -23,23 +23,38 @@ type Totals = {
   guests: number
   gross: number
   discount: number
+  /** Đã hoàn (phiếu hoàn ghi vào khoảng ngày này) */
+  refunded: number
+  /** Doanh thu thuần = tiền thuần các đơn − đã hoàn */
   net: number
+  /** Đã thu của các đơn này, trừ phần đã hoàn */
   paid: number
   due: number
   unpaidOrders: number
 }
 
-/** Tổng đơn đã xác nhận trong khoảng ngày làm dịch vụ (RLS lọc theo người xem). */
+/**
+ * Tổng đơn đã xác nhận trong khoảng ngày làm dịch vụ (RLS lọc theo người xem). Phiếu hoàn trừ vào doanh thu của ngày ghi
+ * hoàn (`revenue_date`; Đợt 3 = ngày làm dịch vụ của đơn).
+ */
 async function totals(tx: Tx, branchId: string, from: string, to: string): Promise<Totals> {
   const [r] = await tx<Record<string, unknown>[]>`
     with o as (
       select o.id, o.gross_amount, o.discount_amount, o.net_amount,
-             coalesce((select sum(p.amount) from payments p where p.order_id = o.id and p.voided_at is null), 0) as paid
+             coalesce((select sum(p.amount) from payments p where p.order_id = o.id and p.voided_at is null), 0) as paid,
+             coalesce((select sum(rr.amount) from order_refunds rr where rr.order_id = o.id), 0) as refunded_all
       from orders o
       where o.branch_id = ${branchId} and o.status = 'confirmed' and o.service_date between ${from}::date and ${to}::date
+    ), rf as (
+      select coalesce(sum(r.amount), 0) as refunded
+      from order_refunds r join orders o2 on o2.id = r.order_id
+      where r.branch_id = ${branchId} and o2.status = 'confirmed'
+        and r.revenue_date between ${from}::date and ${to}::date
     )
     select count(*) as orders, coalesce(sum(gross_amount), 0) as gross, coalesce(sum(discount_amount), 0) as discount,
-           coalesce(sum(net_amount), 0) as net, coalesce(sum(paid), 0) as paid,
+           (select refunded from rf) as refunded,
+           coalesce(sum(net_amount), 0) - (select refunded from rf) as net,
+           coalesce(sum(paid - refunded_all), 0) as paid,
            coalesce(sum(greatest(net_amount - paid, 0)), 0) as due,
            count(*) filter (where paid < net_amount) as unpaid_orders
     from o`
@@ -49,6 +64,7 @@ async function totals(tx: Tx, branchId: string, from: string, to: string): Promi
     guests: orders,
     gross: n(r?.gross),
     discount: n(r?.discount),
+    refunded: n(r?.refunded),
     net: n(r?.net),
     paid: n(r?.paid),
     due: n(r?.due),
@@ -56,17 +72,23 @@ async function totals(tx: Tx, branchId: string, from: string, to: string): Promi
   }
 }
 
+/** Doanh thu theo thợ: phần chia trừ phần bị trừ của phiếu hoàn (theo ngày ghi hoàn). */
 async function byStaff(tx: Tx, branchId: string, from: string, to: string, onlyUser: string | null) {
   const rows = await tx<{ userId: string; name: string; amount: string; orders: string }[]>`
-    select a.staff_user_id as user_id, u.display_name as name, sum(a.allocated_net_amount) as amount,
-           count(distinct o.id) as orders
-    from orders o
-    join order_staff_allocations a on a.order_id = o.id and a.rev = o.content_rev
-    join users u on u.id = a.staff_user_id
-    where o.branch_id = ${branchId} and o.status = 'confirmed' and o.service_date between ${from}::date and ${to}::date
-      and (${onlyUser}::uuid is null or a.staff_user_id = ${onlyUser}::uuid)
-    group by a.staff_user_id, u.display_name
-    order by sum(a.allocated_net_amount) desc`
+    select x.staff_user_id as user_id, u.display_name as name, sum(x.amount) as amount,
+           count(distinct x.order_id) as orders
+    from (
+      select a.staff_user_id, a.allocated_net_amount as amount, o.id as order_id
+      from orders o join order_staff_allocations a on a.order_id = o.id and a.rev = o.content_rev
+      where o.branch_id = ${branchId} and o.status = 'confirmed' and o.service_date between ${from}::date and ${to}::date
+      union all
+      select ra.staff_user_id, -ra.amount, null
+      from order_refund_allocations ra join order_refunds r on r.id = ra.refund_id join orders o on o.id = r.order_id
+      where r.branch_id = ${branchId} and o.status = 'confirmed' and r.revenue_date between ${from}::date and ${to}::date
+    ) x join users u on u.id = x.staff_user_id
+    where (${onlyUser}::uuid is null or x.staff_user_id = ${onlyUser}::uuid)
+    group by x.staff_user_id, u.display_name
+    order by sum(x.amount) desc`
   return rows.map((r) => ({ userId: r.userId, name: r.name, amount: n(r.amount), orders: n(r.orders) }))
 }
 
@@ -261,11 +283,22 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
     >`select (${from}::date + interval '1 month - 1 day')::date::text as d`
     const to = last!.d
 
+    // Theo ngày: đơn đã xác nhận theo ngày làm dịch vụ, trừ phiếu hoàn theo ngày ghi hoàn
     const days = await tx<{ date: string; orders: string; net: string }[]>`
-      select service_date::text as date, count(*) as orders, sum(net_amount) as net
-      from orders where branch_id = ${branch.id} and status = 'confirmed'
-        and service_date between ${from}::date and ${to}::date
-      group by service_date order by service_date`
+      select d.date::text as date, sum(d.orders) as orders, sum(d.net) as net
+      from (
+        select service_date as date, count(*) as orders, sum(net_amount) as net
+        from orders where branch_id = ${branch.id} and status = 'confirmed'
+          and service_date between ${from}::date and ${to}::date
+        group by service_date
+        union all
+        select r.revenue_date, 0, -sum(r.amount)
+        from order_refunds r join orders o on o.id = r.order_id
+        where r.branch_id = ${branch.id} and o.status = 'confirmed'
+          and r.revenue_date between ${from}::date and ${to}::date
+        group by r.revenue_date
+      ) d
+      group by d.date order by d.date`
     const services = await tx<{ name: string; kind: string; quantity: string; net: string }[]>`
       select i.name, i.line_type as kind, sum(i.quantity) as quantity, sum(i.net_amount) as net
       from orders o join order_items i on i.order_id = o.id and i.rev = o.content_rev
