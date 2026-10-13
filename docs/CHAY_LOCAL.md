@@ -48,6 +48,20 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 6. Đơn đã xác nhận: **Lập phiếu xử lý** (sửa miễn phí trong hạn, tính phí, ưu đãi bill sau); **Sửa đơn** cần lý do. Ưu đãi bù khiếu nại hiện ở đơn sau của khách đó, bấm "Áp ưu đãi".
 7. Tab **Khách**: tìm tên/SĐT, hồ sơ, lịch sử đơn; Nhung, Linh sửa tên/SĐT. Form lịch có "Chọn khách có sẵn".
 
+## Thử sổ tiền và cọc Tết (Đợt 3A)
+
+`bun scripts/demo-data.ts` tạo sẵn mùa cọc thử "Tết (demo)" 10 ngày từ hôm nay và 3 lịch: chưa cọc, cọc chờ xác nhận, đã nhận cọc.
+
+1. `linh@lindy.test` → **Thêm → Sổ tiền**: chọn tháng mở sổ, nhập số dư hai tài khoản → **Mở sổ** (một lần). Số dư = số mở sổ + tiền vào − tiền ra từ ngày 1; khoản thu của đơn tự vào sổ.
+2. `linh@lindy.test` → **Thêm → Cài đặt lịch → Mùa cọc Tết**: thêm hoặc sửa mùa (ngày dương lịch, 100.000đ/khách, hoàn khi báo trước 12 tiếng).
+3. Trong mùa cọc, form tạo lịch có phần **Cọc**: chưa nhận cọc vẫn lưu được, lịch hiện nhãn "Chưa cọc" (K16); chọn "Khách đã cọc" để ghi luôn.
+4. `nhung@lindy.test` → mở lịch có "Cọc chờ xác nhận" → **Xác nhận tiền đã vào** → tiền vào Sổ tiền.
+5. Lịch có cọc → **Khách đã đến · Tạo đơn** → chọn dịch vụ → **Làm xong**: cọc tự trừ vào bill, còn phải thu = bill − cọc.
+6. Lịch có cọc → Khách báo huỷ → Huỷ lịch (Linh, Nhung, Chin) → app gợi ý **Hoàn cọc** (báo trước ≥ 12 tiếng) hoặc **Giữ cọc**. Làm khác gợi ý phải ghi lý do và vào Cần xem lại của Linh.
+7. **Tổng quan** (Linh, Nhung): Tiền trong quỹ, Cọc Tết; **Báo cáo**: doanh thu cọc khách bỏ hẹn tách riêng.
+
+Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=0010` (hoặc `--from=0005` nếu hosting còn chạy bản Đợt 1).
+
 ## Quản trị tài khoản (CLI, chưa có màn hình)
 
 ```bash

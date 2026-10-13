@@ -1,4 +1,5 @@
-// Dữ liệu demo cho DB dev (bước 1.19, 2.16): lịch mẫu tuần này, SĐT giả 0900000xxx; 5 đơn mẫu hôm nay, hôm qua.
+// Dữ liệu demo cho DB dev (bước 1.19, 2.16, 3.11): lịch mẫu tuần này, SĐT giả 0900000xxx; 5 đơn mẫu hôm nay, hôm qua;
+// mùa cọc thử và 3 lịch có cọc.
 // Chỉ chạy trên DB localhost _dev.
 //   bun scripts/demo-data.ts
 import { createHash, randomUUID } from 'node:crypto'
@@ -6,8 +7,10 @@ import postgres from 'postgres'
 import type { ItemInput } from '../src/lib/order-math'
 import { foldVietnamese } from '../src/lib/text'
 import { addDays, fromLocal, toLocalDate } from '../src/lib/time'
+import { createAppointment } from '../src/server/appointments/service'
 import type { Auth } from '../src/server/auth/context'
 import { closeSql } from '../src/server/db/client'
+import { confirmDeposit, listSeasons, recordDeposit, saveSeason } from '../src/server/deposits/service'
 import { recordPayment } from '../src/server/orders/payments'
 import type { CreateOrderInput } from '../src/server/orders/schema'
 import { confirmOrder, createOrder, markDone } from '../src/server/orders/service'
@@ -72,29 +75,75 @@ try {
   }
   console.log(`Đã tạo ${n} lịch demo từ hôm nay đến 5 ngày tới.`)
   console.log(`Đã tạo ${await demoOrders(users, branch!.id, today)} đơn demo (Đợt 2).`)
+  console.log(`Đã tạo ${await demoDeposits(users, branch!.id, today)} lịch có mùa cọc demo (Đợt 3).`)
 } finally {
   await sql.end()
   await closeSql()
 }
 
-// Đơn demo đi qua đúng service của app (kiểm quyền, kiểm tổng tiền như khi dùng thật).
-async function demoOrders(users: Map<string, string>, branchId: string, today: string) {
+async function authOf(users: Map<string, string>, branchId: string, key: string): Promise<Auth> {
   const [b] = await sql<{ name: string; shortLabel: string }[]>`
     select name, short_label from branches where id = ${branchId}`
-  const auth = async (key: string): Promise<Auth> => {
-    const userId = users.get(key)!
-    const perms = await sql<{ code: string }[]>`
-      select distinct rp.permission_code as code from user_branch_roles ubr
-      join role_permissions rp on rp.role_id = ubr.role_id
-      where ubr.user_id = ${userId} and ubr.branch_id = ${branchId} and ubr.revoked_at is null`
-    return {
-      sessionId: 'demo',
-      userId,
-      displayName: key,
-      mustChangePassword: false,
-      branches: [{ id: branchId, name: b!.name, shortLabel: b!.shortLabel, perms: perms.map((p) => p.code) }],
-    }
+  const userId = users.get(key)!
+  const perms = await sql<{ code: string }[]>`
+    select distinct rp.permission_code as code from user_branch_roles ubr
+    join role_permissions rp on rp.role_id = ubr.role_id
+    where ubr.user_id = ${userId} and ubr.branch_id = ${branchId} and ubr.revoked_at is null`
+  return {
+    sessionId: 'demo',
+    userId,
+    displayName: key,
+    mustChangePassword: false,
+    branches: [{ id: branchId, name: b!.name, shortLabel: b!.shortLabel, perms: perms.map((p) => p.code) }],
   }
+}
+
+// Cọc demo (Đợt 3, chỉ DB dev): mùa cọc thử 10 ngày từ hôm nay nếu chưa có mùa nào đang bật; 3 lịch: chưa cọc,
+// cọc chờ xác nhận, đã nhận cọc. Đi qua service như khi dùng thật.
+async function demoDeposits(users: Map<string, string>, branchId: string, today: string) {
+  const linh = await authOf(users, branchId, 'linh')
+  const trang = await authOf(users, branchId, 'trang')
+  const nhung = await authOf(users, branchId, 'nhung')
+  const seasons = await listSeasons(linh, branchId)
+  if (!seasons.current) {
+    await saveSeason(linh, {
+      branchId,
+      name: 'Tết (demo)',
+      startDate: today,
+      endDate: addDays(today, 9),
+      amountPerGuest: 100000,
+      refundNoticeHours: 12,
+      forfeitOwnerUserId: users.get('linh')!,
+      isActive: true,
+    })
+  }
+  const appt = async (name: string, guests: number, start: string) =>
+    (
+      await createAppointment(trang, {
+        branchId,
+        customerDisplayName: name,
+        phone: null,
+        date: addDays(today, 2),
+        startTime: start,
+        endTime: `${String(Number(start.slice(0, 2)) + 2).padStart(2, '0')}${start.slice(2)}`,
+        guestCount: guests,
+        serviceSummary: 'Tết',
+        notes: null,
+        createRequestId: randomUUID(),
+      })
+    ).appointment
+  await appt('Khách Tết chưa cọc', 1, '09:00')
+  const p = await appt('Khách Tết chờ xác nhận', 2, '11:00')
+  await recordDeposit(trang, p.id, { idempotencyKey: randomUUID(), amount: 200000, method: 'transfer' })
+  const h = await appt('Khách Tết đã cọc', 1, '14:00')
+  const d = await recordDeposit(trang, h.id, { idempotencyKey: randomUUID(), amount: 100000, method: 'cash' })
+  await confirmDeposit(nhung, d.deposit!.items[0]!.id, d.deposit!.items[0]!.version)
+  return 3
+}
+
+// Đơn demo đi qua đúng service của app (kiểm quyền, kiểm tổng tiền như khi dùng thật).
+async function demoOrders(users: Map<string, string>, branchId: string, today: string) {
+  const auth = (key: string) => authOf(users, branchId, key)
   const svc = new Map(
     (await sql<{ id: string; code: string }[]>`select id, code from services`).map((r) => [r.code, r.id]),
   )

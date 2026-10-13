@@ -190,7 +190,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   *Kiểm tra:* 375px, sáng và tối; đếm lần chạm (mục 5).
 - [x] **3.10 Tổng quan và báo cáo phần 3A.** Linh, Nhung: Tiền trong quỹ (hai tài khoản), cọc đang giữ, cọc chờ xác nhận. Báo cáo ngày/tháng: doanh thu cọc bỏ hẹn tách riêng, cọc đang giữ.
   *Kiểm tra:* PRD 36 ở mức báo cáo (doanh thu thợ của Nhung, Linh từ đơn không đổi); số trên Tổng quan khớp màn Sổ tiền.
-- [ ] **3.11 Chốt 3A.** `bun run check`, build, `scan-bundle`, `check-upgrade --from=0010`; gom test vào `tests/acceptance/coc-tet.test.ts` (mỗi test ghi đúng số module §13 / PRD §18) và `tests/security/so-tien.test.ts`; dữ liệu demo có cọc; báo kết quả. Triển khai 3A riêng được (khi anh yêu cầu) để chạy thử trước mùa cọc.
+- [x] **3.11 Chốt 3A.** `bun run check`, build, `scan-bundle`, `check-upgrade --from=0010`; gom test vào `tests/acceptance/coc-tet.test.ts` (mỗi test ghi đúng số module §13 / PRD §18) và `tests/security/so-tien.test.ts`; dữ liệu demo có cọc; báo kết quả. Triển khai 3A riêng được (khi anh yêu cầu) để chạy thử trước mùa cọc.
 
 ### 3B — Thu chi và chốt ngày
 
@@ -326,3 +326,29 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 - `src/server/orders/service.ts` (xác nhận trừ cọc), `payments.ts` (tip, loại cọc), `policy.ts` (hoàn, huỷ đơn đã xác nhận), `components/don-hang/OrderView.tsx`, `lib/orders.ts`, `lib/order-math.ts` (trạng thái thu có hoàn).
 - `src/server/reports/service.ts`, `_app/index.tsx` (Tổng quan), `them/index.tsx`, `them/bao-cao.tsx`.
 - `scripts/demo-data.ts`, `docs/CHAY_LOCAL.md`, `CLAUDE.md`, `docs/DECISIONS.md`, `docs/OPEN_QUESTIONS.md`.
+
+## 15. Kết quả 3A (13/10/2026)
+
+**Đã làm:** bước 3.1–3.11. Migration `0011_ledger` (sổ bút toán, mở sổ, ghi bù khoản thu Đợt 2), `0012_deposits` (mùa cọc, cờ cần cọc, khoản cọc, trừ cọc vào bill). Quyền mới `cashbook.manage`, `cashbook.owner`, `order.refund` đã thêm (`seedBase` tự gán trên hosting); `order.refund` dùng ở 3B.
+
+| Kiểm | Kết quả |
+|---|---|
+| `bun run lint`, `typecheck` | Đạt |
+| Test tự động | 230/230 đạt (19 file). Mới: `tests/integration/ledger.test.ts` (7), `tests/acceptance/coc-tet.test.ts` (17) |
+| Module lịch test 29–36 | Đạt (tự động) |
+| PRD §18 test 2, 35, 36, 54; 27 phần số dư | Đạt (tự động). Test 36: doanh thu đơn, doanh thu theo thợ không đổi; số tiền hoa hồng ở Đợt 4 |
+| S31–S38 | Đạt (S33 phần SSE: hub chỉ gửi sự kiện `money` cho người có `money_accounts.read_balance`, kiểm bằng đọc code, chưa có test tự động) |
+| `bun run build` (Node), `scan-bundle` | Đạt; 48 file trình duyệt không có bí mật |
+| `check-upgrade --from=0010` và `--from=0005` | Đạt: ghi bù bút toán khoản thu cũ đúng (kể cả khoản đã huỷ); trừ cọc vào bill; mở sổ, số dư khớp |
+| Thử trên trình duyệt 375×812 (tối) | Mở sổ; mùa cọc; tạo lịch có cọc; xác nhận cọc; nhãn Chưa cọc / Cọc chờ xác nhận / Đã cọc; Tổng quan có Tiền trong quỹ và Cọc Tết |
+
+**Sửa trong lúc làm:**
+- postgres.js gửi chuỗi `'true'` cho tham số kiểu boolean thành `false` → gửi thẳng giá trị boolean.
+- Nhãn cọc ở đầu chi tiết lịch lấy từ dòng lịch (thiếu tổng cọc) → lấy theo khối cọc.
+- Ngày mùa cọc không điền sẵn ở form (tránh lỡ bật mùa cọc từ hôm nay).
+
+**Chưa kiểm / còn lại:**
+- Thông báo cọc trên iPhone thật (cần sửa `VAPID_SUBJECT` trên hosting trước).
+- Thử tay cho đủ 4 tài khoản (Trang ghi cọc, Chin hoàn/giữ, Linh xem lại) trên điện thoại thật.
+- Hosting chưa có Đợt 2; triển khai Đợt 2 + 3A cùng lúc thì chạy 7 migration (0006–0012), đã giả lập đạt từ 0005.
+- Bước 3B (3.12–3.22) chưa làm.
