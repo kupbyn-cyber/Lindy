@@ -39,11 +39,12 @@ async function pushTick() {
 export function ensureWorker() {
   if (state.started) return
   if (env('RUN_WORKER') === '0') return
+  const sql = getSql() // chưa có DATABASE_URL thì ném lỗi ở đây, lần sau thử lại
   state.started = true
   state.jobs.push(async () => {
     await notifyOverdue()
   })
-  void getSql()
+  void sql
     .listen('lindy_push', () => void pushTick())
     .catch((e) => console.error('[worker] LISTEN lỗi:', (e as Error).message))
   setInterval(() => void pushTick(), PUSH_INTERVAL_MS).unref?.()

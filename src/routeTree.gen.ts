@@ -24,7 +24,9 @@ import { Route as AppLichIdRouteImport } from './routes/_app/lich/$id'
 import { Route as AppThemIndexRouteImport } from './routes/_app/them/index'
 import { Route as AppThemCaiDatLichRouteImport } from './routes/_app/them/cai-dat-lich'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
+import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoan'
 import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
+import { Route as ApiAccountsIndexRouteImport } from './routes/api/accounts/index'
 import { Route as ApiAppointmentsIndexRouteImport } from './routes/api/appointments/index'
 import { Route as ApiAppointmentsIdRouteImport } from './routes/api/appointments/$id'
 import { Route as ApiAppointmentsAttentionRouteImport } from './routes/api/appointments/attention'
@@ -38,6 +40,7 @@ import { Route as ApiNotificationsUnreadCountRouteImport } from './routes/api/no
 import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
 import { Route as ApiPushSubscriptionsRouteImport } from './routes/api/push/subscriptions'
 import { Route as ApiPushTestRouteImport } from './routes/api/push/test'
+import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
 import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notifications/$id.read'
 import { Route as ApiPushSubscriptionsIdRouteImport } from './routes/api/push/subscriptions.$id'
@@ -116,10 +119,20 @@ const AppThemDoiMatKhauRoute = AppThemDoiMatKhauRouteImport.update({
   path: '/them/doi-mat-khau',
   getParentRoute: () => AppRoute,
 } as any)
+const AppThemTaiKhoanRoute = AppThemTaiKhoanRouteImport.update({
+  id: '/them/tai-khoan',
+  path: '/them/tai-khoan',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppThemThongBaoRoute = AppThemThongBaoRouteImport.update({
   id: '/them/thong-bao',
   path: '/them/thong-bao',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiAccountsIndexRoute = ApiAccountsIndexRouteImport.update({
+  id: '/api/accounts/',
+  path: '/api/accounts/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAppointmentsIndexRoute = ApiAppointmentsIndexRouteImport.update({
   id: '/api/appointments/',
@@ -189,6 +202,11 @@ const ApiPushTestRoute = ApiPushTestRouteImport.update({
   path: '/api/push/test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAccountsIdActionRoute = ApiAccountsIdActionRouteImport.update({
+  id: '/api/accounts/$id/$action',
+  path: '/api/accounts/$id/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAppointmentsIdActionRoute = ApiAppointmentsIdActionRouteImport.update({
   id: '/$action',
   path: '/$action',
@@ -218,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/lich/$id': typeof AppLichIdRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
@@ -232,8 +251,10 @@ export interface FileRoutesByFullPath {
   '/api/push/test': typeof ApiPushTestRoute
   '/lich/': typeof AppLichIndexRoute
   '/them/': typeof AppThemIndexRoute
+  '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
+  '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
@@ -251,6 +272,7 @@ export interface FileRoutesByTo {
   '/lich/$id': typeof AppLichIdRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
@@ -265,8 +287,10 @@ export interface FileRoutesByTo {
   '/api/push/test': typeof ApiPushTestRoute
   '/lich': typeof AppLichIndexRoute
   '/them': typeof AppThemIndexRoute
+  '/api/accounts': typeof ApiAccountsIndexRoute
   '/api/appointments': typeof ApiAppointmentsIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
+  '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
@@ -286,6 +310,7 @@ export interface FileRoutesById {
   '/_app/lich/$id': typeof AppLichIdRoute
   '/_app/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/_app/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/_app/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
@@ -300,8 +325,10 @@ export interface FileRoutesById {
   '/api/push/test': typeof ApiPushTestRoute
   '/_app/lich/': typeof AppLichIndexRoute
   '/_app/them/': typeof AppThemIndexRoute
+  '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
+  '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
@@ -321,6 +348,7 @@ export interface FileRouteTypes {
     | '/lich/$id'
     | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
+    | '/them/tai-khoan'
     | '/them/thong-bao'
     | '/api/appointments/$id'
     | '/api/appointments/attention'
@@ -335,8 +363,10 @@ export interface FileRouteTypes {
     | '/api/push/test'
     | '/lich/'
     | '/them/'
+    | '/api/accounts/'
     | '/api/appointments/'
     | '/api/notifications/'
+    | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/push/subscriptions/$id'
@@ -354,6 +384,7 @@ export interface FileRouteTypes {
     | '/lich/$id'
     | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
+    | '/them/tai-khoan'
     | '/them/thong-bao'
     | '/api/appointments/$id'
     | '/api/appointments/attention'
@@ -368,8 +399,10 @@ export interface FileRouteTypes {
     | '/api/push/test'
     | '/lich'
     | '/them'
+    | '/api/accounts'
     | '/api/appointments'
     | '/api/notifications'
+    | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/push/subscriptions/$id'
@@ -388,6 +421,7 @@ export interface FileRouteTypes {
     | '/_app/lich/$id'
     | '/_app/them/cai-dat-lich'
     | '/_app/them/doi-mat-khau'
+    | '/_app/them/tai-khoan'
     | '/_app/them/thong-bao'
     | '/api/appointments/$id'
     | '/api/appointments/attention'
@@ -402,8 +436,10 @@ export interface FileRouteTypes {
     | '/api/push/test'
     | '/_app/lich/'
     | '/_app/them/'
+    | '/api/accounts/'
     | '/api/appointments/'
     | '/api/notifications/'
+    | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/push/subscriptions/$id'
@@ -427,8 +463,10 @@ export interface RootRouteChildren {
   ApiPushConfigRoute: typeof ApiPushConfigRoute
   ApiPushSubscriptionsRoute: typeof ApiPushSubscriptionsRouteWithChildren
   ApiPushTestRoute: typeof ApiPushTestRoute
+  ApiAccountsIndexRoute: typeof ApiAccountsIndexRoute
   ApiAppointmentsIndexRoute: typeof ApiAppointmentsIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
+  ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
 }
 
@@ -539,12 +577,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppThemDoiMatKhauRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/them/tai-khoan': {
+      id: '/_app/them/tai-khoan'
+      path: '/them/tai-khoan'
+      fullPath: '/them/tai-khoan'
+      preLoaderRoute: typeof AppThemTaiKhoanRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/them/thong-bao': {
       id: '/_app/them/thong-bao'
       path: '/them/thong-bao'
       fullPath: '/them/thong-bao'
       preLoaderRoute: typeof AppThemThongBaoRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/accounts/': {
+      id: '/api/accounts/'
+      path: '/api/accounts'
+      fullPath: '/api/accounts/'
+      preLoaderRoute: typeof ApiAccountsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/appointments/': {
       id: '/api/appointments/'
@@ -637,6 +689,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/accounts/$id/$action': {
+      id: '/api/accounts/$id/$action'
+      path: '/api/accounts/$id/$action'
+      fullPath: '/api/accounts/$id/$action'
+      preLoaderRoute: typeof ApiAccountsIdActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/appointments/$id/$action': {
       id: '/api/appointments/$id/$action'
       path: '/$action'
@@ -669,6 +728,7 @@ interface AppRouteChildren {
   AppLichIdRoute: typeof AppLichIdRoute
   AppThemCaiDatLichRoute: typeof AppThemCaiDatLichRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
+  AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
   AppThemThongBaoRoute: typeof AppThemThongBaoRoute
   AppLichIndexRoute: typeof AppLichIndexRoute
   AppThemIndexRoute: typeof AppThemIndexRoute
@@ -682,6 +742,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppLichIdRoute: AppLichIdRoute,
   AppThemCaiDatLichRoute: AppThemCaiDatLichRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
+  AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
   AppThemThongBaoRoute: AppThemThongBaoRoute,
   AppLichIndexRoute: AppLichIndexRoute,
   AppThemIndexRoute: AppThemIndexRoute,
@@ -729,8 +790,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPushConfigRoute: ApiPushConfigRoute,
   ApiPushSubscriptionsRoute: ApiPushSubscriptionsRouteWithChildren,
   ApiPushTestRoute: ApiPushTestRoute,
+  ApiAccountsIndexRoute: ApiAccountsIndexRoute,
   ApiAppointmentsIndexRoute: ApiAppointmentsIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
+  ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
 }
 export const routeTree = rootRouteImport

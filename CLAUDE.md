@@ -6,7 +6,7 @@ Hướng dẫn cho AI lập trình khi làm việc trong thư mục này. Trao �
 
 App quản lý nội bộ cho Lindy Nailash Studio. Web mobile-first/PWA, ưu tiên Safari trên iPhone (toàn bộ nhân sự dùng iPhone). Giao diện tiếng Việt.
 
-**Nền tảng đã chốt (T01, `docs/TECH_STACK.md`):** kiến trúc như CEN WORK — TanStack Start (React 19, SSR), TanStack Router/Query, Vite, Tailwind v4, Nitro, PostgreSQL 16, phiên cookie tự viết, RLS qua transaction đặt role, migration runner SQL, Web Push qua outbox. Code nằm ngay tại thư mục này. **Chạy local trước**; đồng bộ GitHub và triển khai lên Vibe Hosting Mắt Bão chỉ khi người dùng yêu cầu.
+**Nền tảng đã chốt (T01, `docs/TECH_STACK.md`):** kiến trúc như CEN WORK — TanStack Start (React 19, SSR), TanStack Router/Query, Vite, Tailwind v4, Nitro, PostgreSQL 16, phiên cookie tự viết, RLS qua transaction đặt role, migration runner SQL, Web Push qua outbox. Code nằm ngay tại thư mục này. **Chạy local trước**; đồng bộ GitHub và triển khai lên Vibe Hosting Nhân Hòa (T02, thay Mắt Bão) chỉ khi người dùng yêu cầu.
 
 Đợt 0 và Đợt 1 đã có code (13/10/2026). Cách chạy, kiểm tra: `docs/CHAY_LOCAL.md`. Đợt mới: báo kế hoạch trước, chưa code khi chưa được duyệt.
 

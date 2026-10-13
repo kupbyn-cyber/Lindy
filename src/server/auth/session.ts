@@ -2,6 +2,7 @@
 // Hạn trượt 30 ngày, hạn tuyệt đối 90 ngày [P1]. Mỗi request đọc lại từ DB, không lưu quyền trong cookie.
 import { createHash, randomBytes } from 'node:crypto'
 import { type Tx, withWorker } from '../db/client'
+import { env } from '../env'
 
 export const SLIDING_DAYS = 30
 export const ABSOLUTE_DAYS = 90
@@ -12,6 +13,8 @@ export function hashToken(token: string) {
 }
 
 export function isSecureRequest(request: Request) {
+  // Chạy sau proxy HTTPS của hosting: APP_ORIGIN là https thì luôn coi là HTTPS (cookie Secure, __Host-) [P18].
+  if (env('APP_ORIGIN')?.startsWith('https://')) return true
   const proto = request.headers.get('x-forwarded-proto') ?? new URL(request.url).protocol.replace(':', '')
   return proto === 'https'
 }

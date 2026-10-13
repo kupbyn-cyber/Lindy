@@ -3,75 +3,12 @@
 // - Mỗi file chạy trong một giao dịch; lưu checksum sha256.
 // - File đã chạy mà bị sửa → dừng và báo.
 // - reset chỉ chạy với DB localhost tên _dev/_test, ngoài production, và phải gõ lại tên DB [P15].
-import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import postgres from 'postgres'
+import { ensureMigrationsTable as ensureTable, migrateUp, readMigrations } from '../src/server/ops/migrations'
 import { assertDisposableDb } from './lib/db-guard'
-import { loadEnv, ROOT } from './lib/env'
+import { loadEnv } from './lib/env'
 
-const MIGRATIONS_DIR = join(ROOT, 'db', 'migrations')
-
-type Migration = { version: string; name: string; sql: string; checksum: string }
-
-export function readMigrations(): Migration[] {
-  return readdirSync(MIGRATIONS_DIR)
-    .filter((f) => /^\d{4}_.+\.sql$/.test(f))
-    .sort()
-    .map((file) => {
-      const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8').replace(/\r\n/g, '\n')
-      return {
-        version: file.slice(0, 4),
-        name: file,
-        sql,
-        checksum: createHash('sha256').update(sql).digest('hex'),
-      }
-    })
-}
-
-async function ensureTable(sql: postgres.Sql) {
-  await sql`
-    create table if not exists public.schema_migrations (
-      version text primary key,
-      name text not null,
-      checksum text not null,
-      applied_at timestamptz not null default now()
-    )`
-}
-
-export async function migrateUp(url: string, log = console.log) {
-  const sql = postgres(url, { onnotice: () => {}, max: 1 })
-  try {
-    await ensureTable(sql)
-    const applied = new Map(
-      (
-        await sql<{ version: string; checksum: string; name: string }[]>`
-        select version, checksum, name from public.schema_migrations`
-      ).map((r) => [r.version, r]),
-    )
-    let count = 0
-    for (const m of readMigrations()) {
-      const done = applied.get(m.version)
-      if (done) {
-        if (done.checksum !== m.checksum) {
-          throw new Error(
-            `Migration ${m.name} đã chạy nhưng nội dung bị sửa (lệch checksum). Tạo file mới thay vì sửa.`,
-          )
-        }
-        continue
-      }
-      await sql.begin(async (tx) => {
-        await tx.unsafe(m.sql)
-        await tx`insert into public.schema_migrations (version, name, checksum) values (${m.version}, ${m.name}, ${m.checksum})`
-      })
-      log(`  ✓ ${m.name}`)
-      count++
-    }
-    log(count === 0 ? 'Không có migration mới.' : `Đã chạy ${count} migration.`)
-  } finally {
-    await sql.end()
-  }
-}
+export { migrateUp, readMigrations }
 
 export async function resetDb(url: string) {
   assertDisposableDb(url)

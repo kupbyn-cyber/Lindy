@@ -3,7 +3,7 @@
 import { randomBytes } from 'node:crypto'
 import type postgres from 'postgres'
 import { hashPassword } from '../../src/server/auth/password'
-import { PERMISSIONS, ROLES } from '../../src/server/authz/catalog'
+import { seedBase } from '../../src/server/ops/seed'
 
 type Sql = postgres.Sql
 
@@ -25,41 +25,9 @@ export async function seedCore(
   sql: Sql,
   opts: { withSecondBranch?: boolean; passwords?: Record<string, string> } = {},
 ) {
-  const [org] = await sql<{ id: string }[]>`
-    insert into organizations (name)
-    select 'Lindy Nailash Studio' where not exists (select 1 from organizations)
-    returning id`
-  const orgId = org?.id ?? (await sql<{ id: string }[]>`select id from organizations limit 1`)[0]!.id
-
-  const branchIds: Record<string, string> = {}
-  const branchDefs = [{ code: 'HTK', name: 'CS 31/49 Huỳnh Thúc Kháng', short: 'CS 31/49 HTK' }]
-  if (opts.withSecondBranch) branchDefs.push({ code: 'CS2', name: 'Cơ sở thử nghiệm 2', short: 'CS2' })
-  for (const b of branchDefs) {
-    const [row] = await sql<{ id: string }[]>`
-      insert into branches (organization_id, code, name, short_label)
-      values (${orgId}, ${b.code}, ${b.name}, ${b.short})
-      on conflict (code) do update set name = excluded.name
-      returning id`
-    branchIds[b.code] = row!.id
-  }
-
-  for (const [code, description] of Object.entries(PERMISSIONS)) {
-    await sql`insert into permissions (code, description) values (${code}, ${description})
-              on conflict (code) do update set description = excluded.description`
-  }
-
-  const roleIds: Record<string, string> = {}
-  for (const [code, role] of Object.entries(ROLES)) {
-    const [row] = await sql<{ id: string }[]>`
-      insert into roles (organization_id, code, name) values (${orgId}, ${code}, ${role.name})
-      on conflict (organization_id, code) do update set name = excluded.name
-      returning id`
-    roleIds[code] = row!.id
-    for (const p of role.permissions) {
-      await sql`insert into role_permissions (role_id, permission_code) values (${row!.id}, ${p})
-                on conflict do nothing`
-    }
-  }
+  const { orgId, branchIds, roleIds } = await seedBase(sql, {
+    extraBranches: opts.withSecondBranch ? [{ code: 'CS2', name: 'Cơ sở thử nghiệm 2', short: 'CS2' }] : [],
+  })
 
   const users = opts.withSecondBranch ? [...SAMPLE_USERS, ...TEST_ONLY_USERS] : SAMPLE_USERS
   const created: Record<string, { id: string; password?: string }> = {}

@@ -4,12 +4,16 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const root = process.cwd()
-// Chỉ script dựng DB (chạy tay ở local, không nhận dữ liệu người dùng) được dùng SQL động.
+// Chỉ mã dựng DB được dùng SQL động: chạy file migration, tạo role (tên role là hằng số, mật khẩu đã kiểm
+// chỉ gồm ký tự an toàn). Không file nào trong danh sách nhận dữ liệu do người dùng app gửi lên.
 const allowed = new Set([
   'scripts/migrate.ts',
   'scripts/db-bootstrap.ts',
   'scripts/lint-sql.ts',
+  'src/server/ops/migrations.ts',
+  'src/server/ops/release.ts',
   'tests/setup/global.ts',
+  'tests/integration/release.test.ts',
 ])
 const scanDirs = ['src', 'scripts', 'tests']
 const pattern = /\.unsafe\s*\(/

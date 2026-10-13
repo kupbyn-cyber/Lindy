@@ -36,6 +36,7 @@ export const PERMISSIONS = {
   'attendance.approve': 'Duyệt công',
   'review_queue.read': 'Xem danh sách Cần xem lại',
   'catalog.manage': 'Quản lý danh mục dịch vụ',
+  'users.manage': 'Quản lý tài khoản: tạo, đặt lại mật khẩu, đổi vai trò, khoá',
 } as const
 
 export type Permission = keyof typeof PERMISSIONS

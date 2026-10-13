@@ -115,3 +115,15 @@ Nguồn: kế hoạch `docs/plans/2026-10-12-dot-0-dot-1.md` mục 11, sau phả
 | **K04** | Mật khẩu nhân viên | Tối thiểu **8 ký tự**, chặn mật khẩu phổ biến. | Kiểm ở server khi đặt và đổi mật khẩu. |
 | **K05** | Số khách tối đa một lịch | **4 khách.** | `guest_count` từ 1 đến 4, kiểm ở form, API và ràng buộc DB. Cọc gợi ý Đợt 3 tối đa 4 × 100.000đ. |
 | **K06** | Chuẩn hoá SĐT | Mở rộng module §5.1: bỏ **mọi ký tự không phải số** (trừ `+` ở đầu), `+84` → `0`; còn ký tự lạ thì báo lỗi. | Dùng cho lưu, tìm kiếm và nhắc trùng khách. |
+
+## T02 — Đổi nơi chạy thật (13/10/2026, anh chốt)
+
+- **Hosting chạy thật: Vibe Hosting của Nhân Hòa** (nhanhoa.com), thay Mắt Bão ở T01. Các ý khác của T01 giữ nguyên.
+- Tên miền tạm: `lindy.vibe.vnws.com`. Nguồn code: repo private `github.com/kupbyn-cyber/Lindy`, nhánh `main`.
+
+## K07–K08 — Triển khai lên Vibe Hosting (13/10/2026, anh duyệt)
+
+| Mã | Chủ đề | Đã chốt | Áp dụng |
+|---|---|---|---|
+| **K07** | Thử iPhone | **Bỏ mkcert** (thay K01). Thử Web Push trên iPhone thật ngay ở `https://lindy.vibe.vnws.com` (hosting tự cấp HTTPS). | Không cài chứng chỉ gốc lên iPhone. |
+| **K08** | Tài khoản trên hosting | Hosting không có dòng lệnh → app tự chuẩn bị DB khi khởi động (role, migration, dữ liệu nền, tài khoản Chủ đầu tiên từ biến môi trường) và có màn **Thêm → Tài khoản** cho Chủ. | Quyền mới `users.manage`, chỉ vai trò Chủ. Chi tiết: `docs/TRIEN_KHAI.md`. |

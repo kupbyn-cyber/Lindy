@@ -46,6 +46,9 @@ function MorePage() {
       <div className="border-t border-line">
         <Row to="/them/thong-bao" label="Thông báo" hint="Bật trên máy này, chọn nhóm nhận" />
         <Row to="/them/doi-mat-khau" label="Đổi mật khẩu" />
+        {can('users.manage') ? (
+          <Row to="/them/tai-khoan" label="Tài khoản" hint="Tạo tài khoản, mật khẩu, vai trò, khoá" />
+        ) : null}
         {can('booking_settings.manage') ? (
           <Row to="/them/cai-dat-lich" label="Cài đặt lịch" hint="Giờ mở cửa, thời lượng mặc định" />
         ) : null}
