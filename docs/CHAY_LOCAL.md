@@ -5,14 +5,12 @@ Cập nhật 13/10/2026, sau Đợt 0 và Đợt 1. Máy: Windows 11, Node 24, B
 ## Chạy hằng ngày
 
 ```bash
-bun run db:start
-```
-
-```bash
 bun run dev
 ```
 
-Mở http://localhost:3000. Tắt DB khi không dùng: `bun run db:stop`.
+Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước (máy khởi động lại thì DB tắt theo). Tắt DB khi không dùng: `bun run db:stop`.
+
+Đăng nhập báo "Chưa kết nối được dữ liệu" nghĩa là PostgreSQL chưa chạy: chạy `bun run db:start`.
 
 **Tài khoản mẫu (chỉ ở local):** `linh@lindy.test` (Chủ), `nhung@lindy.test` (Quản lý), `chin@lindy.test` (Thợ, quyền lịch mở rộng), `trang@lindy.test` (Thợ). Đặt mật khẩu dev cố định cho cả 4 bằng `bun scripts/dev-passwords.ts`; mật khẩu nằm ở hằng `DEV_PASSWORD` trong file đó. Lệnh này chỉ chạy được trên DB `lindy_dev`.
 

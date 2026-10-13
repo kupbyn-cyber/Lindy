@@ -5,6 +5,18 @@ import { formatVND, parseVND } from '../../src/lib/money'
 import { normalizePhone } from '../../src/lib/phone'
 import { escapeLike, foldVietnamese } from '../../src/lib/text'
 import { addDays, fromLocal, startOfWeek, toLocalDate, toLocalTime, weekdayShort } from '../../src/lib/time'
+import { fromDbError } from '../../src/server/http/errors'
+
+describe('Lỗi DB → lỗi HTTP', () => {
+  it('mất kết nối PostgreSQL → 503 có câu nói rõ, không phải "Có lỗi xảy ra"', () => {
+    for (const code of ['ECONNREFUSED', 'CONNECT_TIMEOUT', 'CONNECTION_CLOSED']) {
+      const e = fromDbError(Object.assign(new Error('x'), { code }))
+      expect(e?.status).toBe(503)
+      expect(e?.message).toMatch('Chưa kết nối được dữ liệu')
+    }
+    expect(fromDbError(new Error('khác'))).toBeUndefined()
+  })
+})
 
 describe('Tiền', () => {
   it('8.450.000đ; số âm dùng dấu trừ "−"', () => {

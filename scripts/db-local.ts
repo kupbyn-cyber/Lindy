@@ -88,5 +88,8 @@ loadEnv()
 const cmd = process.argv[2] ?? 'status'
 if (cmd === 'init') init()
 else if (cmd === 'start') start()
-else if (cmd === 'stop') stop()
+// ensure: dùng trước "bun run dev" — chỉ bật khi máy này dùng PostgreSQL nhúng (.pgdata đã có), không thì bỏ qua.
+else if (cmd === 'ensure') {
+  if (existsSync(join(DATA, 'PG_VERSION'))) start()
+} else if (cmd === 'stop') stop()
 else console.log(status() ? `PostgreSQL đang chạy ở cổng ${PORT}.` : 'PostgreSQL không chạy.')

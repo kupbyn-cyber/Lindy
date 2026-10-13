@@ -34,7 +34,23 @@ export function fromDbError(err: unknown): AppError | undefined {
       return conflict('Dữ liệu đã tồn tại.')
     case '22P02':
       return notFound()
+    // Không kết nối được PostgreSQL (DB chưa bật, mất mạng tới DB)
+    case 'ECONNREFUSED':
+    case 'ECONNRESET':
+    case 'ETIMEDOUT':
+    case 'CONNECT_TIMEOUT':
+    case 'CONNECTION_CLOSED':
+    case 'CONNECTION_ENDED':
+    case 'CONNECTION_DESTROYED':
+      return dbUnavailable()
     default:
       return undefined
   }
 }
+
+export const dbUnavailable = () =>
+  new AppError(
+    503,
+    'Chưa kết nối được dữ liệu. Thử lại sau ít phút; vẫn lỗi thì báo người quản trị.',
+    'db_unavailable',
+  )

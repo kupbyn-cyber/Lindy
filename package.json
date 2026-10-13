@@ -4,7 +4,7 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "dev": "vite dev",
+    "dev": "bun scripts/db-local.ts ensure && vite dev",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "db:start": "bun scripts/db-local.ts start",
@@ -18,7 +18,7 @@
     "lint": "biome check . && bun scripts/lint-sql.ts",
     "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "bun scripts/db-local.ts ensure && vitest run",
     "check": "bun run lint && bun run typecheck && bun run test"
   },
   "dependencies": {
