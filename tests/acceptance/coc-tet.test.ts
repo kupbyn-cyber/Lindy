@@ -196,6 +196,7 @@ describe('Module 31, 32 — ghi cọc, xác nhận (S31, S32, S38)', () => {
     await recordDeposit(auth('trang'), a.id, { idempotencyKey: key, amount: 200_000, method: 'transfer' })
     expect(d.deposit!.items).toHaveLength(1)
     expect(d.deposit).toMatchObject({ state: 'pending', pendingAmount: 200_000, heldAmount: 0 })
+    expect(d.depositState).toBe('pending')
     const dep = d.deposit!.items[0]!
     expect(dep).toMatchObject({ status: 'recorded', accountName: 'Tài khoản cs HTK' })
     expect(await ledgerOf(dep.id)).toHaveLength(0)
@@ -508,6 +509,40 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
       ['deposit_in', 200_000],
       ['deposit_refund', -80_000],
     ])
+  })
+})
+
+describe('3.10 — Tổng quan, báo cáo', () => {
+  it('Linh, Nhung thấy Tiền trong quỹ và cọc; thợ không thấy; báo cáo tháng khớp số cọc trong DB', async () => {
+    const lo = await overview(auth('linh'), { period: 'month' })
+    expect(lo.money?.map((m) => m.name)).toEqual(['Tiền mặt cs HTK', 'Tài khoản cs HTK'])
+    expect((await overview(auth('nhung'), { period: 'day' })).money).toHaveLength(2)
+    const to = await overview(auth('trang'), { period: 'day' })
+    expect(to.money).toBeNull()
+    expect(to.deposits).toBeNull()
+
+    // Tháng có cọc bị giữ (ngày hẹn có thể sang tháng sau nếu chạy test cuối tháng)
+    const [fm] = await owner<{ month: string }[]>`
+      select to_char(max(revenue_date), 'YYYY-MM') as month from appointment_deposits
+      where branch_id = ${htk} and status = 'forfeited'`
+    const month = fm!.month
+    const { monthReport, dayReport } = await import('../../src/server/reports/service')
+    const m = await monthReport(auth('nhung'), { month })
+    const [db] = await owner<{ forfeited: string; held: string; pending: string }[]>`
+      select coalesce(sum(resolved_amount) filter (where status = 'forfeited'
+               and to_char(revenue_date, 'YYYY-MM') = ${month}), 0) as forfeited,
+             coalesce(sum(amount - coalesce(resolved_amount, 0) - app.deposit_applied(id))
+               filter (where status = 'confirmed'), 0) as held,
+             coalesce(sum(amount) filter (where status = 'recorded'), 0) as pending
+      from appointment_deposits where branch_id = ${htk}`
+    expect(m.deposits.forfeited).toBe(Number(db!.forfeited))
+    expect(m.deposits.forfeited).toBeGreaterThan(0)
+    expect(m.deposits.held).toBe(Number(db!.held))
+    expect(m.deposits.pending).toBe(Number(db!.pending))
+    expect(m.deposits.forfeitedByOwner.map((o) => o.name)).toEqual(['Linh'])
+    expect(lo.deposits?.held).toBe(Number(db!.held))
+    const d = await dayReport(auth('linh'), { date: today })
+    expect(d.deposits.received).toBeGreaterThan(0)
   })
 })
 

@@ -1,11 +1,22 @@
 // Form tạo/sửa lịch (bước 1.12) trong bottom sheet. Không có ô chọn thợ (D17).
 // Tạo nhanh: chạm khung giờ → nhập tên → Lưu. Cảnh báo không chặn lưu (§8).
+// Mùa cọc (Đợt 3, module §5.1, §6): form tạo lịch hiện phần cọc và số gợi ý; chưa nhận cọc vẫn lưu được (K16).
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Note, SegmentedControl, Sheet, TextArea, TextField, useToast } from '~/components/ui'
+import {
+  Button,
+  MoneyInput,
+  Note,
+  SegmentedControl,
+  Sheet,
+  TextArea,
+  TextField,
+  useToast,
+} from '~/components/ui'
 import { ApiError, api } from '~/lib/api'
-import { addMinutes, type Detail, type ListItem, type Warnings } from '~/lib/appointments'
+import { addMinutes, type Detail, type ListItem, type Settings, type Warnings } from '~/lib/appointments'
 import { useCan } from '~/lib/me'
+import { formatVND } from '~/lib/money'
 import { normalizePhone } from '~/lib/phone'
 import { CustomerPicker } from '../don-hang/pickers'
 
@@ -45,6 +56,8 @@ export function AppointmentForm(props: {
   /** Sửa lịch này */
   editing?: Detail
   defaultDurationMin: number
+  /** Mùa cọc đang bật hôm nay: lịch tạo mới cần cọc (C01) */
+  depositSeason?: Settings['depositSeason']
   onSaved?: (id: string) => void
 }) {
   const toast = useToast()
@@ -60,6 +73,12 @@ export function AppointmentForm(props: {
   const [warnings, setWarnings] = useState<Warnings | null>(null)
   const [picking, setPicking] = useState(false)
   const requestId = useRef<string>('')
+  // Cọc ghi kèm khi tạo lịch (khách đã chuyển); mã riêng để bấm lại không ghi hai khoản
+  const [depositOn, setDepositOn] = useState(false)
+  const [depMethod, setDepMethod] = useState<'transfer' | 'cash'>('transfer')
+  const [depAmount, setDepAmount] = useState<number | null>(null)
+  const depositKey = useRef<string>('')
+  const season = !props.editing ? (props.depositSeason ?? null) : null
 
   // Mở form: điền sẵn; mỗi lần mở form tạo mới thì sinh mã yêu cầu mới [P3]
   useEffect(() => {
@@ -73,6 +92,10 @@ export function AppointmentForm(props: {
       setVersion(props.editing.version)
     } else if (props.initial) {
       requestId.current = crypto.randomUUID()
+      depositKey.current = crypto.randomUUID()
+      setDepositOn(false)
+      setDepMethod('transfer')
+      setDepAmount(null)
       setV({
         customerId: null,
         customerDisplayName: '',
@@ -115,6 +138,7 @@ export function AppointmentForm(props: {
 
   if (!v) return null
 
+  const suggested = season ? season.amountPerGuest * v.guestCount : 0
   const localError =
     v.customerDisplayName.trim() === ''
       ? 'Nhập tên khách.'
@@ -156,10 +180,28 @@ export function AppointmentForm(props: {
         const res = await api<{ appointment: ListItem }>('/api/appointments', {
           body: { ...fields, confirm, createRequestId: requestId.current },
         })
+        let depositNote = ''
+        if (season && depositOn && res.appointment.depositState) {
+          try {
+            await api(`/api/appointments/${res.appointment.id}/deposits`, {
+              body: {
+                idempotencyKey: depositKey.current,
+                amount: depAmount ?? suggested,
+                method: depMethod,
+              },
+            })
+            depositNote = ' Cọc chờ Nhung, Linh xác nhận.'
+          } catch (e) {
+            toast(
+              `Đã lưu lịch nhưng chưa ghi được cọc: ${e instanceof Error ? e.message : ''} Ghi lại ở chi tiết lịch.`,
+              'error',
+            )
+          }
+        }
         toast(
           confirm
-            ? `Đã tạo và chốt lịch ${res.appointment.startTime}.`
-            : `Đã lưu lịch ${res.appointment.startTime}.`,
+            ? `Đã tạo và chốt lịch ${res.appointment.startTime}.${depositNote}`
+            : `Đã lưu lịch ${res.appointment.startTime}.${depositNote}`,
         )
         props.onSaved?.(res.appointment.id)
       }
@@ -341,6 +383,48 @@ export function AppointmentForm(props: {
           maxLength={LIMITS.notes}
           onChange={(e) => set('notes', e.target.value)}
         />
+
+        {season ? (
+          <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-line p-3">
+            <span className="label">Cọc · {season.name}</span>
+            <p className="caption m-0 text-ink-muted">
+              Lịch này cần cọc {formatVND(suggested)} ({v.guestCount} khách ×{' '}
+              {formatVND(season.amountPerGuest)}). Chưa nhận cọc vẫn lưu được; lịch hiện “Chưa cọc”.
+            </p>
+            <SegmentedControl
+              ariaLabel="Cọc"
+              options={[
+                { value: 'no', label: 'Chưa nhận cọc' },
+                { value: 'yes', label: 'Khách đã cọc' },
+              ]}
+              value={depositOn ? 'yes' : 'no'}
+              onChange={(x) => setDepositOn(x === 'yes')}
+            />
+            {depositOn ? (
+              <>
+                <SegmentedControl
+                  ariaLabel="Hình thức cọc"
+                  options={[
+                    { value: 'transfer', label: 'Chuyển khoản' },
+                    { value: 'cash', label: 'Tiền mặt' },
+                  ]}
+                  value={depMethod}
+                  onChange={(x) => setDepMethod(x as 'transfer' | 'cash')}
+                />
+                <MoneyInput
+                  label="Số tiền cọc"
+                  value={depAmount ?? suggested}
+                  onValueChange={setDepAmount}
+                  hint={
+                    depAmount != null && depAmount !== suggested
+                      ? `Khác số gợi ý ${formatVND(suggested)}.`
+                      : 'Nhung, Linh xác nhận khi tiền đã vào.'
+                  }
+                />
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
         {warnings && warnings.overlapCount > 0 ? (
           <Note>Cùng giờ có {warnings.overlapCount} lịch khác.</Note>

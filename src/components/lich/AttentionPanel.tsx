@@ -1,5 +1,5 @@
 // Danh sách Cần xử lý (§7.1) cho Linh, Nhung, Chin: Mới đặt chưa chốt, Khách báo huỷ, quá giờ chưa đánh dấu (K02).
-// Cọc chờ xác nhận thêm ở Đợt 3.
+// Cọc (Đợt 3): cọc chờ xác nhận (Nhung, Linh), lịch chưa cọc (K16), cọc chờ hoàn/giữ (Linh, Nhung, Chin).
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Button } from '~/components/ui'
@@ -7,7 +7,15 @@ import { api } from '~/lib/api'
 import type { ListItem } from '~/lib/appointments'
 import { AppointmentRows } from './views'
 
-type Attention = { pending: ListItem[]; customerCancel: ListItem[]; overdue: ListItem[] }
+type Attention = {
+  pending: ListItem[]
+  customerCancel: ListItem[]
+  overdue: ListItem[]
+  depositsToConfirm: ListItem[]
+  depositsMissing: ListItem[]
+  depositsToResolve: ListItem[]
+  depositsToReview: ListItem[]
+}
 
 export function useAttention() {
   return useQuery({
@@ -22,16 +30,64 @@ export function AttentionPanel(props: { compact?: boolean }) {
   const [open, setOpen] = useState(!props.compact)
   const d = q.data
   if (!d) return null
-  const total = d.pending.length + d.customerCancel.length + d.overdue.length
+  const groups = [
+    {
+      key: 'overdue',
+      items: d.overdue,
+      title: 'Quá giờ, chưa đánh dấu đến/không đến',
+      short: 'quá giờ chưa đánh dấu',
+      tone: 'text-danger',
+    },
+    {
+      key: 'depositsToConfirm',
+      items: d.depositsToConfirm ?? [],
+      title: 'Cọc chờ xác nhận tiền đã vào',
+      short: 'cọc chờ xác nhận',
+      tone: 'text-warning',
+    },
+    {
+      key: 'depositsToResolve',
+      items: d.depositsToResolve ?? [],
+      title: 'Cọc chờ hoàn hoặc giữ',
+      short: 'cọc chờ hoàn/giữ',
+      tone: 'text-warning',
+    },
+    {
+      key: 'depositsToReview',
+      items: d.depositsToReview ?? [],
+      title: 'Cọc xử lý khác gợi ý — Linh xem lại',
+      short: 'cọc cần xem lại',
+      tone: 'text-warning',
+    },
+    {
+      key: 'customerCancel',
+      items: d.customerCancel,
+      title: 'Khách báo huỷ',
+      short: 'Khách báo huỷ',
+      tone: 'text-warning',
+    },
+    {
+      key: 'depositsMissing',
+      items: d.depositsMissing ?? [],
+      title: 'Mùa cọc: lịch chưa cọc',
+      short: 'chưa cọc',
+      tone: 'text-ink-muted',
+    },
+    {
+      key: 'pending',
+      items: d.pending,
+      title: 'Mới đặt, chưa chốt',
+      short: 'Mới đặt',
+      tone: 'text-ink-muted',
+    },
+  ]
+  const total = groups.reduce((s, g) => s + g.items.length, 0)
   if (total === 0)
     return props.compact ? null : <p className="body m-0 text-ink-muted">Không có việc cần xử lý.</p>
 
-  const summary = [
-    d.overdue.length ? `${d.overdue.length} quá giờ chưa đánh dấu` : null,
-    d.customerCancel.length ? `${d.customerCancel.length} Khách báo huỷ` : null,
-    d.pending.length ? `${d.pending.length} Mới đặt` : null,
-  ]
-    .filter(Boolean)
+  const summary = groups
+    .filter((g) => g.items.length)
+    .map((g) => `${g.items.length} ${g.short}`)
     .join(' · ')
 
   return (
@@ -50,24 +106,14 @@ export function AttentionPanel(props: { compact?: boolean }) {
       ) : null}
       {open ? (
         <div className="flex flex-col gap-3 pb-2">
-          {d.overdue.length ? (
-            <div>
-              <p className="overline m-0 px-4 pb-1 text-danger">Quá giờ, chưa đánh dấu đến/không đến</p>
-              <AppointmentRows items={d.overdue} showDate />
-            </div>
-          ) : null}
-          {d.customerCancel.length ? (
-            <div>
-              <p className="overline m-0 px-4 pb-1 text-warning">Khách báo huỷ</p>
-              <AppointmentRows items={d.customerCancel} showDate />
-            </div>
-          ) : null}
-          {d.pending.length ? (
-            <div>
-              <p className="overline m-0 px-4 pb-1 text-ink-muted">Mới đặt, chưa chốt</p>
-              <AppointmentRows items={d.pending} showDate />
-            </div>
-          ) : null}
+          {groups
+            .filter((g) => g.items.length)
+            .map((g) => (
+              <div key={g.key}>
+                <p className={`overline m-0 px-4 pb-1 ${g.tone}`}>{g.title}</p>
+                <AppointmentRows items={g.items} showDate />
+              </div>
+            ))}
         </div>
       ) : null}
     </section>

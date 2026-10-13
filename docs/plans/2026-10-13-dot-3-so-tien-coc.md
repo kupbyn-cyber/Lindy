@@ -176,19 +176,19 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   *Kiểm tra:* trả 200.000đ chuyển khoản + 148.000đ tiền mặt → hai tài khoản tăng đúng, công nợ 0 (test 2); huỷ khoản thu → có bút toán đảo; `app_user` INSERT/UPDATE/DELETE bảng sổ → lỗi; thợ đọc sổ → 0 dòng; chạy lại trigger không ghi đôi.
 - [x] **3.3 Mở sổ và màn Sổ tiền (UI06, phần xem).** Linh chọn tháng mở sổ, nhập số dư hai tài khoản. Thêm → Sổ tiền: hai thẻ số dư; danh sách bút toán theo ngày, theo tài khoản. Nhung xem được; thợ không thấy mục này.
   *Kiểm tra:* mở sổ ngày 15 → 422; mở lần hai → chặn; Nhung gọi mở sổ → 403; thợ gọi API số dư → 403; test 27 phần số dư.
-- [ ] **3.4 Mùa cọc.** Migration `0012_deposits` phần mùa cọc. Cài đặt lịch thêm khối "Mùa cọc": tên, từ ngày, đến ngày, mức mỗi khách, số giờ báo trước để được hoàn, người nhận phần cọc bỏ hẹn.
+- [x] **3.4 Mùa cọc.** Migration `0012_deposits` phần mùa cọc. Cài đặt lịch thêm khối "Mùa cọc": tên, từ ngày, đến ngày, mức mỗi khách, số giờ báo trước để được hoàn, người nhận phần cọc bỏ hẹn.
   *Kiểm tra:* hai mùa chồng ngày → chặn; Nhung sửa → 403; sửa mùa không đổi lịch đã tạo.
-- [ ] **3.5 Lịch cần cọc.** DB tính `deposit_required` lúc tạo; form tạo lịch có phần cọc khi đang trong mùa, gợi ý số khách × mức; theo Q-C.
+- [x] **3.5 Lịch cần cọc.** DB tính `deposit_required` lúc tạo; form tạo lịch có phần cọc khi đang trong mùa, gợi ý số khách × mức; theo Q-C.
   *Kiểm tra:* test 29, 30. Tạo trong mùa, ngày hẹn sau mùa → cần cọc; tạo ngoài mùa, ngày hẹn trong mùa → không cần.
-- [ ] **3.6 Ghi và xác nhận cọc.** `POST /api/appointments/:id/deposits` (khoá idempotency); `POST /api/deposits/:id/confirm` (Nhung, Linh) → bút toán `deposit_in`; huỷ cọc ghi nhầm khi chưa xác nhận; thông báo cho người xác nhận.
+- [x] **3.6 Ghi và xác nhận cọc.** `POST /api/appointments/:id/deposits` (khoá idempotency); `POST /api/deposits/:id/confirm` (Nhung, Linh) → bút toán `deposit_in`; huỷ cọc ghi nhầm khi chưa xác nhận; thông báo cho người xác nhận.
   *Kiểm tra:* test 31, 32; S31, S32, S38.
-- [ ] **3.7 Hoàn cọc, giữ cọc.** App gợi ý theo mốc 12 tiếng (giờ hẹn so với thời điểm báo huỷ hoặc huỷ, DB ghi). `refund` chọn tài khoản chi, có lý do → bút toán `deposit_refund`; `forfeit` → doanh thu cọc bỏ hẹn (ngày hẹn, phần của người nhận). Làm trái gợi ý → bắt buộc lý do, vào Cần xem lại của Linh.
+- [x] **3.7 Hoàn cọc, giữ cọc.** App gợi ý theo mốc 12 tiếng (giờ hẹn so với thời điểm báo huỷ hoặc huỷ, DB ghi). `refund` chọn tài khoản chi, có lý do → bút toán `deposit_refund`; `forfeit` → doanh thu cọc bỏ hẹn (ngày hẹn, phần của người nhận). Làm trái gợi ý → bắt buộc lý do, vào Cần xem lại của Linh.
   *Kiểm tra:* test 33, 34, 36; PRD 36; S35, S37.
-- [ ] **3.8 Trừ cọc vào bill.** Đơn tạo từ lịch hiện "Cọc đã nhận …đ". Xác nhận đơn → app tự ghi khoản thu loại cọc, không quá số còn phải thu. Lịch nhóm dùng chung phần cọc còn lại. Huỷ khoản thu cọc → cọc trả về.
+- [x] **3.8 Trừ cọc vào bill.** Đơn tạo từ lịch hiện "Cọc đã nhận …đ". Xác nhận đơn → app tự ghi khoản thu loại cọc, không quá số còn phải thu. Lịch nhóm dùng chung phần cọc còn lại. Huỷ khoản thu cọc → cọc trả về.
   *Kiểm tra:* test 35, PRD 35, 54. Lịch 2 khách cọc 200.000đ, hai đơn 150.000đ và 300.000đ → trừ 150.000đ và 50.000đ; S36.
-- [ ] **3.9 Màn cọc.** Chi tiết lịch có khối Cọc: ghi, trạng thái, xác nhận, hoàn/giữ kèm gợi ý. Danh sách lịch có nhãn "Chưa cọc", "Cọc chờ xác nhận". Cần xử lý: cọc chờ xác nhận, lịch chưa cọc, cọc chờ hoàn/giữ.
+- [x] **3.9 Màn cọc.** Chi tiết lịch có khối Cọc: ghi, trạng thái, xác nhận, hoàn/giữ kèm gợi ý. Danh sách lịch có nhãn "Chưa cọc", "Cọc chờ xác nhận". Cần xử lý: cọc chờ xác nhận, lịch chưa cọc, cọc chờ hoàn/giữ.
   *Kiểm tra:* 375px, sáng và tối; đếm lần chạm (mục 5).
-- [ ] **3.10 Tổng quan và báo cáo phần 3A.** Linh, Nhung: Tiền trong quỹ (hai tài khoản), cọc đang giữ, cọc chờ xác nhận. Báo cáo ngày/tháng: doanh thu cọc bỏ hẹn tách riêng, cọc đang giữ.
+- [x] **3.10 Tổng quan và báo cáo phần 3A.** Linh, Nhung: Tiền trong quỹ (hai tài khoản), cọc đang giữ, cọc chờ xác nhận. Báo cáo ngày/tháng: doanh thu cọc bỏ hẹn tách riêng, cọc đang giữ.
   *Kiểm tra:* PRD 36 ở mức báo cáo (doanh thu thợ của Nhung, Linh từ đơn không đổi); số trên Tổng quan khớp màn Sổ tiền.
 - [ ] **3.11 Chốt 3A.** `bun run check`, build, `scan-bundle`, `check-upgrade --from=0010`; gom test vào `tests/acceptance/coc-tet.test.ts` (mỗi test ghi đúng số module §13 / PRD §18) và `tests/security/so-tien.test.ts`; dữ liệu demo có cọc; báo kết quả. Triển khai 3A riêng được (khi anh yêu cầu) để chạy thử trước mùa cọc.
 

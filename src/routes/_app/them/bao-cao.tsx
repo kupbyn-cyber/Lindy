@@ -1,6 +1,7 @@
 // UI13 — Báo cáo doanh thu (PRD §11, bước 2.21). Linh, Nhung (revenue.read_branch).
 // Doanh thu theo ngày làm dịch vụ, chỉ đơn đã xác nhận; tiền thu theo ngày nhận tiền và tài khoản.
-// Cọc, tip, thu chi, chốt quỹ ở Đợt 3; lương ở Đợt 4; xuất CSV/XLSX/PDF ở Đợt 5.
+// Cọc Tết (Đợt 3A): nhận, hoàn, doanh thu cọc khách bỏ hẹn tách riêng. Tip, thu chi, chốt quỹ ở 3B; lương ở Đợt 4;
+// xuất CSV/XLSX/PDF ở Đợt 5.
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -87,7 +88,7 @@ function ReportPage() {
       {kind === 'day' ? <DayView q={day} /> : <MonthView q={mon} />}
 
       <div className="px-4">
-        <Note>Cọc, tip, thu chi, chốt quỹ có ở Đợt 3; lương ở Đợt 4; xuất file ở Đợt 5.</Note>
+        <Note>Tip, thu chi, chốt quỹ, dòng tiền có ở Đợt 3B; lương ở Đợt 4; xuất file ở Đợt 5.</Note>
       </div>
     </section>
   )
@@ -155,6 +156,25 @@ function Receipts(props: { rows: Day['receipts'] }) {
   )
 }
 
+function Deposits(props: { d: Day['deposits']; period: string }) {
+  const d = props.d
+  return (
+    <Card title="Cọc Tết">
+      <Line label={`Nhận cọc ${props.period}`} value={d.received} />
+      <Line label={`Hoàn cọc ${props.period}`} value={d.refunded} />
+      <Line label="Doanh thu cọc khách bỏ hẹn" value={d.forfeited} strong />
+      {d.forfeitedByOwner.map((o) => (
+        <Line key={o.name} label={`· phần của ${o.name}`} value={o.amount} />
+      ))}
+      <Line label="Cọc đang giữ (hiện tại)" value={d.held} />
+      <Line label="Cọc chờ xác nhận (hiện tại)" value={d.pending} />
+      <p className="caption m-0 text-ink-muted">
+        Cọc bỏ hẹn ghi theo ngày hẹn, không tính hoa hồng, KPI; không cộng vào doanh thu thuần ở trên.
+      </p>
+    </Card>
+  )
+}
+
 function Appointments(props: { a: Day['appointments'] }) {
   const a = props.a
   return (
@@ -186,6 +206,7 @@ function DayView(props: { q: ReturnType<typeof useQuery<Day>> }) {
       </Card>
       <Staff rows={d.byStaff} />
       <Receipts rows={d.receipts} />
+      <Deposits d={d.deposits} period="trong ngày" />
       <Appointments a={d.appointments} />
     </>
   )
@@ -220,6 +241,7 @@ function MonthView(props: { q: ReturnType<typeof useQuery<Month>> }) {
       </Card>
       <Staff rows={m.byStaff} />
       <Receipts rows={m.receipts} />
+      <Deposits d={m.deposits} period="trong tháng" />
       <Card title="Khách">
         <Line label="Khách mới" text={String(m.customers.new)} />
         <Line label="Khách quay lại" text={String(m.customers.returning)} />

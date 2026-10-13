@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import type { ChipTone } from '~/components/ui'
 import type { ApptStatus } from '~/server/appointments/policy'
 import type { Detail, ListItem, Warnings } from '~/server/appointments/service'
+import type { DepositStatus } from '~/server/deposits/policy'
+import type { DepositState } from '~/server/deposits/view'
 import { api } from './api'
 
-export type { ApptStatus, Detail, ListItem, Warnings }
+export type { ApptStatus, DepositState, Detail, ListItem, Warnings }
 
 export const STATUS_LABEL: Record<ApptStatus, string> = {
   pending: 'Mới đặt',
@@ -37,7 +39,29 @@ export const FILTERS = [
 ] as const
 export type Filter = (typeof FILTERS)[number]['value']
 
-export type Settings = { openTime: string; closeTime: string; defaultDurationMin: number; timezone: string }
+export type Settings = {
+  openTime: string
+  closeTime: string
+  defaultDurationMin: number
+  timezone: string
+  /** Mùa cọc đang bật hôm nay (Đợt 3): lịch tạo hôm nay cần cọc */
+  depositSeason?: { name: string; endDate: string; amountPerGuest: number } | null
+}
+
+export const DEPOSIT_STATUS: Record<DepositStatus, { label: string; tone: ChipTone }> = {
+  recorded: { label: 'Chờ xác nhận', tone: 'warning' },
+  confirmed: { label: 'Đã nhận cọc', tone: 'success' },
+  refunded: { label: 'Đã hoàn cọc', tone: 'neutral' },
+  forfeited: { label: 'Quán giữ cọc', tone: 'accent' },
+  voided: { label: 'Đã huỷ', tone: 'neutral' },
+}
+
+/** Nhãn cọc trên lịch (K16). done: đã trừ, hoàn, giữ hết — không hiện nhãn. */
+export const DEPOSIT_STATE_CHIP: Partial<Record<DepositState, { label: string; tone: ChipTone }>> = {
+  missing: { label: 'Chưa cọc', tone: 'warning' },
+  pending: { label: 'Cọc chờ xác nhận', tone: 'accent' },
+  held: { label: 'Đã cọc', tone: 'success' },
+}
 
 export function useAppointments(params: { from: string; to: string; filter: Filter; q?: string }) {
   const qs = new URLSearchParams()

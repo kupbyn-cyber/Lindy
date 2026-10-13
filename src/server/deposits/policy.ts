@@ -3,14 +3,6 @@
 
 export type DepositStatus = 'recorded' | 'confirmed' | 'refunded' | 'forfeited' | 'voided'
 
-export const DEPOSIT_STATUS_LABEL: Record<DepositStatus, string> = {
-  recorded: 'Chờ xác nhận',
-  confirmed: 'Đã nhận cọc',
-  refunded: 'Đã hoàn cọc',
-  forfeited: 'Quán giữ cọc',
-  voided: 'Đã huỷ',
-}
-
 /** Lịch đã kết thúc thì mới hoàn hoặc giữ cọc (huỷ, không đến; đã làm xong mà cọc còn dư). */
 export const RESOLVABLE_APPT = ['cancelled', 'no_show', 'completed']
 

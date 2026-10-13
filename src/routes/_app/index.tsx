@@ -1,5 +1,5 @@
-// UI02 — Tổng quan (PRD §5.2). Linh, Nhung: doanh thu thuần, tiền đã thu, còn khách nợ, doanh thu từng thợ,
-// Cần xử lý. Thợ: số của mình và lịch chung. Tiền trong quỹ có ở Đợt 3.
+// UI02 — Tổng quan (PRD §5.2). Linh, Nhung: doanh thu thuần, tiền đã thu, còn khách nợ, Tiền trong quỹ, cọc Tết,
+// doanh thu từng thợ, Cần xử lý. Thợ: số của mình và lịch chung.
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -74,6 +74,45 @@ function Overview() {
         </section>
       ) : null}
 
+      {d?.money ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 text-ink-muted">Tiền trong quỹ</h2>
+          <Link to="/them/so-tien" className="lo-card flex flex-col gap-1 no-underline">
+            {d.money.some((m) => m.balance == null) ? (
+              <span className="body text-ink-muted">Chưa mở sổ. Linh mở sổ ở Thêm → Sổ tiền.</span>
+            ) : (
+              d.money.map((m) => (
+                <div key={m.id} className="flex items-baseline justify-between gap-2">
+                  <span className="body">{m.name}</span>
+                  <Money value={m.balance ?? 0} tone={(m.balance ?? 0) < 0 ? 'negative' : undefined} />
+                </div>
+              ))
+            )}
+          </Link>
+        </section>
+      ) : null}
+
+      {d?.deposits &&
+      (d.deposits.held || d.deposits.pending || d.deposits.forfeited || d.deposits.received) ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 text-ink-muted">Cọc Tết</h2>
+          <div className="lo-card flex flex-col gap-1">
+            <DepLine label="Cọc đang giữ (chưa phải doanh thu)" value={d.deposits.held} />
+            {d.deposits.pending ? <DepLine label="Cọc chờ xác nhận" value={d.deposits.pending} /> : null}
+            <DepLine
+              label={`Nhận cọc ${period === 'day' ? 'hôm nay' : 'tháng này'}`}
+              value={d.deposits.received}
+            />
+            {d.deposits.forfeited ? (
+              <DepLine
+                label={`Doanh thu cọc khách bỏ hẹn (${d.deposits.forfeitedByOwner.map((o) => o.name).join(', ')})`}
+                value={d.deposits.forfeited}
+              />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       {a && (a.awaiting || a.myInProgress || a.ownerApproval || a.review) ? (
         <section className="flex flex-col gap-1">
           <h2 className="overline m-0 text-ink-muted">Cần xử lý · đơn hàng</h2>
@@ -128,6 +167,15 @@ function Overview() {
 
       <TodaySummary />
     </section>
+  )
+}
+
+function DepLine(props: { label: string; value: number }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="body text-ink-muted">{props.label}</span>
+      <Money value={props.value} />
+    </div>
   )
 }
 

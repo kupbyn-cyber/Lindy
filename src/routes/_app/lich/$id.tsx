@@ -4,6 +4,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Phone } from 'lucide-react'
 import { type ReactNode, useRef, useState } from 'react'
 import { AppointmentForm } from '~/components/lich/AppointmentForm'
+import { DepositSection } from '~/components/lich/DepositSection'
 import {
   Button,
   ConfirmDialog,
@@ -15,6 +16,7 @@ import {
 } from '~/components/ui'
 import { ApiError, api, errorText } from '~/lib/api'
 import {
+  DEPOSIT_STATE_CHIP,
   type Detail,
   STATUS_LABEL,
   STATUS_TONE,
@@ -63,6 +65,12 @@ const AUDIT_LABEL: Record<string, string> = {
   cancelled: 'Huỷ lịch',
   customer_cancel_reported: 'Khách báo huỷ',
   note: 'Ghi chú thêm',
+  deposit_recorded: 'Ghi cọc',
+  deposit_confirmed: 'Xác nhận cọc',
+  deposit_voided: 'Huỷ khoản cọc',
+  deposit_refunded: 'Hoàn cọc',
+  deposit_forfeited: 'Giữ cọc',
+  deposit_reviewed: 'Linh đã xem khoản cọc',
 }
 
 const FIELD_LABEL: Record<string, string> = {
@@ -185,6 +193,11 @@ function DetailPage() {
         <div className="flex flex-wrap gap-1">
           <StatusChip tone={STATUS_TONE[d.status]}>{STATUS_LABEL[d.status]}</StatusChip>
           {d.customerCancelReported ? <StatusChip tone="warning">Khách báo huỷ</StatusChip> : null}
+          {d.depositState && DEPOSIT_STATE_CHIP[d.depositState] ? (
+            <StatusChip tone={DEPOSIT_STATE_CHIP[d.depositState]!.tone}>
+              {DEPOSIT_STATE_CHIP[d.depositState]!.label}
+            </StatusChip>
+          ) : null}
           {d.outsideHours ? <StatusChip tone="warning">Ngoài giờ mở cửa</StatusChip> : null}
         </div>
       </div>
@@ -266,6 +279,8 @@ function DetailPage() {
               </Note>
             ))}
           </div>
+
+          <DepositSection d={d} />
 
           {d.orders.length > 0 ? (
             <div className="flex flex-col gap-1">

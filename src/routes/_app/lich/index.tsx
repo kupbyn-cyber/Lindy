@@ -181,6 +181,7 @@ function SchedulePage() {
         open={!!form}
         initial={form ?? undefined}
         defaultDurationMin={settings.data?.defaultDurationMin ?? 120}
+        depositSeason={settings.data?.depositSeason}
         onClose={() => setForm(null)}
       />
     </section>

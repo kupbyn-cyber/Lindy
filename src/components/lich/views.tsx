@@ -3,7 +3,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { cx, StatusChip } from '~/components/ui'
-import { type ListItem, layoutDay, STATUS_LABEL, STATUS_TONE } from '~/lib/appointments'
+import { DEPOSIT_STATE_CHIP, type ListItem, layoutDay, STATUS_LABEL, STATUS_TONE } from '~/lib/appointments'
 import { addDays, formatIsoDate, hhmmToMinutes, minutesToHHMM, weekdayLong, weekdayShort } from '~/lib/time'
 
 // ---------------------------------------------------------------- Thanh ngày
@@ -66,9 +66,11 @@ function blockClass(it: ListItem) {
 
 function Badges(props: { it: ListItem; compact?: boolean }) {
   const { it } = props
+  const dep = it.depositState ? DEPOSIT_STATE_CHIP[it.depositState] : undefined
   return (
     <>
       {it.customerCancelReported ? <StatusChip tone="warning">Khách báo huỷ</StatusChip> : null}
+      {dep ? <StatusChip tone={dep.tone}>{dep.label}</StatusChip> : null}
       {!props.compact || it.status !== 'confirmed' ? (
         <StatusChip tone={STATUS_TONE[it.status]}>{STATUS_LABEL[it.status]}</StatusChip>
       ) : null}
@@ -174,6 +176,10 @@ export function DayTimeline(props: {
                 </span>
               ) : p.customerCancelReported ? (
                 <span className="caption block truncate text-warning">Khách báo huỷ</span>
+              ) : p.depositState === 'missing' || p.depositState === 'pending' ? (
+                <span className="caption block truncate text-warning">
+                  {DEPOSIT_STATE_CHIP[p.depositState]?.label}
+                </span>
               ) : null}
             </Link>
           ))}

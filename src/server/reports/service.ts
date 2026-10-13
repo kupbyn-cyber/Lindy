@@ -1,12 +1,13 @@
 // Tổng quan (UI02, bước 2.20) và báo cáo doanh thu ngày/tháng (UI13, PRD §11, bước 2.21).
 // Doanh thu chỉ tính đơn Đã xác nhận, theo ngày làm dịch vụ (Q01, Q02). Lượt khách = số đơn đã xác nhận (K13).
-// Linh, Nhung (revenue.read_branch) xem số toàn quán; thợ chỉ thấy số của mình (K09). Tiền trong quỹ, cọc, tip, thu chi
-// có ở Đợt 3.
+// Linh, Nhung (revenue.read_branch) xem số toàn quán; thợ chỉ thấy số của mình (K09). Đợt 3A: Tiền trong quỹ
+// (money_accounts.read_balance), cọc nhận / hoàn / giữ, doanh thu cọc khách bỏ hẹn tách riêng. Tip, thu chi ở 3B.
 import { isIsoDate, toLocalDate } from '~/lib/time'
 import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
 import { forbidden, invalid } from '../http/errors'
+import { balancesOf } from '../money/service'
 import { reviewPending } from '../orders/service'
 
 const n = (v: unknown) => Number(v ?? 0)
@@ -76,10 +77,16 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
   const all = hasPerm(auth, branch.id, 'revenue.read_branch')
   const isOwner = hasPerm(auth, branch.id, 'review_queue.read')
   const canConfirm = hasPerm(auth, branch.id, 'order.confirm')
+  const balances = hasPerm(auth, branch.id, 'money_accounts.read_balance')
   return withUser(auth.userId, async (tx) => {
-    const { today } = await branchToday(tx, branch.id)
+    const { tz, today } = await branchToday(tx, branch.id)
     const from = input.period === 'month' ? `${today.slice(0, 8)}01` : today
     const t = all ? await totals(tx, branch.id, from, today) : null
+    // Tiền trong quỹ (PRD §5.2): Linh, Nhung; chưa mở sổ thì số dư null
+    const money = balances
+      ? (await balancesOf(tx, branch.id)).map((a) => ({ id: a.id, name: a.name, balance: a.balance }))
+      : null
+    const deposits = all ? await depositStats(tx, branch.id, tz, from, today) : null
     const staff = await byStaff(tx, branch.id, from, today, all ? null : auth.userId)
     // P41: đếm mọi ngày (đơn ngày cũ chưa xác nhận thì chưa vào doanh thu, không được quên)
     const [c] = await tx<Record<string, unknown>[]>`
@@ -98,6 +105,8 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
       from,
       to: today,
       revenue: t,
+      money,
+      deposits,
       byStaff: staff,
       mine: all ? null : (staff[0]?.amount ?? 0),
       attention: {
@@ -148,6 +157,38 @@ async function appointmentStats(tx: Tx, branchId: string, tz: string, from: stri
   }
 }
 
+/**
+ * Cọc mùa Tết (Đợt 3): nhận (đã xác nhận), hoàn, giữ trong khoảng ngày; đang giữ, chờ xác nhận tính đến lúc xem.
+ * Cọc bị giữ là doanh thu "cọc khách bỏ hẹn", tách riêng, ghi theo ngày hẹn, phần của người nhận (A03, C04).
+ */
+async function depositStats(tx: Tx, branchId: string, tz: string, from: string, to: string) {
+  const [r] = await tx<Record<string, unknown>[]>`
+    select
+      coalesce(sum(amount) filter (where status <> 'voided'
+        and (confirmed_at at time zone ${tz})::date between ${from}::date and ${to}::date), 0) as received,
+      coalesce(sum(resolved_amount) filter (where status = 'refunded'
+        and (resolved_at at time zone ${tz})::date between ${from}::date and ${to}::date), 0) as refunded,
+      coalesce(sum(resolved_amount) filter (where status = 'forfeited'
+        and revenue_date between ${from}::date and ${to}::date), 0) as forfeited,
+      coalesce(sum(amount - coalesce(resolved_amount, 0) - app.deposit_applied(id)) filter (where status = 'confirmed'), 0)
+        as held,
+      coalesce(sum(amount) filter (where status = 'recorded'), 0) as pending
+    from appointment_deposits where branch_id = ${branchId}`
+  const owners = await tx<{ name: string; amount: string }[]>`
+    select u.display_name as name, sum(d.resolved_amount) as amount
+    from appointment_deposits d join users u on u.id = d.forfeit_owner_user_id
+    where d.branch_id = ${branchId} and d.status = 'forfeited' and d.revenue_date between ${from}::date and ${to}::date
+    group by u.display_name order by u.display_name`
+  return {
+    received: n(r?.received),
+    refunded: n(r?.refunded),
+    forfeited: n(r?.forfeited),
+    forfeitedByOwner: owners.map((o) => ({ name: o.name, amount: n(o.amount) })),
+    held: n(r?.held),
+    pending: n(r?.pending),
+  }
+}
+
 async function orderCounts(tx: Tx, branchId: string, from: string, to: string) {
   const [r] = await tx<Record<string, unknown>[]>`
     select count(*) filter (where status = 'confirmed') as confirmed,
@@ -178,6 +219,7 @@ export async function dayReport(auth: Auth, input: { branchId?: string; date?: s
       byStaff: await byStaff(tx, branch.id, date, date, null),
       receipts: await receipts(tx, branch.id, tz, date, date),
       appointments: await appointmentStats(tx, branch.id, tz, date, date),
+      deposits: await depositStats(tx, branch.id, tz, date, date),
     }
   })
 }
@@ -237,6 +279,7 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
       byStaff: await byStaff(tx, branch.id, from, to, null),
       receipts: await receipts(tx, branch.id, tz, from, to),
       appointments: await appointmentStats(tx, branch.id, tz, from, to),
+      deposits: await depositStats(tx, branch.id, tz, from, to),
       customers: {
         new: n(cust?.newCustomers),
         returning: n(cust?.returningCustomers),

@@ -59,7 +59,11 @@ function MorePage() {
           <Row to="/them/danh-muc" label="Danh mục dịch vụ" hint="Dịch vụ, combo, giá" />
         ) : null}
         {can('booking_settings.manage') ? (
-          <Row to="/them/cai-dat-lich" label="Cài đặt lịch" hint="Giờ mở cửa, thời lượng mặc định" />
+          <Row
+            to="/them/cai-dat-lich"
+            label="Cài đặt lịch"
+            hint="Giờ mở cửa, thời lượng mặc định, mùa cọc Tết"
+          />
         ) : null}
       </div>
       <div className="px-4 pt-6">

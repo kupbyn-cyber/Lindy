@@ -30,7 +30,11 @@ export function useLiveEvents(branchId: string | null) {
         healthy = true
         everConnected = true
       })
-      es.addEventListener('appointments', () => void qc.invalidateQueries({ queryKey: ['appointments'] }))
+      es.addEventListener('appointments', () => {
+        void qc.invalidateQueries({ queryKey: ['appointments'] })
+        // Cọc ghi trên lịch: Tổng quan có số cọc chờ xác nhận
+        void qc.invalidateQueries({ queryKey: ['orders', 'overview'] })
+      })
       es.addEventListener('orders', () => {
         void qc.invalidateQueries({ queryKey: ['orders'] })
         void qc.invalidateQueries({ queryKey: ['appointments'] })

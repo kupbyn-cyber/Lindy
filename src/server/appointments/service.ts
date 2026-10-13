@@ -410,6 +410,8 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
       : await computeWarnings(tx, row.branchId, row.startAt, row.endAt, row.phone, row.id, s),
     orders,
     deposit,
+    // Nhãn theo các khoản cọc thật của lịch (dòng đọc bằng select * không có tổng cọc)
+    depositState: deposit?.state ?? null,
   }
 }
 
@@ -486,6 +488,7 @@ export async function attentionList(auth: Auth, branchId?: string) {
       depositsToConfirm: [],
       depositsMissing: [],
       depositsToResolve: [],
+      depositsToReview: [],
     }
   return withUser(auth.userId, async (tx) => {
     const s = await loadSettings(tx, branch.id)
@@ -506,7 +509,17 @@ export async function attentionList(auth: Auth, branchId?: string) {
     const now = Date.now()
     const item = (r: Row) => toItem(r, auth.userId, s.timezone)
     const can = (p: string) => hasPerm(auth, branch.id, p)
+    // Cọc xử lý khác gợi ý (hoàn khi nên giữ, hoặc ngược lại) → Linh xem lại [P49]
+    const review = can('review_queue.read')
+      ? await tx<Row[]>`
+          select a.*, dp.deposit_pending, dp.deposit_held, dp.deposit_any from appointments a ${DEPOSIT_COLS(tx)}
+          where a.branch_id = ${branch.id}
+            and exists (select 1 from appointment_deposits x where x.appointment_id = a.id
+                        and x.needs_owner_review and x.reviewed_at is null)
+          order by a.start_at desc limit 100`
+      : []
     return {
+      depositsToReview: review.map(item),
       depositsToConfirm: can('deposits.confirm')
         ? dep.filter((r) => Number(r.depositPending ?? 0) > 0).map(item)
         : [],
