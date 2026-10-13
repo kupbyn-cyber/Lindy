@@ -298,6 +298,12 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             <Money value={d.dueAmount} tone={d.dueAmount > 0 ? 'negative' : undefined} />
           </div>
         ) : null}
+        {d.depositAvailable > 0 && d.status !== 'cancelled' ? (
+          <Note>
+            Lịch có cọc {formatVND(d.depositAvailable)} chưa trừ. App tự trừ vào bill khi bấm Làm xong hoặc
+            xác nhận.
+          </Note>
+        ) : null}
         {levelNote ? (
           <Note tone={d.approval?.valid ? 'info' : 'warning'}>
             {d.approval?.valid ? `Giảm giá đã được ${d.approval.byName} duyệt.` : levelNote}
@@ -313,7 +319,9 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
               <div key={p.id} className="lo-row">
                 <span className="lo-row-main">
                   <span className={p.voided ? 'body text-ink-muted line-through' : 'body'}>
-                    {p.method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'} · {p.accountName}
+                    {p.method === 'deposit'
+                      ? 'Trừ cọc của lịch'
+                      : `${p.method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'} · ${p.accountName}`}
                   </span>
                   <span className="lo-row-meta caption">
                     {formatDateTimeShort(p.receivedAt)} · {p.recordedByName}

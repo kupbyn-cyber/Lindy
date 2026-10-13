@@ -156,6 +156,7 @@ describe('Xếp cột lịch chồng giờ', () => {
     guestCount: 1,
     serviceSummary: null,
     status: 'pending',
+    depositState: null,
     customerCancelReported: false,
     outsideHours: false,
     mine: false,

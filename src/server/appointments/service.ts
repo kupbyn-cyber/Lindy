@@ -7,6 +7,7 @@ import { addDays, formatIsoDate, fromLocal, isIsoDate, toLocalDate, toLocalTime 
 import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
+import { type DepositBlock, type DepositState, depositBlock, depositState } from '../deposits/view'
 import { conflict, forbidden, invalid, notFound } from '../http/errors'
 import { emitEvent } from '../notifications/emit'
 import { type ApptCan, type ApptStatus, appointmentCan } from './policy'
@@ -42,6 +43,13 @@ type Row = {
   updatedAt: Date
   version: number
   createRequestHash: string
+  depositRequired: boolean
+  depositPerGuest: string | null
+  depositSeasonId: string | null
+  /** Có khi đọc bằng listAppointments/attentionList (tổng cọc của lịch) */
+  depositPending?: string | null
+  depositHeld?: string | null
+  depositAny?: boolean | null
 }
 
 /** Dòng trên lịch: không có SĐT, ghi chú (B08, P11). */
@@ -59,6 +67,8 @@ export type ListItem = {
   customerCancelReported: boolean
   outsideHours: boolean
   mine: boolean
+  /** Nhãn cọc (K16): missing = Chưa cọc; pending = Cọc chờ xác nhận; held = Đã cọc; null = không cần cọc */
+  depositState: DepositState | null
 }
 
 export type Warnings = {
@@ -85,6 +95,8 @@ export type Detail = ListItem & {
   warnings: Warnings
   /** Đơn tạo từ lịch (kể cả đơn người xem không mở được, K09). */
   orders: { id: string; codeLabel: string; status: string; visible: boolean }[]
+  /** Lịch tạo trong mùa cọc (C01); null = không cần cọc */
+  deposit: DepositBlock | null
 }
 
 async function linkedOrders(tx: Tx, id: string) {
@@ -127,8 +139,25 @@ function toItem(r: Row, userId: string, tz: string): ListItem {
     customerCancelReported: r.customerCancelReportedAt != null,
     outsideHours: r.outsideHours,
     mine: r.createdBy === userId,
+    depositState: depositState(
+      r.depositRequired,
+      r.status,
+      Number(r.depositPending ?? 0),
+      Number(r.depositHeld ?? 0),
+      !!r.depositAny,
+    ),
   }
 }
+
+/** Cột tổng cọc của lịch cho danh sách (chỉ lịch cần cọc) */
+const DEPOSIT_COLS = (tx: Tx) => tx`
+  left join lateral (
+    select coalesce(sum(d.amount) filter (where d.status = 'recorded'), 0) as deposit_pending,
+           coalesce(sum(d.amount - coalesce(d.resolved_amount, 0) - app.deposit_applied(d.id))
+                    filter (where d.status = 'confirmed'), 0) as deposit_held,
+           coalesce(bool_or(d.status <> 'voided'), false) as deposit_any
+    from appointment_deposits d where d.appointment_id = a.id
+  ) dp on a.deposit_required`
 
 function perms(auth: Auth, branchId: string) {
   return auth.branches.find((b) => b.id === branchId)?.perms ?? []
@@ -353,6 +382,8 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
   ])
   const get = (id: string | null) => (id ? (n.get(id) ?? null) : null)
   const orders = await linkedOrders(tx, row.id)
+  const deposit = await depositBlock(tx, auth, row)
+  const hasConfirmedDeposit = !!deposit?.items.some((d) => d.status === 'confirmed')
   return {
     ...toItem(row, auth.userId, s.timezone),
     customerId: row.customerId,
@@ -368,16 +399,27 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
     customerCancelReportedByName: get(row.customerCancelReportedBy),
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
-    can: appointmentCan(perms(auth, row.branchId), auth.userId, row, activeCount(orders)),
+    can: appointmentCan(
+      perms(auth, row.branchId),
+      auth.userId,
+      { ...row, hasConfirmedDeposit },
+      activeCount(orders),
+    ),
     warnings: ['cancelled', 'no_show'].includes(row.status)
       ? { overlapCount: 0, duplicates: [], outsideHours: row.outsideHours }
       : await computeWarnings(tx, row.branchId, row.startAt, row.endAt, row.phone, row.id, s),
     orders,
+    deposit,
   }
 }
 
 export async function getAppointment(auth: Auth, id: string) {
   return withUser(auth.userId, async (tx) => toDetail(tx, auth, await loadRow(tx, id)))
+}
+
+/** Chi tiết lịch trong một giao dịch đang mở (thao tác cọc trả về lịch đã cập nhật). */
+export async function appointmentDetail(tx: Tx, auth: Auth, id: string) {
+  return toDetail(tx, auth, await loadRow(tx, id))
 }
 
 export async function listAppointments(
@@ -410,7 +452,7 @@ export async function listAppointments(
     const like = q ? `%${escapeLike(q)}%` : null
 
     const rows = await tx<Row[]>`
-      select * from appointments
+      select a.*, dp.deposit_pending, dp.deposit_held, dp.deposit_any from appointments a ${DEPOSIT_COLS(tx)}
       where branch_id = ${branch.id}
         and (${from}::timestamptz is null or start_at >= ${from})
         and (${to}::timestamptz is null or start_at < ${to})
@@ -430,22 +472,55 @@ export async function listAppointments(
   })
 }
 
-/** Danh sách Cần xử lý cho người có quyền lịch mở rộng (§7.1). Quá giờ theo K02: qua giờ kết thúc. */
+/**
+ * Danh sách Cần xử lý cho người có quyền lịch mở rộng (§7.1). Quá giờ theo K02: qua giờ kết thúc.
+ * Cọc (Đợt 3): cọc chờ xác nhận (Nhung, Linh), lịch chưa cọc (K16), cọc chờ hoàn/giữ (Linh, Nhung, Chin).
+ */
 export async function attentionList(auth: Auth, branchId?: string) {
   const branch = requireBranch(auth, branchId)
   if (!hasPerm(auth, branch.id, 'appointments.manage_all'))
-    return { pending: [], customerCancel: [], overdue: [] }
+    return {
+      pending: [],
+      customerCancel: [],
+      overdue: [],
+      depositsToConfirm: [],
+      depositsMissing: [],
+      depositsToResolve: [],
+    }
   return withUser(auth.userId, async (tx) => {
     const s = await loadSettings(tx, branch.id)
     const rows = await tx<Row[]>`
-      select * from appointments
+      select a.*, dp.deposit_pending, dp.deposit_held, dp.deposit_any from appointments a ${DEPOSIT_COLS(tx)}
       where branch_id = ${branch.id} and status in ('pending', 'confirmed')
         and (status = 'pending' or customer_cancel_reported_at is not null or end_at < now())
         and end_at > now() - interval '7 days'
       order by start_at limit 200`
+    // Lịch cần cọc còn việc: chưa cọc (còn mở, chưa qua giờ), cọc chờ xác nhận, cọc còn giữ khi lịch đã kết thúc
+    const dep = await tx<Row[]>`
+      select a.*, dp.deposit_pending, dp.deposit_held, dp.deposit_any from appointments a ${DEPOSIT_COLS(tx)}
+      where a.branch_id = ${branch.id} and a.deposit_required
+        and ((dp.deposit_pending > 0)
+          or (not dp.deposit_any and a.status in ('pending', 'confirmed') and a.end_at > now())
+          or (dp.deposit_held > 0 and a.status in ('cancelled', 'no_show', 'completed')))
+      order by a.start_at limit 200`
     const now = Date.now()
     const item = (r: Row) => toItem(r, auth.userId, s.timezone)
+    const can = (p: string) => hasPerm(auth, branch.id, p)
     return {
+      depositsToConfirm: can('deposits.confirm')
+        ? dep.filter((r) => Number(r.depositPending ?? 0) > 0).map(item)
+        : [],
+      depositsMissing: dep
+        .filter((r) => !r.depositAny && ['pending', 'confirmed'].includes(r.status))
+        .map(item),
+      depositsToResolve: can('deposits.resolve')
+        ? dep
+            .filter(
+              (r) =>
+                Number(r.depositHeld ?? 0) > 0 && ['cancelled', 'no_show', 'completed'].includes(r.status),
+            )
+            .map(item)
+        : [],
       overdue: rows.filter((r) => new Date(r.endAt).getTime() < now).map(item),
       customerCancel: rows
         .filter((r) => r.customerCancelReportedAt && new Date(r.endAt).getTime() >= now)
@@ -592,10 +667,13 @@ export async function transitionAppointment(
 ) {
   return withUser(auth.userId, async (tx) => {
     const row = await loadRow(tx, id)
+    const [held] = row.depositRequired
+      ? await tx`select 1 from appointment_deposits where appointment_id = ${id} and status = 'confirmed' limit 1`
+      : []
     const can = appointmentCan(
       perms(auth, row.branchId),
       auth.userId,
-      row,
+      { ...row, hasConfirmedDeposit: !!held },
       activeCount(await linkedOrders(tx, row.id)),
     )
     const s = await loadSettings(tx, row.branchId)
@@ -623,7 +701,9 @@ export async function transitionAppointment(
     if (!allowed) {
       throw forbidden(
         action === 'cancel'
-          ? 'Không huỷ được lịch này. Dùng Khách báo huỷ để báo Linh, Nhung, Chin.'
+          ? held
+            ? 'Lịch đã có cọc được xác nhận. Báo Linh, Nhung hoặc Chin huỷ lịch.'
+            : 'Không huỷ được lịch này. Dùng Khách báo huỷ để báo Linh, Nhung, Chin.'
           : 'Không có quyền làm việc này với lịch ở trạng thái hiện tại.',
       )
     }
@@ -685,7 +765,19 @@ export async function transitionAppointment(
 
 export async function getSettings(auth: Auth, branchId?: string) {
   const branch = requireBranch(auth, branchId)
-  return withUser(auth.userId, (tx) => loadSettings(tx, branch.id))
+  return withUser(auth.userId, async (tx) => {
+    const s = await loadSettings(tx, branch.id)
+    // Mùa cọc đang bật hôm nay: form tạo lịch hiện phần cọc và số gợi ý (module §5.1, §6.1, test 29–30)
+    const [season] = await tx<{ name: string; endDate: string; amountPerGuest: string }[]>`
+      select name, end_date::text as end_date, amount_per_guest
+      from app.deposit_season_on(${branch.id}, (now() at time zone ${s.timezone})::date) where id is not null`
+    return {
+      ...s,
+      depositSeason: season
+        ? { name: season.name, endDate: season.endDate, amountPerGuest: Number(season.amountPerGuest) }
+        : null,
+    }
+  })
 }
 
 export async function updateSettings(

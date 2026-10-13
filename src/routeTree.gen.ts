@@ -15,6 +15,7 @@ import { Route as DoiMatKhauRouteImport } from './routes/doi-mat-khau'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppThongBaoRouteImport } from './routes/_app/thong-bao'
 import { Route as ApiBookingSettingsRouteImport } from './routes/api/booking-settings'
+import { Route as ApiDepositSeasonsRouteImport } from './routes/api/deposit-seasons'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiMeRouteImport } from './routes/api/me'
@@ -62,6 +63,7 @@ import { Route as ApiStaffIndexRouteImport } from './routes/api/staff/index'
 import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
 import { Route as ApiCustomersIdCompensationsRouteImport } from './routes/api/customers/$id.compensations'
+import { Route as ApiDepositsIdActionRouteImport } from './routes/api/deposits/$id.$action'
 import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notifications/$id.read'
 import { Route as ApiOrdersIdActionRouteImport } from './routes/api/orders/$id.$action'
 import { Route as ApiPaymentsIdActionRouteImport } from './routes/api/payments/$id.$action'
@@ -95,6 +97,11 @@ const AppThongBaoRoute = AppThongBaoRouteImport.update({
 const ApiBookingSettingsRoute = ApiBookingSettingsRouteImport.update({
   id: '/api/booking-settings',
   path: '/api/booking-settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDepositSeasonsRoute = ApiDepositSeasonsRouteImport.update({
+  id: '/api/deposit-seasons',
+  path: '/api/deposit-seasons',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiEventsRoute = ApiEventsRouteImport.update({
@@ -336,6 +343,11 @@ const ApiCustomersIdCompensationsRoute =
     path: '/compensations',
     getParentRoute: () => ApiCustomersIdRoute,
   } as any)
+const ApiDepositsIdActionRoute = ApiDepositsIdActionRouteImport.update({
+  id: '/api/deposits/$id/$action',
+  path: '/api/deposits/$id/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotificationsIdReadRoute = ApiNotificationsIdReadRouteImport.update({
   id: '/api/notifications/$id/read',
   path: '/api/notifications/$id/read',
@@ -368,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/doi-mat-khau': typeof DoiMatKhauRoute
   '/thong-bao': typeof AppThongBaoRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
+  '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
@@ -415,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
+  '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
@@ -426,6 +440,7 @@ export interface FileRoutesByTo {
   '/doi-mat-khau': typeof DoiMatKhauRoute
   '/thong-bao': typeof AppThongBaoRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
+  '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
@@ -474,6 +489,7 @@ export interface FileRoutesByTo {
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
+  '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
@@ -487,6 +503,7 @@ export interface FileRoutesById {
   '/doi-mat-khau': typeof DoiMatKhauRoute
   '/_app/thong-bao': typeof AppThongBaoRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
+  '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
@@ -535,6 +552,7 @@ export interface FileRoutesById {
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
+  '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
@@ -549,6 +567,7 @@ export interface FileRouteTypes {
     | '/doi-mat-khau'
     | '/thong-bao'
     | '/api/booking-settings'
+    | '/api/deposit-seasons'
     | '/api/events'
     | '/api/health'
     | '/api/me'
@@ -596,6 +615,7 @@ export interface FileRouteTypes {
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/customers/$id/compensations'
+    | '/api/deposits/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
@@ -607,6 +627,7 @@ export interface FileRouteTypes {
     | '/doi-mat-khau'
     | '/thong-bao'
     | '/api/booking-settings'
+    | '/api/deposit-seasons'
     | '/api/events'
     | '/api/health'
     | '/api/me'
@@ -655,6 +676,7 @@ export interface FileRouteTypes {
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/customers/$id/compensations'
+    | '/api/deposits/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
@@ -667,6 +689,7 @@ export interface FileRouteTypes {
     | '/doi-mat-khau'
     | '/_app/thong-bao'
     | '/api/booking-settings'
+    | '/api/deposit-seasons'
     | '/api/events'
     | '/api/health'
     | '/api/me'
@@ -715,6 +738,7 @@ export interface FileRouteTypes {
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/customers/$id/compensations'
+    | '/api/deposits/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
@@ -727,6 +751,7 @@ export interface RootRouteChildren {
   DangNhapRoute: typeof DangNhapRoute
   DoiMatKhauRoute: typeof DoiMatKhauRoute
   ApiBookingSettingsRoute: typeof ApiBookingSettingsRoute
+  ApiDepositSeasonsRoute: typeof ApiDepositSeasonsRoute
   ApiEventsRoute: typeof ApiEventsRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiMeRoute: typeof ApiMeRoute
@@ -757,6 +782,7 @@ export interface RootRouteChildren {
   ApiOrdersIndexRoute: typeof ApiOrdersIndexRoute
   ApiStaffIndexRoute: typeof ApiStaffIndexRoute
   ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
+  ApiDepositsIdActionRoute: typeof ApiDepositsIdActionRoute
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
   ApiPaymentsIdActionRoute: typeof ApiPaymentsIdActionRoute
   ApiTicketsIdActionRoute: typeof ApiTicketsIdActionRoute
@@ -804,6 +830,13 @@ declare module '@tanstack/react-router' {
       path: '/api/booking-settings'
       fullPath: '/api/booking-settings'
       preLoaderRoute: typeof ApiBookingSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/deposit-seasons': {
+      id: '/api/deposit-seasons'
+      path: '/api/deposit-seasons'
+      fullPath: '/api/deposit-seasons'
+      preLoaderRoute: typeof ApiDepositSeasonsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/events': {
@@ -1135,6 +1168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCustomersIdCompensationsRouteImport
       parentRoute: typeof ApiCustomersIdRoute
     }
+    '/api/deposits/$id/$action': {
+      id: '/api/deposits/$id/$action'
+      path: '/api/deposits/$id/$action'
+      fullPath: '/api/deposits/$id/$action'
+      preLoaderRoute: typeof ApiDepositsIdActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notifications/$id/read': {
       id: '/api/notifications/$id/read'
       path: '/api/notifications/$id/read'
@@ -1266,6 +1306,7 @@ const rootRouteChildren: RootRouteChildren = {
   DangNhapRoute: DangNhapRoute,
   DoiMatKhauRoute: DoiMatKhauRoute,
   ApiBookingSettingsRoute: ApiBookingSettingsRoute,
+  ApiDepositSeasonsRoute: ApiDepositSeasonsRoute,
   ApiEventsRoute: ApiEventsRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiMeRoute: ApiMeRoute,
@@ -1296,6 +1337,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOrdersIndexRoute: ApiOrdersIndexRoute,
   ApiStaffIndexRoute: ApiStaffIndexRoute,
   ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
+  ApiDepositsIdActionRoute: ApiDepositsIdActionRoute,
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
   ApiPaymentsIdActionRoute: ApiPaymentsIdActionRoute,
   ApiTicketsIdActionRoute: ApiTicketsIdActionRoute,

@@ -293,7 +293,8 @@ export type OrderItemView = {
 export type PaymentView = {
   id: string
   amount: number
-  method: 'cash' | 'transfer'
+  /** deposit: cọc của lịch trừ vào bill (Đợt 3), không có tài khoản nhận */
+  method: 'cash' | 'transfer' | 'deposit'
   accountName: string
   receivedAt: string
   recordedByName: string | null
@@ -353,6 +354,8 @@ export type OrderDetail = {
   netAmount: number
   paidAmount: number
   dueAmount: number
+  /** Cọc đã xác nhận của lịch chưa trừ vào bill nào (module §10) */
+  depositAvailable: number
   paymentStatus: PaymentStatus
   requiredLevel: Level
   approval: { byName: string | null; level: Level | null; at: string | null; valid: boolean } | null
@@ -431,7 +434,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     {
       id: string
       amount: number
-      method: 'cash' | 'transfer'
+      method: PaymentView['method']
       accountName: string
       receivedAt: Date
       recordedBy: string
@@ -440,10 +443,16 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       voidedBy: string | null
     }[]
   >`
-    select p.id, p.amount::int as amount, p.method, m.name as account_name, p.received_at, p.recorded_by,
-           p.voided_at, p.void_reason, p.voided_by
-    from payments p join money_accounts m on m.id = p.money_account_id
+    select p.id, p.amount::int as amount, p.method, coalesce(m.name, 'Trừ cọc của lịch') as account_name,
+           p.received_at, p.recorded_by, p.voided_at, p.void_reason, p.voided_by
+    from payments p left join money_accounts m on m.id = p.money_account_id
     where p.order_id = ${o.id} order by p.received_at`
+  // Cọc đã xác nhận của lịch còn chưa trừ (app tự trừ khi bấm Làm xong hoặc xác nhận)
+  const [dep] = o.appointmentId
+    ? await tx<{ available: string }[]>`
+        select coalesce(sum(d.amount - coalesce(d.resolved_amount, 0) - app.deposit_applied(d.id)), 0) as available
+        from appointment_deposits d where d.appointment_id = ${o.appointmentId} and d.status = 'confirmed'`
+    : []
   const [customer] = o.customerId
     ? await tx<{ id: string; name: string; phone: string | null }[]>`
         select id, name, phone from customers where id = ${o.customerId}`
@@ -580,6 +589,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     netAmount: o.netAmount,
     paidAmount: paid,
     dueAmount: Math.max(0, o.netAmount - paid),
+    depositAvailable: Number(dep?.available ?? 0),
     paymentStatus: paymentStatus(o.netAmount, paid),
     requiredLevel: o.requiredLevel,
     approval: o.discountApprovedBy
@@ -944,6 +954,8 @@ export async function markDone(auth: Auth, id: string, version: number) {
       update orders set status = 'awaiting_confirmation' where id = ${id} and version = ${version} returning id`
     await afterUpdate(tx, auth, id, u)
     await audit(tx, auth, row, 'done')
+    // Cọc của lịch trừ vào bill (test 35, 54)
+    if (row.appointmentId) await tx`select app.apply_deposits(${id})`
     return detailOf(tx, auth, await loadRow(tx, id))
   })
 }
@@ -971,7 +983,11 @@ export async function confirmOrder(auth: Auth, id: string, version: number) {
         discount_approval_hash = ${approve ? null : row.discountApprovalHash}
       where id = ${id} and version = ${version} returning id`
     await afterUpdate(tx, auth, id, u)
-    if (row.appointmentId) await tx`select app.sync_appointment(${row.appointmentId})`
+    if (row.appointmentId) {
+      await tx`select app.sync_appointment(${row.appointmentId})`
+      // Cọc xác nhận sau khi bấm Làm xong, hoặc xác nhận thẳng từ Đang làm: trừ nốt (test 35, 54)
+      await tx`select app.apply_deposits(${id})`
+    }
     await audit(tx, auth, row, 'confirmed')
     return detailOf(tx, auth, await loadRow(tx, id))
   })

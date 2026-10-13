@@ -6,6 +6,8 @@ export const NOTIFICATION_TYPES = {
   'appointment.confirmed': { label: 'Chốt lịch', audience: 'appointments.manage_all' },
   'appointment.customer_cancel': { label: 'Khách báo huỷ', audience: 'appointments.manage_all' },
   'appointment.overdue': { label: 'Lịch đã qua giờ chưa đánh dấu', audience: 'appointments.manage_all' },
+  // Cọc mùa Tết (module §13 test 31): Nhung, Linh nhận khi có cọc chờ xác nhận
+  'deposit.recorded': { label: 'Cọc chờ xác nhận', audience: 'deposits.confirm' },
   'system.test': { label: 'Thông báo thử', audience: 'appointments.read_branch' },
 } as const
 

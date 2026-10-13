@@ -37,7 +37,13 @@ export type ApptCan = {
 export function appointmentCan(
   perms: string[],
   userId: string,
-  a: { createdBy: string; status: ApptStatus; customerCancelReportedAt?: unknown },
+  a: {
+    createdBy: string
+    status: ApptStatus
+    customerCancelReportedAt?: unknown
+    /** Có cọc đã xác nhận (còn giữ): thợ không tự huỷ (module §4, test 36) */
+    hasConfirmedDeposit?: boolean
+  },
   /** Số đơn liên kết chưa huỷ: lịch có đơn thì tự Hoàn thành khi đơn được xác nhận (§5.4). */
   activeOrders = 0,
 ): ApptCan {
@@ -50,7 +56,7 @@ export function appointmentCan(
     confirm: has('confirm_all') && a.status === 'pending',
     cancel:
       (has('cancel_all') && ['pending', 'confirmed', 'arrived'].includes(a.status)) ||
-      (ownPending && has('cancel_own_pending')),
+      (ownPending && has('cancel_own_pending') && !a.hasConfirmedDeposit),
     reportCustomerCancel: has('report_customer_cancel') && open && !a.customerCancelReportedAt,
     markArrived: has('mark_arrived') && open,
     noShow: has('manage_all') && open,
