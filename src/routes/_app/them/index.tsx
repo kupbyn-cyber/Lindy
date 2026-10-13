@@ -49,6 +49,12 @@ function MorePage() {
         {can('users.manage') ? (
           <Row to="/them/tai-khoan" label="Tài khoản" hint="Tạo tài khoản, mật khẩu, vai trò, khoá" />
         ) : null}
+        {can('revenue.read_branch') ? (
+          <Row to="/them/bao-cao" label="Báo cáo doanh thu" hint="Theo ngày, tháng, thợ, dịch vụ" />
+        ) : null}
+        {can('catalog.manage') ? (
+          <Row to="/them/danh-muc" label="Danh mục dịch vụ" hint="Dịch vụ, combo, giá" />
+        ) : null}
         {can('booking_settings.manage') ? (
           <Row to="/them/cai-dat-lich" label="Cài đặt lịch" hint="Giờ mở cửa, thời lượng mặc định" />
         ) : null}

@@ -148,6 +148,33 @@ export function Money(props: {
   )
 }
 
+// ---------------------------------------------------------------- SummaryCard
+
+/** Thẻ số liệu chính (design SummaryCard): một nhãn, một số tiền lớn, vài dòng giải thích. Mỗi màn một thẻ. */
+export function SummaryCard(props: {
+  label: string
+  value: number
+  rows?: { label: string; value: number; tone?: 'muted' | 'negative' | 'positive' }[]
+  footnote?: ReactNode
+  className?: string
+}) {
+  return (
+    <section className={cx('lo-card', 'flex flex-col gap-1', props.className)}>
+      <span className="overline text-ink-muted">{props.label}</span>
+      <Money value={props.value} size="xl" />
+      {props.rows?.map((r) => (
+        <div key={r.label} className="flex items-baseline justify-between gap-2">
+          <span className="body text-ink-muted">{r.label}</span>
+          <Money value={r.value} tone={r.tone} />
+        </div>
+      ))}
+      {props.footnote ? (
+        <p className="caption m-0 border-t border-line pt-1 text-ink-muted">{props.footnote}</p>
+      ) : null}
+    </section>
+  )
+}
+
 // ---------------------------------------------------------------- StatusChip
 
 export type ChipTone = 'success' | 'warning' | 'danger' | 'accent' | 'neutral'

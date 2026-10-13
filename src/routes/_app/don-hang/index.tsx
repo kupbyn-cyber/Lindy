@@ -16,12 +16,14 @@ import {
 } from '~/lib/orders'
 import { addDays, formatIsoDate, isIsoDate, toLocalDate } from '~/lib/time'
 
-type Search = { d?: string; loc?: OrderFilterValue }
+// xl: chỉ đơn cần Linh xem lại (Q04), trong 31 ngày gần nhất
+type Search = { d?: string; loc?: OrderFilterValue; xl?: boolean }
 
 export const Route = createFileRoute('/_app/don-hang/')({
   validateSearch: (s: Record<string, unknown>): Search => ({
     d: typeof s.d === 'string' && isIsoDate(s.d) ? s.d : undefined,
     loc: ORDER_FILTERS.some((f) => f.value === s.loc) ? (s.loc as OrderFilterValue) : undefined,
+    xl: s.xl === true || s.xl === 'true' ? true : undefined,
   }),
   head: () => ({ meta: [{ title: 'Đơn hàng · LINDY OS' }] }),
   component: OrdersPage,
@@ -39,7 +41,12 @@ function OrdersPage() {
     const t = setTimeout(() => setQd(q.trim()), 300)
     return () => clearTimeout(t)
   }, [q])
-  const list = useOrders({ from: date, to: date, filter, q: qd || undefined })
+  const review = !!search.xl
+  const list = useOrders(
+    review
+      ? { from: addDays(today, -31), to: today, filter: 'all', review: true }
+      : { from: date, to: date, filter, q: qd || undefined },
+  )
   const go = (patch: Partial<Search>) =>
     navigate({ search: (prev: Search) => ({ ...prev, ...patch }), replace: true })
   const dayChoice = date === today ? 'today' : date === addDays(today, -1) ? 'yesterday' : 'other'
@@ -96,7 +103,22 @@ function OrdersPage() {
         </div>
       </div>
 
-      {s ? (
+      {review ? (
+        <div className="px-4">
+          <Note>
+            Đơn Nhung tự xác nhận có phần của mình, 31 ngày gần nhất. Mở đơn rồi bấm “Đã xem lại”.{' '}
+            <button
+              type="button"
+              className="border-0 bg-transparent p-0 text-accent underline"
+              onClick={() => go({ xl: undefined })}
+            >
+              Bỏ lọc
+            </button>
+          </Note>
+        </div>
+      ) : null}
+
+      {s && !review ? (
         <div className="mx-4 lo-card flex flex-col gap-1">
           <span className="overline text-ink-muted">
             {date === today ? 'Hôm nay' : formatIsoDate(date)} · {s.orderCount} đơn đã xác nhận

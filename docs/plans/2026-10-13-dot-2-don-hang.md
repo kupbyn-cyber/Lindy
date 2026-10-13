@@ -226,12 +226,12 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   *Kiểm tra:* test 33 (doanh thu 400.000đ, cơ sở hoa hồng Chin 500.000đ), 50; ưu đãi đã dùng không áp lại được.
 - [x] **2.19 Sửa đơn đã xác nhận** (D04: kỳ còn mở; Đợt 2 chưa có kỳ lương nên mọi kỳ đều mở). Nhung, Linh sửa, lý do bắt buộc, lưu trước/sau. Tổng mới nhỏ hơn số đã thu → 422 "Cần phiếu hoàn (có ở Đợt 3)". Nhung sửa thêm phần của mình → vào Cần xem lại [P31].
   *Kiểm tra:* lịch sử có đủ trước/sau, người sửa, lý do; tổng mới < đã thu → 422; doanh thu ngày làm dịch vụ đổi theo; S27.
-- [ ] **2.20 Tổng quan (UI02) có số tiền.**
+- [x] **2.20 Tổng quan (UI02) có số tiền.**
   - Linh, Nhung: doanh thu thuần, tiền đã thu, còn khách nợ; số đơn, lượt khách (Q-B); doanh thu từng thợ.
   - Cần xử lý: đơn chờ xác nhận, giảm giá chờ Linh duyệt, Cần xem lại (Linh), lịch Mới đặt.
   - Thợ: chỉ số của mình + lịch chung. "Tiền trong quỹ" → Đợt 3.
   *Kiểm tra:* số khớp báo cáo cùng ngày; S29.
-- [ ] **2.21 Báo cáo doanh thu (UI13, phần doanh thu).** Ngày: đơn đã xác nhận / chờ / huỷ, lượt khách, doanh thu gộp, giảm giá, thuần, theo thợ, tiền thu theo tài khoản, còn phải thu. Tháng: theo ngày, theo dịch vụ, theo thợ.
+- [x] **2.21 Báo cáo doanh thu (UI13, phần doanh thu).** Ngày: đơn đã xác nhận / chờ / huỷ, lượt khách, doanh thu gộp, giảm giá, thuần, theo thợ, tiền thu theo tài khoản, còn phải thu. Tháng: theo ngày, theo dịch vụ, theo thợ.
   *Kiểm tra:* test 30, 31 ở mức báo cáo; Σ các ngày = số tháng.
 - [ ] **2.22 Cài đặt danh mục (UI14, Linh).** Thêm, sửa, ngừng bán dịch vụ, combo; đổi giá có lịch sử.
   *Kiểm tra:* thêm mục mới → tìm thấy ngay khi tạo đơn; đổi giá không đổi đơn cũ; Nhung gọi API → 403.

@@ -71,9 +71,17 @@ export type OrderList = {
   revenueAll: boolean
 }
 
-export function useOrders(params: { from: string; to: string; filter: OrderFilterValue; q?: string }) {
+export function useOrders(params: {
+  from: string
+  to: string
+  filter: OrderFilterValue
+  q?: string
+  /** Chỉ đơn cần Linh xem lại (Q04) */
+  review?: boolean
+}) {
   const qs = new URLSearchParams({ from: params.from, to: params.to, filter: params.filter })
   if (params.q) qs.set('q', params.q)
+  if (params.review) qs.set('review', '1')
   return useQuery({
     queryKey: ['orders', 'list', params],
     queryFn: () => api<OrderList>(`/api/orders?${qs.toString()}`),

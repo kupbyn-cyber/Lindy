@@ -18,6 +18,7 @@ import { Route as ApiBookingSettingsRouteImport } from './routes/api/booking-set
 import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiMeRouteImport } from './routes/api/me'
+import { Route as ApiOverviewRouteImport } from './routes/api/overview'
 import { Route as AppDonHangIndexRouteImport } from './routes/_app/don-hang/index'
 import { Route as AppDonHangIdRouteImport } from './routes/_app/don-hang/$id'
 import { Route as AppDonHangTaoRouteImport } from './routes/_app/don-hang/tao'
@@ -26,6 +27,7 @@ import { Route as AppKhachIdRouteImport } from './routes/_app/khach/$id'
 import { Route as AppLichIndexRouteImport } from './routes/_app/lich/index'
 import { Route as AppLichIdRouteImport } from './routes/_app/lich/$id'
 import { Route as AppThemIndexRouteImport } from './routes/_app/them/index'
+import { Route as AppThemBaoCaoRouteImport } from './routes/_app/them/bao-cao'
 import { Route as AppThemCaiDatLichRouteImport } from './routes/_app/them/cai-dat-lich'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
 import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoan'
@@ -49,6 +51,7 @@ import { Route as ApiOrdersIdRouteImport } from './routes/api/orders/$id'
 import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
 import { Route as ApiPushSubscriptionsRouteImport } from './routes/api/push/subscriptions'
 import { Route as ApiPushTestRouteImport } from './routes/api/push/test'
+import { Route as ApiReportsKindRouteImport } from './routes/api/reports/$kind'
 import { Route as ApiStaffIndexRouteImport } from './routes/api/staff/index'
 import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
@@ -103,6 +106,11 @@ const ApiMeRoute = ApiMeRouteImport.update({
   path: '/api/me',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOverviewRoute = ApiOverviewRouteImport.update({
+  id: '/api/overview',
+  path: '/api/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppDonHangIndexRoute = AppDonHangIndexRouteImport.update({
   id: '/don-hang/',
   path: '/don-hang/',
@@ -141,6 +149,11 @@ const AppLichIdRoute = AppLichIdRouteImport.update({
 const AppThemIndexRoute = AppThemIndexRouteImport.update({
   id: '/them/',
   path: '/them/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemBaoCaoRoute = AppThemBaoCaoRouteImport.update({
+  id: '/them/bao-cao',
+  path: '/them/bao-cao',
   getParentRoute: () => AppRoute,
 } as any)
 const AppThemCaiDatLichRoute = AppThemCaiDatLichRouteImport.update({
@@ -261,6 +274,11 @@ const ApiPushTestRoute = ApiPushTestRouteImport.update({
   path: '/api/push/test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReportsKindRoute = ApiReportsKindRouteImport.update({
+  id: '/api/reports/$kind',
+  path: '/api/reports/$kind',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStaffIndexRoute = ApiStaffIndexRouteImport.update({
   id: '/api/staff/',
   path: '/api/staff/',
@@ -317,10 +335,12 @@ export interface FileRoutesByFullPath {
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
+  '/api/overview': typeof ApiOverviewRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
   '/don-hang/tao': typeof AppDonHangTaoRoute
   '/khach/$id': typeof AppKhachIdRoute
   '/lich/$id': typeof AppLichIdRoute
+  '/them/bao-cao': typeof AppThemBaoCaoRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
@@ -338,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/api/reports/$kind': typeof ApiReportsKindRoute
   '/don-hang/': typeof AppDonHangIndexRoute
   '/khach/': typeof AppKhachIndexRoute
   '/lich/': typeof AppLichIndexRoute
@@ -366,11 +387,13 @@ export interface FileRoutesByTo {
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
+  '/api/overview': typeof ApiOverviewRoute
   '/': typeof AppIndexRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
   '/don-hang/tao': typeof AppDonHangTaoRoute
   '/khach/$id': typeof AppKhachIdRoute
   '/lich/$id': typeof AppLichIdRoute
+  '/them/bao-cao': typeof AppThemBaoCaoRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
@@ -388,6 +411,7 @@ export interface FileRoutesByTo {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/api/reports/$kind': typeof ApiReportsKindRoute
   '/don-hang': typeof AppDonHangIndexRoute
   '/khach': typeof AppKhachIndexRoute
   '/lich': typeof AppLichIndexRoute
@@ -418,11 +442,13 @@ export interface FileRoutesById {
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
+  '/api/overview': typeof ApiOverviewRoute
   '/_app/': typeof AppIndexRoute
   '/_app/don-hang/$id': typeof AppDonHangIdRoute
   '/_app/don-hang/tao': typeof AppDonHangTaoRoute
   '/_app/khach/$id': typeof AppKhachIdRoute
   '/_app/lich/$id': typeof AppLichIdRoute
+  '/_app/them/bao-cao': typeof AppThemBaoCaoRoute
   '/_app/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/_app/them/tai-khoan': typeof AppThemTaiKhoanRoute
@@ -440,6 +466,7 @@ export interface FileRoutesById {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/api/reports/$kind': typeof ApiReportsKindRoute
   '/_app/don-hang/': typeof AppDonHangIndexRoute
   '/_app/khach/': typeof AppKhachIndexRoute
   '/_app/lich/': typeof AppLichIndexRoute
@@ -471,10 +498,12 @@ export interface FileRouteTypes {
     | '/api/events'
     | '/api/health'
     | '/api/me'
+    | '/api/overview'
     | '/don-hang/$id'
     | '/don-hang/tao'
     | '/khach/$id'
     | '/lich/$id'
+    | '/them/bao-cao'
     | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
     | '/them/tai-khoan'
@@ -492,6 +521,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/api/reports/$kind'
     | '/don-hang/'
     | '/khach/'
     | '/lich/'
@@ -520,11 +550,13 @@ export interface FileRouteTypes {
     | '/api/events'
     | '/api/health'
     | '/api/me'
+    | '/api/overview'
     | '/'
     | '/don-hang/$id'
     | '/don-hang/tao'
     | '/khach/$id'
     | '/lich/$id'
+    | '/them/bao-cao'
     | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
     | '/them/tai-khoan'
@@ -542,6 +574,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/api/reports/$kind'
     | '/don-hang'
     | '/khach'
     | '/lich'
@@ -571,11 +604,13 @@ export interface FileRouteTypes {
     | '/api/events'
     | '/api/health'
     | '/api/me'
+    | '/api/overview'
     | '/_app/'
     | '/_app/don-hang/$id'
     | '/_app/don-hang/tao'
     | '/_app/khach/$id'
     | '/_app/lich/$id'
+    | '/_app/them/bao-cao'
     | '/_app/them/cai-dat-lich'
     | '/_app/them/doi-mat-khau'
     | '/_app/them/tai-khoan'
@@ -593,6 +628,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/api/reports/$kind'
     | '/_app/don-hang/'
     | '/_app/khach/'
     | '/_app/lich/'
@@ -622,6 +658,7 @@ export interface RootRouteChildren {
   ApiEventsRoute: typeof ApiEventsRoute
   ApiHealthRoute: typeof ApiHealthRoute
   ApiMeRoute: typeof ApiMeRoute
+  ApiOverviewRoute: typeof ApiOverviewRoute
   ApiAppointmentsIdRoute: typeof ApiAppointmentsIdRouteWithChildren
   ApiAppointmentsAttentionRoute: typeof ApiAppointmentsAttentionRoute
   ApiAppointmentsCheckRoute: typeof ApiAppointmentsCheckRoute
@@ -635,6 +672,7 @@ export interface RootRouteChildren {
   ApiPushConfigRoute: typeof ApiPushConfigRoute
   ApiPushSubscriptionsRoute: typeof ApiPushSubscriptionsRouteWithChildren
   ApiPushTestRoute: typeof ApiPushTestRoute
+  ApiReportsKindRoute: typeof ApiReportsKindRoute
   ApiAccountsIndexRoute: typeof ApiAccountsIndexRoute
   ApiAppointmentsIndexRoute: typeof ApiAppointmentsIndexRoute
   ApiCatalogIndexRoute: typeof ApiCatalogIndexRoute
@@ -713,6 +751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/overview': {
+      id: '/api/overview'
+      path: '/api/overview'
+      fullPath: '/api/overview'
+      preLoaderRoute: typeof ApiOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/don-hang/': {
       id: '/_app/don-hang/'
       path: '/don-hang'
@@ -767,6 +812,13 @@ declare module '@tanstack/react-router' {
       path: '/them'
       fullPath: '/them/'
       preLoaderRoute: typeof AppThemIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/bao-cao': {
+      id: '/_app/them/bao-cao'
+      path: '/them/bao-cao'
+      fullPath: '/them/bao-cao'
+      preLoaderRoute: typeof AppThemBaoCaoRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/them/cai-dat-lich': {
@@ -930,6 +982,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPushTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/reports/$kind': {
+      id: '/api/reports/$kind'
+      path: '/api/reports/$kind'
+      fullPath: '/api/reports/$kind'
+      preLoaderRoute: typeof ApiReportsKindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/staff/': {
       id: '/api/staff/'
       path: '/api/staff'
@@ -1003,6 +1062,7 @@ interface AppRouteChildren {
   AppDonHangTaoRoute: typeof AppDonHangTaoRoute
   AppKhachIdRoute: typeof AppKhachIdRoute
   AppLichIdRoute: typeof AppLichIdRoute
+  AppThemBaoCaoRoute: typeof AppThemBaoCaoRoute
   AppThemCaiDatLichRoute: typeof AppThemCaiDatLichRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
   AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
@@ -1020,6 +1080,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDonHangTaoRoute: AppDonHangTaoRoute,
   AppKhachIdRoute: AppKhachIdRoute,
   AppLichIdRoute: AppLichIdRoute,
+  AppThemBaoCaoRoute: AppThemBaoCaoRoute,
   AppThemCaiDatLichRoute: AppThemCaiDatLichRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
   AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
@@ -1086,6 +1147,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEventsRoute: ApiEventsRoute,
   ApiHealthRoute: ApiHealthRoute,
   ApiMeRoute: ApiMeRoute,
+  ApiOverviewRoute: ApiOverviewRoute,
   ApiAppointmentsIdRoute: ApiAppointmentsIdRouteWithChildren,
   ApiAppointmentsAttentionRoute: ApiAppointmentsAttentionRoute,
   ApiAppointmentsCheckRoute: ApiAppointmentsCheckRoute,
@@ -1099,6 +1161,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPushConfigRoute: ApiPushConfigRoute,
   ApiPushSubscriptionsRoute: ApiPushSubscriptionsRouteWithChildren,
   ApiPushTestRoute: ApiPushTestRoute,
+  ApiReportsKindRoute: ApiReportsKindRoute,
   ApiAccountsIndexRoute: ApiAccountsIndexRoute,
   ApiAppointmentsIndexRoute: ApiAppointmentsIndexRoute,
   ApiCatalogIndexRoute: ApiCatalogIndexRoute,
