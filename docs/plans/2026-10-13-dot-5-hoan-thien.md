@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 5 — Hoàn thiện
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 5A ĐÃ LÀM (kết quả mục 14). 5B chờ app chạy ổn ở quán (Q42) và file mẫu từ Google Sheets. Q-K, Q-L, Q-M đã chốt 13/10/2026 theo phương án (a) → K23, K24, K25. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 5A ĐÃ LÀM (mục 14). 5B ĐÃ LÀM theo yêu cầu của anh (mục 15), chưa thử với file thật. Đợt 5 XONG phần code. Q-K, Q-L, Q-M đã chốt 13/10/2026 theo phương án (a) → K23, K24, K25. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (D14, Q40, Q42, K20–K22); PRD v1.2 §1 (điểm đích), §4 (`profit.read`, `payroll.export_all_branch`), §7.1 (lợi nhuận tạm tính), §11, §15, §16, §17, §18 (test 19, 27, 29), §19.6; PRD v1.1 §15, §16 (chi tiết nhập dữ liệu cũ); kế hoạch Đợt 2–4 (phần dời sang Đợt 5).
 
 Ký hiệu `[Pn]`: điểm phản biện ở mục 11 (nối tiếp P76). `Sn`: test bảo mật ở mục 10.2 (nối tiếp S62).
@@ -145,11 +145,11 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 ### 5B — Nhập dữ liệu cũ (sau khi app chạy ổn, Q42)
 
-- [ ] **5.8 Nhận file mẫu.** Anh xuất 1–2 tab tháng (2025, 2026) từ Google Sheets ra CSV gửi em. Em chốt cách đọc cột, cập nhật mục 7.2 và các bước 5.9–5.11, báo anh duyệt.
-- [ ] **5.9 Nhập.** Thêm → Nhập dữ liệu cũ (Linh): tải CSV → xem trước, danh sách lỗi (trống, trùng, sai ngày, sai tổng, tên thợ không khớp, tên khách gần giống) → xác nhận nhập; nhập lại cùng file không nhân đôi.
-- [ ] **5.10 Tra cứu.** Lịch sử khách hiện dòng "nhập từ Sheets"; báo cáo tháng cũ có khối doanh thu nhập từ Sheets (theo thợ), tách khỏi số của app.
+- [~] **5.8 Nhận file mẫu.** (13/10/2026 anh bảo làm luôn, chưa có file mẫu: thay bằng màn ghép cột, Linh tự chọn cột nên bảng tính bố cục nào cũng nhập được; khi có file thật thì thử lại.) Anh xuất 1–2 tab tháng (2025, 2026) từ Google Sheets ra CSV gửi em. Em chốt cách đọc cột, cập nhật mục 7.2 và các bước 5.9–5.11, báo anh duyệt.
+- [x] **5.9 Nhập.** Thêm → Nhập dữ liệu cũ (Linh): tải CSV → xem trước, danh sách lỗi (trống, trùng, sai ngày, sai tổng, tên thợ không khớp, tên khách gần giống) → xác nhận nhập; nhập lại cùng file không nhân đôi.
+- [x] **5.10 Tra cứu.** Lịch sử khách hiện dòng "nhập từ Sheets"; báo cáo tháng cũ có khối doanh thu nhập từ Sheets (theo thợ), tách khỏi số của app.
   *Kiểm tra:* test 29 (nhập lịch sử không sinh tiền vào quỹ, không đổi số dư, không vào lương).
-- [ ] **5.11 Chốt 5B.** Phản biện; kiểm tra; tài liệu; báo kết quả.
+- [x] **5.11 Chốt 5B.** Phản biện; kiểm tra; tài liệu; báo kết quả.
 
 ## 10. Kiểm thử
 
@@ -224,3 +224,26 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 | P82 | ⚪ | Link tải là GET: trang khác có thể khiến máy Linh tải file | Trang khác không đọc được nội dung (cùng nguồn); chỉ tốn lượt tải, có giới hạn và audit |
 
 **Việc anh làm (ngoài code):** bật sao lưu tự động trên Vibe Host và xem có bản sao lưu hằng ngày; mở thử một file XLSX trên máy tính và iPhone; in thử báo cáo tháng ra PDF.
+
+## 15. Kết quả 5B (13/10/2026)
+
+**Thay đổi so với kế hoạch:** anh bảo làm luôn khi chưa có file mẫu. Để không đoán bố cục bảng tính, màn nhập cho **Linh tự ghép cột**: dòng tiêu đề, tháng của tab, cột ngày, tên khách, SĐT, dịch vụ / ghi chú, tổng tiền, và mỗi cột tiền là của thợ nào (hoặc "thợ không có tài khoản", giữ tên cột). App gợi ý ghép theo tên cột và tên thợ.
+
+**Đã làm:** migration `0019_legacy` (bảng lần nhập, dòng doanh thu cũ; hàm nhập, huỷ lần nhập); quyền `legacy.import` (Linh); Thêm → **Nhập dữ liệu cũ** (tải CSV, xem trước, ghép cột, **Kiểm tra**, **Nhập**, các lần đã nhập, huỷ lần nhập có lý do); báo cáo tháng có khối **Doanh thu nhập từ Google Sheets**; hồ sơ khách có mục **Nhập từ Google Sheets**.
+
+Đọc file: CSV dấu phẩy, chấm phẩy hoặc tab, ngoặc kép, BOM; số tiền "1.250.000", "1,250,000đ", "250k", "(50.000)"; ngày "13/10/2026", "13-10-26", "2026-10-13", "13/10", "13" (theo tháng của tab). Kiểm: thiếu ngày, ngày không đọc được, ngoài tháng của tab, ngày tương lai, sai tổng, số tiền lạ; bỏ qua dòng trống, dòng tổng cộng, dòng không có tiền; cảnh báo cột có tiền chưa ghép, dòng trùng trong file, SĐT không đọc được, SĐT trùng khách tên khác, tên giống khách có sẵn mà không có SĐT (không tự gộp — test 16). Khách: khớp theo SĐT, tạo hồ sơ mới khi có SĐT. Nhập lại cùng file không nhân đôi; huỷ lần nhập thì nhập lại được.
+
+**Kiểm tra:**
+- `bun run check`: 318/318 test (thêm `tests/acceptance/nhap-du-lieu-cu.test.ts`: đọc CSV, số tiền, ngày; xem trước, gợi ý ghép; kiểm lỗi; quyền; PRD 29, 16; nhập lại, huỷ). Build chạy được; `scan-bundle` sạch (61 file).
+- `check-upgrade --from=0018` và `--from=0005` đạt (nhập 2 khoản, số bút toán sổ tiền không đổi); `restore-check --from=dev` đạt (60 bảng, có bảng dữ liệu cũ).
+- Trình duyệt 375×812 (Linh): tải CSV mẫu → gợi ý ghép đúng → Kiểm tra (4 khoản, 1 dòng sai tổng) → Nhập; báo cáo tháng 9/2025, hồ sơ khách mới hiện dòng cũ. Bảng xem trước cuộn trong khung, trang không cuộn ngang.
+- **Chưa kiểm:** file thật từ Google Sheets của quán (bố cục thật có thể cần ghép cột khác, hoặc có định dạng số, ngày khác).
+
+**Phản biện 5B:**
+
+| Mã | Mức | Điểm yếu | Kết quả |
+|---|---|---|---|
+| P83 | 🟡 | SĐT trong bảng tính trùng một khách khác tên → ghép nhầm hồ sơ | Ghép theo SĐT như quy tắc CRM, nhưng hiện cảnh báo từng dòng để Linh xem trước khi nhập |
+| P84 | ⚪ | Huỷ lần nhập không xoá hồ sơ khách đã tạo | Ghi nhận: khách là người thật, không xoá dữ liệu nghiệp vụ |
+| P85 | ⚪ | File rất lớn, nhiều cột | Giới hạn 2MB, 20.000 dòng, 200 cột; mỗi lần nhập một tab |
+| P86 | ⚪ | Nhập nhầm hai lần cùng dữ liệu với cách ghép khác | Dấu vân tay theo ngày, khách, thợ, số tiền, ghi chú: phần trùng bị bỏ qua; nhầm thì huỷ cả lần nhập |

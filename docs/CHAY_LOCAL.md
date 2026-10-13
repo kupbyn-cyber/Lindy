@@ -1,6 +1,6 @@
 # Chạy LINDY OS ở local
 
-Cập nhật 13/10/2026, sau Đợt 0 đến Đợt 3 (sổ tiền, cọc, thu chi, chốt quỹ, tip, hoàn tiền) Đợt 4 (nhân viên, chấm công, lương, tạm ứng) và Đợt 5A (lợi nhuận, báo cáo đã chốt, xuất dữ liệu, sao lưu). Máy: Windows 11, Node 24, Bun 1.4.
+Cập nhật 13/10/2026, sau Đợt 0 đến Đợt 3 (sổ tiền, cọc, thu chi, chốt quỹ, tip, hoàn tiền) Đợt 4 (nhân viên, chấm công, lương, tạm ứng) và Đợt 5 (lợi nhuận, báo cáo đã chốt, xuất dữ liệu, sao lưu, nhập dữ liệu cũ). Máy: Windows 11, Node 24, Bun 1.4.
 
 ## Chạy hằng ngày
 
@@ -103,7 +103,14 @@ Demo có tháng bắt đầu tính lương = tháng này và một đề nghị 
 3. **In / PDF** ở Báo cáo và trong phiếu lương: Safari iPhone → Chia sẻ → In → Lưu PDF; máy tính → In → Lưu PDF.
 4. Khôi phục thử bản sao lưu vào DB tạm: `bun scripts/restore-check.ts --file=đường-dẫn.json` (file Linh tải) hoặc `bun scripts/restore-check.ts --from=dev`. Cần `PG_ADMIN_URL` (PostgreSQL local). Tài khoản sau khôi phục không có mật khẩu: đặt lại bằng `bun scripts/user.ts reset-password`.
 
-Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0018` nếu đã có Đợt 5A).
+## Thử nhập dữ liệu cũ (Đợt 5B)
+
+1. Google Sheets → mở tab tháng → **Tệp → Tải xuống → CSV**.
+2. `linh@lindy.test` → **Thêm → Nhập dữ liệu cũ** → chọn file. Kiểm **Dòng tiêu đề**, chọn **Tháng của tab** (khi cột ngày chỉ có số ngày), ghép cột ngày, khách, SĐT, dịch vụ, tổng; mỗi cột tiền là của thợ nào (thợ đã nghỉ: "Thợ không có tài khoản").
+3. **Kiểm tra**: xem số khoản, tổng theo thợ, lỗi (dòng lỗi không nhập), cảnh báo → **Nhập**. Nhập lại cùng file không nhân đôi; nhầm thì **Huỷ** lần nhập (cần lý do).
+4. Báo cáo tháng cũ có khối **Doanh thu nhập từ Google Sheets**; hồ sơ khách (khớp theo SĐT) có mục **Nhập từ Google Sheets**. Không vào doanh thu, sổ tiền, lương của app.
+
+Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0019` nếu đã có Đợt 5).
 
 ## Quản trị tài khoản (CLI, chưa có màn hình)
 

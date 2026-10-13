@@ -123,6 +123,27 @@ function CustomerPage() {
         </div>
       </section>
 
+      {c.legacy.length > 0 ? (
+        <section>
+          <h2 className="overline m-0 px-4 pb-1 text-ink-muted">Nhập từ Google Sheets</h2>
+          <div className="border-t border-line">
+            {c.legacy.map((x, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: lịch sử chỉ đọc
+              <div key={i} className="lo-row">
+                <span className="lo-row-main">
+                  <span className="body lo-row-title">{formatIsoDate(x.saleDate)}</span>
+                  <span className="lo-row-meta caption">{[x.note, x.staff].filter(Boolean).join(' · ')}</span>
+                </span>
+                <span className="lo-row-side">
+                  <Money value={x.amount} />
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="caption m-0 px-4 pt-1 text-ink-muted">Không rõ dịch vụ / chưa biết đã thu tiền.</p>
+        </section>
+      ) : null}
+
       {c.changes.length > 0 ? (
         <section>
           <h2 className="overline m-0 px-4 pb-1 text-ink-muted">Thay đổi hồ sơ</h2>

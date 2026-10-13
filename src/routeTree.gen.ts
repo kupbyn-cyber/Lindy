@@ -39,6 +39,7 @@ import { Route as AppThemDanhMucRouteImport } from './routes/_app/them/danh-muc'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
 import { Route as AppThemLuongRouteImport } from './routes/_app/them/luong'
 import { Route as AppThemNhanVienRouteImport } from './routes/_app/them/nhan-vien'
+import { Route as AppThemNhapDuLieuCuRouteImport } from './routes/_app/them/nhap-du-lieu-cu'
 import { Route as AppThemSoTienRouteImport } from './routes/_app/them/so-tien'
 import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoan'
 import { Route as AppThemTamUngRouteImport } from './routes/_app/them/tam-ung'
@@ -254,6 +255,11 @@ const AppThemLuongRoute = AppThemLuongRouteImport.update({
 const AppThemNhanVienRoute = AppThemNhanVienRouteImport.update({
   id: '/them/nhan-vien',
   path: '/them/nhan-vien',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemNhapDuLieuCuRoute = AppThemNhapDuLieuCuRouteImport.update({
+  id: '/them/nhap-du-lieu-cu',
+  path: '/them/nhap-du-lieu-cu',
   getParentRoute: () => AppRoute,
 } as any)
 const AppThemSoTienRoute = AppThemSoTienRouteImport.update({
@@ -623,6 +629,7 @@ export interface FileRoutesByFullPath {
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/luong': typeof AppThemLuongRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
+  '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
   '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/tam-ung': typeof AppThemTamUngRoute
@@ -721,6 +728,7 @@ export interface FileRoutesByTo {
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/luong': typeof AppThemLuongRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
+  '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
   '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/tam-ung': typeof AppThemTamUngRoute
@@ -821,6 +829,7 @@ export interface FileRoutesById {
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/_app/them/luong': typeof AppThemLuongRoute
   '/_app/them/nhan-vien': typeof AppThemNhanVienRoute
+  '/_app/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
   '/_app/them/so-tien': typeof AppThemSoTienRoute
   '/_app/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/_app/them/tam-ung': typeof AppThemTamUngRoute
@@ -921,6 +930,7 @@ export interface FileRouteTypes {
     | '/them/doi-mat-khau'
     | '/them/luong'
     | '/them/nhan-vien'
+    | '/them/nhap-du-lieu-cu'
     | '/them/so-tien'
     | '/them/tai-khoan'
     | '/them/tam-ung'
@@ -1019,6 +1029,7 @@ export interface FileRouteTypes {
     | '/them/doi-mat-khau'
     | '/them/luong'
     | '/them/nhan-vien'
+    | '/them/nhap-du-lieu-cu'
     | '/them/so-tien'
     | '/them/tai-khoan'
     | '/them/tam-ung'
@@ -1118,6 +1129,7 @@ export interface FileRouteTypes {
     | '/_app/them/doi-mat-khau'
     | '/_app/them/luong'
     | '/_app/them/nhan-vien'
+    | '/_app/them/nhap-du-lieu-cu'
     | '/_app/them/so-tien'
     | '/_app/them/tai-khoan'
     | '/_app/them/tam-ung'
@@ -1471,6 +1483,13 @@ declare module '@tanstack/react-router' {
       path: '/them/nhan-vien'
       fullPath: '/them/nhan-vien'
       preLoaderRoute: typeof AppThemNhanVienRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/nhap-du-lieu-cu': {
+      id: '/_app/them/nhap-du-lieu-cu'
+      path: '/them/nhap-du-lieu-cu'
+      fullPath: '/them/nhap-du-lieu-cu'
+      preLoaderRoute: typeof AppThemNhapDuLieuCuRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/them/so-tien': {
@@ -1961,6 +1980,7 @@ interface AppRouteChildren {
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
   AppThemLuongRoute: typeof AppThemLuongRoute
   AppThemNhanVienRoute: typeof AppThemNhanVienRoute
+  AppThemNhapDuLieuCuRoute: typeof AppThemNhapDuLieuCuRoute
   AppThemSoTienRoute: typeof AppThemSoTienRoute
   AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
   AppThemTamUngRoute: typeof AppThemTamUngRoute
@@ -1989,6 +2009,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
   AppThemLuongRoute: AppThemLuongRoute,
   AppThemNhanVienRoute: AppThemNhanVienRoute,
+  AppThemNhapDuLieuCuRoute: AppThemNhapDuLieuCuRoute,
   AppThemSoTienRoute: AppThemSoTienRoute,
   AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
   AppThemTamUngRoute: AppThemTamUngRoute,

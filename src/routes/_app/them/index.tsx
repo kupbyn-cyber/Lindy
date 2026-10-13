@@ -87,6 +87,13 @@ function MorePage() {
         {can('data.export') ? (
           <Row to="/them/xuat-du-lieu" label="Xuất dữ liệu" hint="Tải CSV, XLSX; bản sao lưu" />
         ) : null}
+        {can('legacy.import') ? (
+          <Row
+            to="/them/nhap-du-lieu-cu"
+            label="Nhập dữ liệu cũ"
+            hint="Doanh thu cũ từ Google Sheets để tra cứu"
+          />
+        ) : null}
         {can('catalog.manage') ? (
           <Row to="/them/danh-muc" label="Danh mục dịch vụ" hint="Dịch vụ, combo, giá" />
         ) : null}

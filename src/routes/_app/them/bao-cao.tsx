@@ -391,6 +391,18 @@ function MonthView(props: { q: ReturnType<typeof useQuery<Month>> }) {
       </p>
       {m.closed ? <Closed c={m.closed} /> : <Revenue r={m.revenue} />}
       {m.profit ? <Profit p={m.profit} /> : null}
+      {m.legacy ? (
+        <Card title="Doanh thu nhập từ Google Sheets">
+          <Line label={`Tổng · ${m.legacy.entries} khoản`} value={m.legacy.total} strong />
+          {m.legacy.byStaff.map((s) => (
+            <Line key={s.name} label={`· ${s.name}`} value={s.amount} />
+          ))}
+          <p className="caption m-0 text-ink-muted">
+            Không rõ dịch vụ / chưa biết đã thu tiền. Chỉ để tra cứu: không cộng vào doanh thu, lợi nhuận,
+            lương của app.
+          </p>
+        </Card>
+      ) : null}
       <Card title="Doanh thu theo ngày">
         {m.byDay.length === 0 ? <span className="body text-ink-muted">Chưa có đơn đã xác nhận.</span> : null}
         {m.byDay.map((d) => (

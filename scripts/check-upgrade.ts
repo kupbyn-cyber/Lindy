@@ -2,7 +2,7 @@
 // DB tạm ở trạng thái bản đang chạy (migration đến --from, có tài khoản chủ, lịch hẹn; từ 0009 có đơn và khoản thu),
 // rồi chạy bước chuẩn bị DB của bản mới (runRelease, như lúc app khởi động trên hosting) và thử luồng chính bằng service
 // của app: đơn từ lịch, thu tiền; bút toán ghi bù; cọc Tết trừ vào bill; mở sổ và số dư; thu chi; tip, hoàn tiền,
-// chứng từ; nhân viên, chấm công; lương, tạm ứng; báo cáo, xuất dữ liệu, sao lưu.
+// chứng từ; nhân viên, chấm công; lương, tạm ứng; báo cáo, xuất dữ liệu, sao lưu; nhập dữ liệu cũ.
 //   bun scripts/check-upgrade.ts --from=0010
 // Chỉ chạy với PostgreSQL local; DB tạm bị xoá khi xong.
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
@@ -373,6 +373,30 @@ try {
     )
     if (!rep.profit || !(csv.body as string).includes('#0002') || bk.json.includes('password_hash'))
       throw new Error('Báo cáo, xuất dữ liệu, sao lưu sai.')
+
+    // Nhập dữ liệu cũ (0019): một tab nhỏ → bảng riêng, không thêm bút toán
+    const { importLegacy } = await import('../src/server/legacy/service')
+    const [lb] = await db<{ n: number }[]>`select count(*)::int as n from money_ledger_entries`
+    const lg = await importLegacy(auth, {
+      fileName: 'thang-9-2025.csv',
+      label: 'Thử nâng cấp',
+      text: 'Ngày,Khách,Linh,Tổng\n05/09/2025,Khách cũ,100000,100000\n06/09/2025,Khách cũ 2,50000,50000',
+      mapping: {
+        headerRow: 1,
+        month: '2025-09',
+        date: 0,
+        customer: 1,
+        phone: null,
+        note: null,
+        total: 3,
+        staff: [{ col: 2, userId: linh!.id }],
+      },
+    })
+    const [la] = await db<{ n: number }[]>`select count(*)::int as n from money_ledger_entries`
+    log(
+      `Dữ liệu cũ: nhập ${lg.inserted} khoản ${lg.total}đ; bút toán sổ tiền không đổi (${lb!.n} → ${la!.n})`,
+    )
+    if (lg.inserted !== 2 || lb!.n !== la!.n) throw new Error('Nhập dữ liệu cũ sai.')
 
     const [n] = await db<Record<string, number>[]>`
       select (select count(*)::int from schema_migrations) as migrations,
