@@ -1,8 +1,8 @@
 // Chi tiết lịch (module §7.2, bước 1.13). Nút hiện theo quyền; server vẫn từ chối gọi trực tiếp.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Phone } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { AppointmentForm } from '~/components/lich/AppointmentForm'
 import {
   Button,
@@ -21,6 +21,7 @@ import {
   useAppointment,
   useBookingSettings,
 } from '~/lib/appointments'
+import { ORDER_STATUS_LABEL, type OrderStatus } from '~/lib/orders'
 import { formatDateTimeShort, formatIsoDate, weekdayLong } from '~/lib/time'
 
 export const Route = createFileRoute('/_app/lich/$id')({
@@ -89,6 +90,12 @@ function DetailPage() {
   const settings = useBookingSettings()
   const qc = useQueryClient()
   const toast = useToast()
+  const navigate = useNavigate()
+  const [orderBusy, setOrderBusy] = useState(false)
+  const [orderError, setOrderError] = useState<string | null>(null)
+  const [askExtra, setAskExtra] = useState(false)
+  // Mã yêu cầu tạo đơn: bấm hai lần không ra hai đơn (test 28)
+  const orderRequest = useRef('')
   const [tab, setTab] = useState<'info' | 'history'>('info')
   const [editing, setEditing] = useState(false)
   const [action, setAction] = useState<Action | null>(null)
@@ -146,6 +153,27 @@ function DetailPage() {
   }
   const c = d.can
   const cannotCancelHint = !c.cancel && c.reportCustomerCancel
+  const activeOrders = d.orders.filter((o) => o.status !== 'cancelled')
+
+  // Tạo đơn từ lịch (module §10): lịch tự sang Khách đã đến → Đang làm; mở đơn để chọn dịch vụ
+  async function createOrder(additional: boolean) {
+    setOrderBusy(true)
+    setOrderError(null)
+    if (!orderRequest.current) orderRequest.current = crypto.randomUUID()
+    try {
+      const res = await api<{ order: { id: string } }>(`/api/appointments/${d.id}/create-order`, {
+        body: { createRequestId: orderRequest.current, additional },
+      })
+      orderRequest.current = ''
+      setAskExtra(false)
+      await qc.invalidateQueries({ queryKey: ['appointments'] })
+      await navigate({ to: '/don-hang/$id', params: { id: res.order.id } })
+    } catch (e) {
+      setOrderError(errorText(e))
+    } finally {
+      setOrderBusy(false)
+    }
+  }
 
   return (
     <section className="flex flex-col gap-3 pt-1">
@@ -239,7 +267,49 @@ function DetailPage() {
             ))}
           </div>
 
+          {d.orders.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              <h2 className="overline m-0 px-4 text-ink-muted">Đơn từ lịch này</h2>
+              <div className="border-t border-line">
+                {d.orders.map((o) =>
+                  o.visible ? (
+                    <Link
+                      key={o.id}
+                      to="/don-hang/$id"
+                      params={{ id: o.id }}
+                      className="lo-row lo-row-action"
+                    >
+                      <span className="body">Đơn {o.codeLabel}</span>
+                      <span className="label text-ink-muted">
+                        {ORDER_STATUS_LABEL[o.status as OrderStatus]}
+                      </span>
+                    </Link>
+                  ) : (
+                    <div key={o.id} className="lo-row">
+                      <span className="body">Đơn {o.codeLabel}</span>
+                      <span className="label text-ink-muted">
+                        {ORDER_STATUS_LABEL[o.status as OrderStatus]}
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          ) : null}
+
           <div className="flex flex-col gap-2 px-4 pb-2">
+            {c.createOrder ? (
+              activeOrders.length === 0 ? (
+                <Button variant="primary" block loading={orderBusy} onClick={() => void createOrder(false)}>
+                  Khách đã đến · Tạo đơn
+                </Button>
+              ) : (
+                <Button block loading={orderBusy} onClick={() => setAskExtra(true)}>
+                  Tạo thêm đơn (khách khác trong nhóm)
+                </Button>
+              )
+            ) : null}
+            {orderError ? <Note tone="danger">{orderError}</Note> : null}
             {c.confirm ? (
               <Button variant="primary" block onClick={() => open('confirm')}>
                 Chốt lịch
@@ -296,6 +366,11 @@ function DetailPage() {
         <p className="body m-0 text-ink-muted">
           {d.startTime} {formatIsoDate(d.date)} · {d.name}
         </p>
+        {action === 'cancel' && activeOrders.length > 0 ? (
+          <Note tone="warning">
+            Lịch có {activeOrders.length} đơn liên kết. Huỷ lịch không huỷ đơn; xử lý đơn riêng.
+          </Note>
+        ) : null}
         {action === 'cancel' ? (
           <TextArea
             label="Lý do huỷ (bắt buộc)"
@@ -313,6 +388,21 @@ function DetailPage() {
           />
         ) : null}
         {actionError ? <Note tone="danger">{actionError}</Note> : null}
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={askExtra}
+        title="Tạo thêm đơn cho lịch này?"
+        confirmLabel="Tạo thêm đơn"
+        busy={orderBusy}
+        onConfirm={() => void createOrder(true)}
+        onCancel={() => setAskExtra(false)}
+      >
+        <p className="body m-0 text-ink-muted">
+          Lịch đã có {activeOrders.map((o) => o.codeLabel).join(', ')}. Chỉ tạo thêm khi là khách khác trong
+          nhóm {d.guestCount > 1 ? `(${d.guestCount} khách)` : ''}.
+        </p>
+        {orderError ? <Note tone="danger">{orderError}</Note> : null}
       </ConfirmDialog>
 
       <AppointmentForm

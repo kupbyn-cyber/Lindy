@@ -218,6 +218,67 @@ export function TextArea(props: FieldBase & TextareaHTMLAttributes<HTMLTextAreaE
   )
 }
 
+/** Ô nhập tiền: bàn phím số, hiện nhóm nghìn "70.000", hậu tố "đ"; giá trị là số nguyên VND. */
+export function MoneyInput(
+  props: FieldBase & {
+    value: number | null
+    onValueChange: (v: number | null) => void
+    disabled?: boolean
+    placeholder?: string
+  },
+) {
+  const { label, hint, error, className } = props
+  const inputId = useId()
+  const msgId = `${inputId}-msg`
+  const text = props.value == null ? '' : String(props.value).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return (
+    <div className={cx('lo-field', 'lo-field-money', error && 'has-error', className)}>
+      <label className="lo-field-label label" htmlFor={inputId}>
+        {label}
+      </label>
+      <div className="lo-field-box">
+        <input
+          id={inputId}
+          className="lo-input input-text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={text}
+          disabled={props.disabled}
+          placeholder={props.placeholder}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || hint ? msgId : undefined}
+          onChange={(e) => {
+            const d = e.target.value.replace(/[^\d]/g, '').slice(0, 9)
+            props.onValueChange(d ? Number.parseInt(d, 10) : null)
+          }}
+        />
+        <span className="lo-field-suffix body">đ</span>
+      </div>
+      {error || hint ? (
+        <p id={msgId} className={cx('lo-field-msg', 'caption', error && 'is-error')}>
+          {error ?? hint}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------- Fab
+
+/** Nút tròn nổi "+ Tạo đơn" (G18). Mỗi màn hình một Fab; ẩn ở màn tạo/sửa đơn. */
+export function Fab(props: { label?: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="lo-fab lo-fab-fixed"
+      aria-label={props.label ?? 'Tạo đơn'}
+      onClick={props.onClick}
+    >
+      <Icon name="plus" size={28} />
+    </button>
+  )
+}
+
 // ---------------------------------------------------------------- Note (dòng thông tin/cảnh báo không chặn)
 
 export function Note(props: {

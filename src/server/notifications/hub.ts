@@ -33,14 +33,15 @@ const state: HubState = g.__lindyHub
 
 type LiveMessage =
   | { kind: 'appointments'; branchId: string; dates?: string[] }
+  | { kind: 'orders'; branchId: string; dates?: string[] }
   | { kind: 'notifications'; branchId?: string; userIds: string[] }
   | { kind: 'sessions_revoked'; sessionIds: string[]; userIds: string[] }
 
 export function dispatch(msg: LiveMessage) {
   for (const c of state.clients.values()) {
-    if (msg.kind === 'appointments') {
-      if (c.branchIds.has(msg.branchId))
-        c.send('appointments', { branchId: msg.branchId, dates: msg.dates ?? [] })
+    if (msg.kind === 'appointments' || msg.kind === 'orders') {
+      // Chỉ báo "có thay đổi" (loại, cơ sở, ngày); máy tải lại qua API, server lọc theo K09.
+      if (c.branchIds.has(msg.branchId)) c.send(msg.kind, { branchId: msg.branchId, dates: msg.dates ?? [] })
     } else if (msg.kind === 'notifications') {
       if (msg.userIds.includes(c.userId)) c.send('notifications', {})
     } else if (msg.kind === 'sessions_revoked') {

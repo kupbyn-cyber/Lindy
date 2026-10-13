@@ -13,13 +13,15 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as DangNhapRouteImport } from './routes/dang-nhap'
 import { Route as DoiMatKhauRouteImport } from './routes/doi-mat-khau'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
-import { Route as AppDonHangRouteImport } from './routes/_app/don-hang'
 import { Route as AppKhachRouteImport } from './routes/_app/khach'
 import { Route as AppThongBaoRouteImport } from './routes/_app/thong-bao'
 import { Route as ApiBookingSettingsRouteImport } from './routes/api/booking-settings'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiMeRouteImport } from './routes/api/me'
+import { Route as AppDonHangIndexRouteImport } from './routes/_app/don-hang/index'
+import { Route as AppDonHangIdRouteImport } from './routes/_app/don-hang/$id'
+import { Route as AppDonHangTaoRouteImport } from './routes/_app/don-hang/tao'
 import { Route as AppLichIndexRouteImport } from './routes/_app/lich/index'
 import { Route as AppLichIdRouteImport } from './routes/_app/lich/$id'
 import { Route as AppThemIndexRouteImport } from './routes/_app/them/index'
@@ -73,11 +75,6 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDonHangRoute = AppDonHangRouteImport.update({
-  id: '/don-hang',
-  path: '/don-hang',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppKhachRoute = AppKhachRouteImport.update({
   id: '/khach',
   path: '/khach',
@@ -107,6 +104,21 @@ const ApiMeRoute = ApiMeRouteImport.update({
   id: '/api/me',
   path: '/api/me',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppDonHangIndexRoute = AppDonHangIndexRouteImport.update({
+  id: '/don-hang/',
+  path: '/don-hang/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDonHangIdRoute = AppDonHangIdRouteImport.update({
+  id: '/don-hang/$id',
+  path: '/don-hang/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDonHangTaoRoute = AppDonHangTaoRouteImport.update({
+  id: '/don-hang/tao',
+  path: '/don-hang/tao',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppLichIndexRoute = AppLichIndexRouteImport.update({
   id: '/lich/',
@@ -281,13 +293,14 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
-  '/don-hang': typeof AppDonHangRoute
   '/khach': typeof AppKhachRoute
   '/thong-bao': typeof AppThongBaoRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
+  '/don-hang/$id': typeof AppDonHangIdRoute
+  '/don-hang/tao': typeof AppDonHangTaoRoute
   '/lich/$id': typeof AppLichIdRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
@@ -306,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/don-hang/': typeof AppDonHangIndexRoute
   '/lich/': typeof AppLichIndexRoute
   '/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
@@ -325,7 +339,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
-  '/don-hang': typeof AppDonHangRoute
   '/khach': typeof AppKhachRoute
   '/thong-bao': typeof AppThongBaoRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
@@ -333,6 +346,8 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/': typeof AppIndexRoute
+  '/don-hang/$id': typeof AppDonHangIdRoute
+  '/don-hang/tao': typeof AppDonHangTaoRoute
   '/lich/$id': typeof AppLichIdRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
@@ -351,6 +366,7 @@ export interface FileRoutesByTo {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/don-hang': typeof AppDonHangIndexRoute
   '/lich': typeof AppLichIndexRoute
   '/them': typeof AppThemIndexRoute
   '/api/accounts': typeof ApiAccountsIndexRoute
@@ -372,7 +388,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
-  '/_app/don-hang': typeof AppDonHangRoute
   '/_app/khach': typeof AppKhachRoute
   '/_app/thong-bao': typeof AppThongBaoRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
@@ -380,6 +395,8 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/don-hang/$id': typeof AppDonHangIdRoute
+  '/_app/don-hang/tao': typeof AppDonHangTaoRoute
   '/_app/lich/$id': typeof AppLichIdRoute
   '/_app/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
@@ -398,6 +415,7 @@ export interface FileRoutesById {
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
+  '/_app/don-hang/': typeof AppDonHangIndexRoute
   '/_app/lich/': typeof AppLichIndexRoute
   '/_app/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
@@ -420,13 +438,14 @@ export interface FileRouteTypes {
     | '/'
     | '/dang-nhap'
     | '/doi-mat-khau'
-    | '/don-hang'
     | '/khach'
     | '/thong-bao'
     | '/api/booking-settings'
     | '/api/events'
     | '/api/health'
     | '/api/me'
+    | '/don-hang/$id'
+    | '/don-hang/tao'
     | '/lich/$id'
     | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
@@ -445,6 +464,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/don-hang/'
     | '/lich/'
     | '/them/'
     | '/api/accounts/'
@@ -464,7 +484,6 @@ export interface FileRouteTypes {
   to:
     | '/dang-nhap'
     | '/doi-mat-khau'
-    | '/don-hang'
     | '/khach'
     | '/thong-bao'
     | '/api/booking-settings'
@@ -472,6 +491,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/'
+    | '/don-hang/$id'
+    | '/don-hang/tao'
     | '/lich/$id'
     | '/them/cai-dat-lich'
     | '/them/doi-mat-khau'
@@ -490,6 +511,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/don-hang'
     | '/lich'
     | '/them'
     | '/api/accounts'
@@ -510,7 +532,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/dang-nhap'
     | '/doi-mat-khau'
-    | '/_app/don-hang'
     | '/_app/khach'
     | '/_app/thong-bao'
     | '/api/booking-settings'
@@ -518,6 +539,8 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/_app/'
+    | '/_app/don-hang/$id'
+    | '/_app/don-hang/tao'
     | '/_app/lich/$id'
     | '/_app/them/cai-dat-lich'
     | '/_app/them/doi-mat-khau'
@@ -536,6 +559,7 @@ export interface FileRouteTypes {
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
+    | '/_app/don-hang/'
     | '/_app/lich/'
     | '/_app/them/'
     | '/api/accounts/'
@@ -616,13 +640,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/don-hang': {
-      id: '/_app/don-hang'
-      path: '/don-hang'
-      fullPath: '/don-hang'
-      preLoaderRoute: typeof AppDonHangRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/khach': {
       id: '/_app/khach'
       path: '/khach'
@@ -664,6 +681,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/me'
       preLoaderRoute: typeof ApiMeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/don-hang/': {
+      id: '/_app/don-hang/'
+      path: '/don-hang'
+      fullPath: '/don-hang/'
+      preLoaderRoute: typeof AppDonHangIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/don-hang/$id': {
+      id: '/_app/don-hang/$id'
+      path: '/don-hang/$id'
+      fullPath: '/don-hang/$id'
+      preLoaderRoute: typeof AppDonHangIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/don-hang/tao': {
+      id: '/_app/don-hang/tao'
+      path: '/don-hang/tao'
+      fullPath: '/don-hang/tao'
+      preLoaderRoute: typeof AppDonHangTaoRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/lich/': {
       id: '/_app/lich/'
@@ -900,29 +938,33 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
-  AppDonHangRoute: typeof AppDonHangRoute
   AppKhachRoute: typeof AppKhachRoute
   AppThongBaoRoute: typeof AppThongBaoRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppDonHangIdRoute: typeof AppDonHangIdRoute
+  AppDonHangTaoRoute: typeof AppDonHangTaoRoute
   AppLichIdRoute: typeof AppLichIdRoute
   AppThemCaiDatLichRoute: typeof AppThemCaiDatLichRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
   AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
   AppThemThongBaoRoute: typeof AppThemThongBaoRoute
+  AppDonHangIndexRoute: typeof AppDonHangIndexRoute
   AppLichIndexRoute: typeof AppLichIndexRoute
   AppThemIndexRoute: typeof AppThemIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppDonHangRoute: AppDonHangRoute,
   AppKhachRoute: AppKhachRoute,
   AppThongBaoRoute: AppThongBaoRoute,
   AppIndexRoute: AppIndexRoute,
+  AppDonHangIdRoute: AppDonHangIdRoute,
+  AppDonHangTaoRoute: AppDonHangTaoRoute,
   AppLichIdRoute: AppLichIdRoute,
   AppThemCaiDatLichRoute: AppThemCaiDatLichRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
   AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
   AppThemThongBaoRoute: AppThemThongBaoRoute,
+  AppDonHangIndexRoute: AppDonHangIndexRoute,
   AppLichIndexRoute: AppLichIndexRoute,
   AppThemIndexRoute: AppThemIndexRoute,
 }

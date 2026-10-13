@@ -1,6 +1,6 @@
 # Chạy LINDY OS ở local
 
-Cập nhật 13/10/2026, sau Đợt 0 và Đợt 1. Máy: Windows 11, Node 24, Bun 1.4.
+Cập nhật 13/10/2026, sau Đợt 0, Đợt 1 và Đợt 2A (đơn hàng). Máy: Windows 11, Node 24, Bun 1.4.
 
 ## Chạy hằng ngày
 
@@ -20,7 +20,10 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 2. `bun run db:setup` — bật PostgreSQL 16 nhúng (thư mục `.pgdata`, cổng 5433), tạo role, DB `lindy_dev` + `lindy_test`, chạy migration, tạo dữ liệu nền và 4 tài khoản mẫu. Mật khẩu sinh ngẫu nhiên ghi vào `.env` và `.local/` (không commit, không in ra màn hình).
 3. `bun scripts/gen-vapid.ts` — khoá VAPID riêng cho Web Push.
 4. `bun scripts/gen-icons.ts` và `bun scripts/gen-tokens.ts` — chỉ cần khi đổi biểu tượng hoặc `tokens.json`.
-5. (Tuỳ chọn) `bun scripts/demo-data.ts` — 12 lịch demo từ hôm nay, SĐT giả.
+5. (Tuỳ chọn) `bun scripts/demo-data.ts` — 12 lịch demo từ hôm nay (SĐT giả) và 5 đơn demo hôm nay, hôm qua. Chỉ chạy trên DB `lindy_dev`; chạy lại sẽ thêm bản nữa, muốn sạch thì `db:reset` trước.
+6. Danh mục dịch vụ ban đầu nạp từ `src/server/ops/catalog-data.ts`. Sửa `data/services.csv` hoặc `data/combos.csv` thì chạy `bun scripts/gen-catalog.ts` để sinh lại (chỉ thêm mã mới vào DB; giá đã có trong DB không bị ghi đè).
+
+**Cổng 3000 đang bận** (một dev server khác đang chạy): chạy `node node_modules/vite/bin/vite.js dev --port 3002 --strictPort` hoặc cấu hình `lindy-dev-3002` trong `.claude/launch.json`.
 
 **Dùng PostgreSQL cài thật thay bản nhúng:** đặt `PG_ADMIN_URL` trong `.env` trỏ tới tài khoản `postgres` của bản cài (anh tự nhập mật khẩu), rồi chạy `bun scripts/db-bootstrap.ts`, `bun run db:migrate`, `bun run db:seed`.
 
@@ -34,6 +37,13 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 | `node --env-file=.env .output/server/index.mjs` | Chạy bản build bằng Node (cổng 3000, đổi bằng `PORT`) |
 | `bun run db:status` | Migration nào đã chạy |
 | `bun run db:reset -- --confirm=lindy_dev` | Xoá sạch DB dev và chạy lại migration (chỉ DB localhost tên `_dev`/`_test`) |
+
+## Thử đơn hàng (Đợt 2A)
+
+1. Đăng nhập `trang@lindy.test` → nút tròn **+** (Tạo đơn) → Thêm dịch vụ → tích chọn (gõ “tdc”, “son gel”, “mat meo”) → Thêm → **Làm xong**. Khách lẻ, thợ mặc định là người tạo.
+2. Đăng nhập `nhung@lindy.test` → Đơn hàng → mở đơn Chờ xác nhận → **Xác nhận bill** → ô ghi tiền thu mở sẵn → Lưu.
+3. Từ lịch: mở một lịch hôm nay → **Khách đã đến · Tạo đơn** → đơn mở sẵn với tên, SĐT khách; lịch sang Đang làm; xác nhận đơn → lịch Hoàn thành.
+4. Thợ chỉ thấy đơn mình tạo hoặc có phần mình (K09); sau Làm xong chỉ Nhung, Linh sửa được (K10).
 
 ## Quản trị tài khoản (CLI, chưa có màn hình)
 

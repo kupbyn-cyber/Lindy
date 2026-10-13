@@ -16,6 +16,7 @@ export function useLiveEvents(branchId: string | null) {
 
     const refreshAll = () => {
       void qc.invalidateQueries({ queryKey: ['appointments'] })
+      void qc.invalidateQueries({ queryKey: ['orders'] })
       void qc.invalidateQueries({ queryKey: ['notifications'] })
     }
 
@@ -29,6 +30,10 @@ export function useLiveEvents(branchId: string | null) {
         everConnected = true
       })
       es.addEventListener('appointments', () => void qc.invalidateQueries({ queryKey: ['appointments'] }))
+      es.addEventListener('orders', () => {
+        void qc.invalidateQueries({ queryKey: ['orders'] })
+        void qc.invalidateQueries({ queryKey: ['appointments'] })
+      })
       es.addEventListener('notifications', () => void qc.invalidateQueries({ queryKey: ['notifications'] }))
       es.onerror = () => {
         healthy = false

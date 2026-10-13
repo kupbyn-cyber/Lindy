@@ -492,11 +492,89 @@ select.lo-input {
   gap: var(--space-3);
 }
 
+/* Đơn hàng: ô tích chọn tròn trong danh sách dịch vụ (C09) */
+.lo-check {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-full);
+  color: var(--on-accent);
+}
+.lo-check.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Thanh nút cố định ngay trên thanh điều hướng (màn tạo/sửa đơn) */
+.lo-actionbar {
+  position: sticky;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  z-index: 12;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+/* Tăng giảm số lượng (ngón, hình, cái) */
+.lo-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.lo-stepper button {
+  min-width: var(--tap-min);
+  min-height: 40px;
+  border: 0;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.lo-stepper input {
+  width: 44px;
+  min-height: 40px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chip chọn thợ trên dòng đơn */
+.lo-toggle {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.lo-toggle.is-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* Keyboard focus */
 .lo-btn:focus-visible,
 .lo-fab:focus-visible,
 .lo-seg-item:focus-visible,
 .lo-row-action:focus-visible,
+.lo-toggle:focus-visible,
+.lo-stepper button:focus-visible,
 .lo-input:focus-visible,
 .lo-input:focus,
 .lo-icon-btn:focus-visible {

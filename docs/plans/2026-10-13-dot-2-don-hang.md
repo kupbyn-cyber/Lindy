@@ -197,24 +197,24 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   - `POST /api/payments/:id/void`: huỷ khoản nhập nhầm, có lý do, khi chưa đối soát.
   - Trạng thái thu tự tính.
   *Kiểm tra:* test 3, 17; S24, S25.
-- [~] **2.12 Tạo đơn từ lịch.** (server xong; nút và cảnh báo trên màn chi tiết lịch ở 2.15)
+- [x] **2.12 Tạo đơn từ lịch.**
   - `POST /api/appointments/:id/create-order`: chống bấm hai lần, mang tên, SĐT, khách; dịch vụ dự kiến chỉ để tham khảo.
   - "Tạo thêm đơn" cho lịch đã có đơn, có hộp xác nhận.
   - Huỷ lịch có đơn liên kết → cảnh báo. Lịch đã có đơn → ẩn nút "Hoàn thành" bấm tay (§5.4).
   *Kiểm tra:* module 26, 28; test PRD 26 (khách hai cơ sở: hồ sơ chung, đơn đúng cơ sở).
-- [ ] **2.13 Màn tạo/sửa đơn (UI04)** và nút tròn "+ Tạo đơn" (Fab).
+- [x] **2.13 Màn tạo/sửa đơn (UI04)** và nút tròn "+ Tạo đơn" (Fab).
   - Khách: tìm SĐT/tên hoặc khách lẻ. Ngày làm dịch vụ.
   - "Thêm dịch vụ" mở sheet danh sách tích chọn theo nhóm, có ô tìm; ô số lượng cho ngón/hình/cái; ô giá hiện khoảng ngay dưới.
   - Phụ thu, dòng nhập tay; chọn thợ từng dòng; giảm giá; tổng hiện ngay; nút Lưu, Làm xong; 409 → hiện bản mới.
   *Kiểm tra:* 375px không cuộn ngang, sáng và tối; đếm lần chạm (mục 5).
-- [ ] **2.14 Danh sách đơn (UI03), chi tiết và xác nhận (UI05).**
+- [x] **2.14 Danh sách đơn (UI03), chi tiết và xác nhận (UI05).**
   - Danh sách lọc hôm nay / hôm qua / ngày chọn, trạng thái, thợ, khách, phương thức trả.
   - Chi tiết: dòng thời gian, dòng đơn, chia thợ, giảm giá, khoản thu, hạn bảo hành; nhãn "vượt khoảng", "dịch vụ nhập tay", "giảm chờ duyệt" [P28].
   - Nút Xác nhận và Ghi tiền thu nối liền (điền sẵn số còn phải thu).
   *Kiểm tra:* đăng nhập lần lượt 4 tài khoản, đối chiếu nút và đơn thấy được với K09, K10, mục 8.
-- [ ] **2.15 Nút trên chi tiết lịch + cập nhật tức thời cho đơn.**
+- [x] **2.15 Nút trên chi tiết lịch + cập nhật tức thời cho đơn.**
   *Kiểm tra:* 2 cửa sổ: Trang bấm Làm xong → danh sách Chờ xác nhận của Nhung cập nhật dưới 2 giây.
-- [ ] **2.16 Chốt 2A.** `bun run check`, build, `scan-bundle`; gom test vào `tests/acceptance/don-hang.test.ts` (mỗi test ghi đúng số PRD §18 hoặc module §13) và `tests/security/orders.test.ts`; dữ liệu demo đơn hàng; báo kết quả.
+- [x] **2.16 Chốt 2A.** `bun run check`, build, `scan-bundle`; gom test vào `tests/acceptance/don-hang.test.ts` (mỗi test ghi đúng số PRD §18 hoặc module §13) và `tests/security/orders.test.ts`; dữ liệu demo đơn hàng; báo kết quả.
 
 ### 2B — Hoàn thiện
 
@@ -341,3 +341,33 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 - `src/components/lich/AppointmentForm.tsx` (chọn khách có sẵn), `src/routes/_app/lich/$id.tsx` (nút tạo đơn).
 - `src/routes/_app.tsx` (Fab), `_app/index.tsx` (Tổng quan), `_app/them/index.tsx` (mục Danh mục, Báo cáo).
 - `scripts/demo-data.ts` (đơn mẫu), `docs/CHAY_LOCAL.md`, `CLAUDE.md`, `docs/DECISIONS.md`, `docs/OPEN_QUESTIONS.md`.
+
+## 15. Kết quả 2A (13/10/2026)
+
+### Đã kiểm bằng bằng chứng
+
+| Kiểm tra | Kết quả |
+|---|---|
+| `bun run check` (Biome, cấm `sql.unsafe`, typecheck, test) | Đạt. 180/180 test, 13 file (103 test cũ Đợt 0–1 vẫn đạt) |
+| Test PRD §18: 1, 3, 4, 15, 17, 21, 26, 28, 30, 31, 32, 43, 45, 46, 47, 48, 49, 50, 51, 52 | Đạt, tự động (`tests/acceptance/don-hang.test.ts`, `tests/unit/order-math.test.ts`, `tests/unit/catalog-search.test.ts`, `tests/integration/customers.test.ts`) |
+| Test 33, 34 phần cơ sở hoa hồng | Đạt (`order-math.test.ts`); số tiền hoa hồng ở Đợt 4 |
+| Test module lịch 26, 27, 28 | Đạt, tự động |
+| Test bảo mật S19–S26, S28 + phần danh sách của S29 + chặn ở tầng SQL | Đạt (`tests/security/orders.test.ts`) |
+| P37 — quyền gọi hàm schema `app` | Sửa ở `0008_function_grants`; test xác nhận `app_user` không gọi được hàm nội bộ |
+| `bun run build` + `scan-bundle` | Build được; 42 file trình duyệt không chứa bí mật |
+| Giao diện 375×812 (trình duyệt trong app, chế độ tối) | Không cuộn ngang ở Đơn hàng, Tạo đơn, Chi tiết đơn, Chi tiết lịch. Tạo đơn khách lẻ 1 dịch vụ: + → Thêm dịch vụ → tích → Thêm → Làm xong = 5 lần chạm |
+| Luồng thật trên giao diện | Trang tạo đơn (mắt mèo 10 ngón tự điền 70.000đ, sinh nhật 10%) → Làm xong; Nhung xác nhận → ô thu tiền tự mở → thu chuyển khoản → Đã thu đủ, bảo hành +3 ngày. Từ lịch: "Khách đã đến · Tạo đơn" → đơn mang tên, SĐT; lịch sang Đang làm, ẩn Hoàn thành bấm tay |
+| Cập nhật tức thời | Sự kiện `orders` đến SSE sau ~30 ms; gói tin chỉ có cơ sở và ngày |
+
+### Khác với kế hoạch
+
+- Danh mục nạp từ file sinh sẵn `catalog-data.ts` (Bun không đọc được `?raw`), không nhúng CSV.
+- Thêm migration `0008_function_grants` (P37); đơn hàng thành `0009_orders`.
+- DB dev dựng lại bằng `db:reset` (chỉ có dữ liệu mẫu: 4 tài khoản mẫu, 14 lịch mẫu, chưa có khách, đơn, push) vì migration 0009 sửa nhiều lần khi làm.
+- Duyệt giảm giá ghi trên đơn (một người duyệt cho cả đơn), không theo từng khoản giảm; hiệu lực gắn với băm phần giá (`pricing_hash`).
+- Nút trình duyệt trong app không nhận cú bấm khi khung trình duyệt bị ẩn; luồng giao diện được bấm bằng JavaScript trên đúng phần tử.
+
+### Chưa làm hoặc chưa kiểm
+
+- 2B (bước 2.17–2.23): tab Khách, phiếu bảo hành và ưu đãi bù khiếu nại, sửa đơn đã xác nhận, Tổng quan có số tiền, báo cáo, cài đặt danh mục.
+- Chưa thử trên iPhone thật; chưa đẩy lên GitHub/hosting.
