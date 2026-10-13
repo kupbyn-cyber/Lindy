@@ -20,6 +20,7 @@ import { useCan } from '~/lib/me'
 import { formatVND } from '~/lib/money'
 import { addDays, formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import type { dayClosePreview } from '~/server/money/service'
+import type { tipSummary } from '~/server/orders/tips'
 
 export const Route = createFileRoute('/_app/them/chot-ngay')({
   head: () => ({ meta: [{ title: 'Chốt quỹ · LINDY OS' }] }),
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/_app/them/chot-ngay')({
 })
 
 type Data = Awaited<ReturnType<typeof dayClosePreview>>
+type Tips = Awaited<ReturnType<typeof tipSummary>>
 
 function Page() {
   const can = useCan()
@@ -84,6 +86,7 @@ function Page() {
               }
             />
           </div>
+          <TipsCard />
           {d.closable && d.figures ? (
             <CloseForm d={d} key={`${d.date}-${d.figures.expected}`} onDone={() => setDate(null)} />
           ) : (
@@ -239,6 +242,74 @@ function CloseForm(props: { d: Data; onDone: () => void }) {
         </div>
       </ConfirmDialog>
     </>
+  )
+}
+
+/** Tip giữ hộ chưa trả (Q15): cuối ngày Nhung trả tiền mặt cho từng thợ, app ghi tiền ra khỏi quỹ tiền mặt. */
+function TipsCard() {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [pay, setPay] = useState<{ staffUserId: string; name: string; amount: number; key: string } | null>(
+    null,
+  )
+  const [busy, setBusy] = useState(false)
+  const q = useQuery({ queryKey: ['money', 'tips'], queryFn: () => api<Tips>('/api/tips') })
+  if (!q.data || q.data.holding.length === 0) return null
+
+  async function run() {
+    if (!pay) return
+    setBusy(true)
+    try {
+      await api('/api/tips', { body: { staffUserId: pay.staffUserId, idempotencyKey: pay.key } })
+      await qc.invalidateQueries({ queryKey: ['money'] })
+      toast(`Đã ghi trả tip ${formatVND(pay.amount)} cho ${pay.name}.`)
+      setPay(null)
+    } catch (e) {
+      toast(errorText(e), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card title="Tip giữ hộ chờ trả thợ">
+      {q.data.holding.map((h) => (
+        <div key={h.staffUserId} className="flex items-center justify-between gap-2">
+          <span className="body">
+            {h.name} <span className="caption text-ink-muted">· {h.count} khoản</span>
+          </span>
+          <span className="flex items-center gap-2">
+            <Money value={h.amount} />
+            {q.data.can.pay ? (
+              <Button
+                variant="quiet"
+                onClick={() =>
+                  setPay({
+                    staffUserId: h.staffUserId,
+                    name: h.name,
+                    amount: h.amount,
+                    key: crypto.randomUUID(),
+                  })
+                }
+              >
+                Trả tiền mặt
+              </Button>
+            ) : null}
+          </span>
+        </div>
+      ))}
+      <p className="caption m-0 text-ink-muted">Trả xong, tiền ra khỏi quỹ tiền mặt trước khi đếm két.</p>
+      <ConfirmDialog
+        open={!!pay}
+        title={pay ? `Trả ${formatVND(pay.amount)} tip cho ${pay.name}?` : ''}
+        confirmLabel="Đã trả tiền mặt"
+        busy={busy}
+        onConfirm={() => void run()}
+        onCancel={() => setPay(null)}
+      >
+        <p className="body m-0 text-ink-muted">App ghi khoản chi tip từ tiền mặt.</p>
+      </ConfirmDialog>
+    </Card>
   )
 }
 

@@ -4,6 +4,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
+import { Attachments } from '~/components/tien/Attachments'
 import {
   Button,
   type ChipTone,
@@ -316,6 +317,7 @@ function DetailSheet(props: { e: ExpenseView; onClose: () => void }) {
         ) : null}
       </div>
       {error && !act ? <Note tone="danger">{error}</Note> : null}
+      <Attachments ownerType="expense" ownerId={e.id} />
 
       <ConfirmDialog
         open={!!act}

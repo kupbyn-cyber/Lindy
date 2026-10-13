@@ -7,6 +7,7 @@ import { TodaySummary } from '~/components/lich/TodaySummary'
 import { Money, SegmentedControl, SummaryCard } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useMe } from '~/lib/me'
+import { formatVND } from '~/lib/money'
 import { formatIsoDate } from '~/lib/time'
 import type { overview } from '~/server/reports/service'
 
@@ -71,7 +72,19 @@ function Overview() {
           <span className="caption text-ink-muted">
             Tính đơn đã xác nhận có phần bạn làm{d.byStaff[0] ? ` · ${d.byStaff[0].orders} đơn` : ''}.
           </span>
+          {a?.tipsPending ? (
+            <span className="body">
+              Tip khách chuyển khoản chờ nhận: <Money value={a.tipsPending} size="sm" />
+            </span>
+          ) : null}
         </section>
+      ) : null}
+
+      {r && a?.reviewTotal ? (
+        <Link to="/them/can-xem-lai" className="lo-row lo-row-action -mx-4 border-y border-line">
+          <span className="body-strong">{a.reviewTotal} mục cần Linh xem lại</span>
+          <span className="label text-accent">Xem</span>
+        </Link>
       ) : null}
 
       {d?.money ? (
@@ -113,7 +126,7 @@ function Overview() {
         </section>
       ) : null}
 
-      {a && (a.awaiting || a.myInProgress || a.ownerApproval || a.review) ? (
+      {a && (a.awaiting || a.myInProgress || a.ownerApproval) ? (
         <section className="flex flex-col gap-1">
           <h2 className="overline m-0 text-ink-muted">Cần xử lý · đơn hàng</h2>
           <div className="-mx-4 border-t border-line">
@@ -131,13 +144,6 @@ function Overview() {
                 text={`${a.ownerApproval} đơn giảm trên 20% chờ Linh duyệt`}
               />
             ) : null}
-            {a.review ? (
-              <AttentionLink
-                to="/don-hang"
-                search={{ xl: true }}
-                text={`${a.review} đơn Nhung tự xác nhận cần xem lại`}
-              />
-            ) : null}
             {a.myInProgress ? (
               <AttentionLink
                 to="/don-hang"
@@ -149,8 +155,7 @@ function Overview() {
         </section>
       ) : null}
 
-      {a &&
-      (a.expensesToApprove || a.expensesToPay || a.expensesReview || a.closesReview || a.closeOverdue) ? (
+      {a && (a.expensesToApprove || a.expensesToPay || a.closeOverdue || (d?.money && a.tipsPending)) ? (
         <section className="flex flex-col gap-1">
           <h2 className="overline m-0 text-ink-muted">Cần xử lý · thu chi</h2>
           <div className="-mx-4 border-t border-line">
@@ -163,14 +168,8 @@ function Overview() {
             {a.expensesToPay ? (
               <PageLink to="/them/thu-chi" text={`${a.expensesToPay} phiếu đã duyệt chờ chi tiền`} />
             ) : null}
-            {a.expensesReview ? (
-              <PageLink
-                to="/them/thu-chi"
-                text={`${a.expensesReview} phiếu chi Nhung tự duyệt cần xem lại`}
-              />
-            ) : null}
-            {a.closesReview ? (
-              <PageLink to="/them/chot-ngay" text={`${a.closesReview} lần chốt quỹ lệch tiền cần xem lại`} />
+            {d?.money && a.tipsPending ? (
+              <PageLink to="/them/chot-ngay" text={`Tip giữ hộ chưa trả thợ: ${formatVND(a.tipsPending)}`} />
             ) : null}
           </div>
         </section>

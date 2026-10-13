@@ -1,7 +1,7 @@
 // UI13 — Báo cáo doanh thu (PRD §11, bước 2.21). Linh, Nhung (revenue.read_branch).
 // Doanh thu theo ngày làm dịch vụ, chỉ đơn đã xác nhận; tiền thu theo ngày nhận tiền và tài khoản.
-// Cọc Tết (Đợt 3A): nhận, hoàn, doanh thu cọc khách bỏ hẹn tách riêng. Tip, thu chi, chốt quỹ ở 3B; lương ở Đợt 4;
-// xuất CSV/XLSX/PDF ở Đợt 5.
+// Đợt 3: cọc Tết (nhận, hoàn, doanh thu cọc khách bỏ hẹn tách riêng); doanh thu trừ phiếu hoàn; dòng tiền (PRD §7.5);
+// ngày: chốt quỹ, tip giữ hộ. Lương ở Đợt 4; xuất CSV/XLSX/PDF ở Đợt 5.
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -88,7 +88,9 @@ function ReportPage() {
       {kind === 'day' ? <DayView q={day} /> : <MonthView q={mon} />}
 
       <div className="px-4">
-        <Note>Tip, thu chi, chốt quỹ, dòng tiền có ở Đợt 3B; lương ở Đợt 4; xuất file ở Đợt 5.</Note>
+        <Note>
+          Doanh thu theo dịch vụ chưa trừ phần hoàn tiền. Lợi nhuận, lương ở Đợt 4; xuất file ở Đợt 5.
+        </Note>
       </div>
     </section>
   )
@@ -126,6 +128,7 @@ function Revenue(props: { r: Day['revenue'] }) {
     <Card title="Doanh thu (đơn đã xác nhận)">
       <Line label="Doanh thu gộp" value={r.gross} />
       <Line label="Giảm giá" value={r.discount} />
+      {r.refunded ? <Line label="Đã hoàn tiền" value={r.refunded} /> : null}
       <Line label="Doanh thu thuần" value={r.net} strong />
       <Line label="Đơn · lượt khách" text={`${r.orders} · ${r.guests}`} />
       <Line label="Đã thu của các đơn này" value={r.paid} />
@@ -175,6 +178,58 @@ function Deposits(props: { d: Day['deposits']; period: string }) {
   )
 }
 
+/** Dòng tiền (PRD §7.5): số dư đầu/cuối, thu chi theo nhóm; chuyển nội bộ hiện riêng, không cộng vào tổng */
+function Cashflow(props: { f: Month['cashflow']; revenueNet: number; month?: boolean }) {
+  const f = props.f
+  if (!f) return null
+  return (
+    <>
+      <Card title={props.month ? 'Dòng tiền tháng' : 'Tiền vào, tiền ra trong ngày'}>
+        {f.accounts.map((a) => (
+          <div key={a.name} className="flex flex-col gap-0.5 border-b border-line pb-1">
+            <span className="body-strong">{a.name}</span>
+            <Line label={props.month ? 'Đầu tháng' : 'Đầu ngày'} value={a.opening} />
+            <Line label={props.month ? 'Cuối tháng' : 'Cuối ngày'} value={a.closing} strong />
+          </div>
+        ))}
+        {f.inflows.map((l) => (
+          <Line key={l.key} label={l.label} value={l.amount} />
+        ))}
+        <Line label="Tổng tiền vào" value={f.totalIn} strong />
+        {f.outflows.map((l) => (
+          <Line key={l.key} label={l.label} value={l.amount} negative />
+        ))}
+        <Line label="Tổng tiền ra" value={f.totalOut} strong />
+        {f.transfers ? <Line label="Chuyển nội bộ (không tính vào tổng)" value={f.transfers} /> : null}
+        {props.month && f.customerReceipts < props.revenueNet ? (
+          <p className="caption m-0 text-warning">
+            Doanh thu thuần {props.revenueNet.toLocaleString('vi-VN')}đ, tiền thu của khách trong tháng{' '}
+            {f.customerReceipts.toLocaleString('vi-VN')}đ. Kiểm đơn chưa thu đủ.
+          </p>
+        ) : null}
+      </Card>
+      {props.month && f.byCategory.length ? (
+        <Card title="Chi theo nhóm">
+          {f.byCategory.map((c) => (
+            <Line key={c.name} label={c.name} value={c.amount} />
+          ))}
+        </Card>
+      ) : null}
+      {props.month && f.byDay.length ? (
+        <Card title="Tiền vào / ra theo ngày (trừ chuyển nội bộ)">
+          {f.byDay.map((d) => (
+            <Line
+              key={d.date}
+              label={`${formatIsoDate(d.date).slice(0, 5)} · vào ${d.inflow.toLocaleString('vi-VN')}đ`}
+              value={-d.outflow}
+            />
+          ))}
+        </Card>
+      ) : null}
+    </>
+  )
+}
+
 function Appointments(props: { a: Day['appointments'] }) {
   const a = props.a
   return (
@@ -206,6 +261,24 @@ function DayView(props: { q: ReturnType<typeof useQuery<Day>> }) {
       </Card>
       <Staff rows={d.byStaff} />
       <Receipts rows={d.receipts} />
+      <Cashflow f={d.cashflow} revenueNet={d.revenue.net} />
+      <Card title="Chốt quỹ, tip">
+        {d.dayClose ? (
+          <>
+            <Line label="Tiền mặt lý thuyết" value={d.dayClose.expected} />
+            <Line label={`Đếm được (${d.dayClose.closedByName ?? ''})`} value={d.dayClose.counted} />
+            {d.dayClose.difference ? (
+              <Line label={`Chênh lệch: ${d.dayClose.reason ?? ''}`} value={d.dayClose.difference} negative />
+            ) : null}
+          </>
+        ) : (
+          <span className="body text-ink-muted">Ngày này chưa chốt quỹ.</span>
+        )}
+        <Line
+          label={`Tip giữ hộ chưa trả thợ (${d.tipsHolding.count} khoản, hiện tại)`}
+          value={d.tipsHolding.amount}
+        />
+      </Card>
       <Deposits d={d.deposits} period="trong ngày" />
       <Appointments a={d.appointments} />
     </>
@@ -241,6 +314,7 @@ function MonthView(props: { q: ReturnType<typeof useQuery<Month>> }) {
       </Card>
       <Staff rows={m.byStaff} />
       <Receipts rows={m.receipts} />
+      <Cashflow f={m.cashflow} revenueNet={m.revenue.net} month />
       <Deposits d={m.deposits} period="trong tháng" />
       <Card title="Khách">
         <Line label="Khách mới" text={String(m.customers.new)} />

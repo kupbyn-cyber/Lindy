@@ -31,6 +31,7 @@ import { Route as AppLichIdRouteImport } from './routes/_app/lich/$id'
 import { Route as AppThemIndexRouteImport } from './routes/_app/them/index'
 import { Route as AppThemBaoCaoRouteImport } from './routes/_app/them/bao-cao'
 import { Route as AppThemCaiDatLichRouteImport } from './routes/_app/them/cai-dat-lich'
+import { Route as AppThemCanXemLaiRouteImport } from './routes/_app/them/can-xem-lai'
 import { Route as AppThemChotNgayRouteImport } from './routes/_app/them/chot-ngay'
 import { Route as AppThemDanhMucRouteImport } from './routes/_app/them/danh-muc'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
@@ -190,6 +191,11 @@ const AppThemBaoCaoRoute = AppThemBaoCaoRouteImport.update({
 const AppThemCaiDatLichRoute = AppThemCaiDatLichRouteImport.update({
   id: '/them/cai-dat-lich',
   path: '/them/cai-dat-lich',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemCanXemLaiRoute = AppThemCanXemLaiRouteImport.update({
+  id: '/them/can-xem-lai',
+  path: '/them/can-xem-lai',
   getParentRoute: () => AppRoute,
 } as any)
 const AppThemChotNgayRoute = AppThemChotNgayRouteImport.update({
@@ -470,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/lich/$id': typeof AppLichIdRoute
   '/them/bao-cao': typeof AppThemBaoCaoRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
+  '/them/can-xem-lai': typeof AppThemCanXemLaiRoute
   '/them/chot-ngay': typeof AppThemChotNgayRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
@@ -544,6 +551,7 @@ export interface FileRoutesByTo {
   '/lich/$id': typeof AppLichIdRoute
   '/them/bao-cao': typeof AppThemBaoCaoRoute
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
+  '/them/can-xem-lai': typeof AppThemCanXemLaiRoute
   '/them/chot-ngay': typeof AppThemChotNgayRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
@@ -620,6 +628,7 @@ export interface FileRoutesById {
   '/_app/lich/$id': typeof AppLichIdRoute
   '/_app/them/bao-cao': typeof AppThemBaoCaoRoute
   '/_app/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
+  '/_app/them/can-xem-lai': typeof AppThemCanXemLaiRoute
   '/_app/them/chot-ngay': typeof AppThemChotNgayRoute
   '/_app/them/danh-muc': typeof AppThemDanhMucRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
@@ -696,6 +705,7 @@ export interface FileRouteTypes {
     | '/lich/$id'
     | '/them/bao-cao'
     | '/them/cai-dat-lich'
+    | '/them/can-xem-lai'
     | '/them/chot-ngay'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
@@ -770,6 +780,7 @@ export interface FileRouteTypes {
     | '/lich/$id'
     | '/them/bao-cao'
     | '/them/cai-dat-lich'
+    | '/them/can-xem-lai'
     | '/them/chot-ngay'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
@@ -845,6 +856,7 @@ export interface FileRouteTypes {
     | '/_app/lich/$id'
     | '/_app/them/bao-cao'
     | '/_app/them/cai-dat-lich'
+    | '/_app/them/can-xem-lai'
     | '/_app/them/chot-ngay'
     | '/_app/them/danh-muc'
     | '/_app/them/doi-mat-khau'
@@ -1108,6 +1120,13 @@ declare module '@tanstack/react-router' {
       path: '/them/cai-dat-lich'
       fullPath: '/them/cai-dat-lich'
       preLoaderRoute: typeof AppThemCaiDatLichRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/can-xem-lai': {
+      id: '/_app/them/can-xem-lai'
+      path: '/them/can-xem-lai'
+      fullPath: '/them/can-xem-lai'
+      preLoaderRoute: typeof AppThemCanXemLaiRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/them/chot-ngay': {
@@ -1479,6 +1498,7 @@ interface AppRouteChildren {
   AppLichIdRoute: typeof AppLichIdRoute
   AppThemBaoCaoRoute: typeof AppThemBaoCaoRoute
   AppThemCaiDatLichRoute: typeof AppThemCaiDatLichRoute
+  AppThemCanXemLaiRoute: typeof AppThemCanXemLaiRoute
   AppThemChotNgayRoute: typeof AppThemChotNgayRoute
   AppThemDanhMucRoute: typeof AppThemDanhMucRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
@@ -1501,6 +1521,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppLichIdRoute: AppLichIdRoute,
   AppThemBaoCaoRoute: AppThemBaoCaoRoute,
   AppThemCaiDatLichRoute: AppThemCaiDatLichRoute,
+  AppThemCanXemLaiRoute: AppThemCanXemLaiRoute,
   AppThemChotNgayRoute: AppThemChotNgayRoute,
   AppThemDanhMucRoute: AppThemDanhMucRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,

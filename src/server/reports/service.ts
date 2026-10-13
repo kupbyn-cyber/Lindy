@@ -164,6 +164,8 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
         closeOverdue: manage && firstUnclosed && firstUnclosed < today ? firstUnclosed : null,
         /** Tổng mục Cần xem lại của Linh (trang Thêm → Cần xem lại) */
         reviewTotal: isOwner ? await reviewCount(tx, branch.id) : 0,
+        /** Tip giữ hộ chưa trả (RLS: Nhung, Linh thấy cả quán; thợ thấy tip của mình) */
+        tipsPending: (await tipsHolding(tx, branch.id)).amount,
       },
     }
   })

@@ -16,7 +16,7 @@ import {
 } from '~/components/ui'
 import { ApiError, api, errorText } from '~/lib/api'
 import { formatVND } from '~/lib/money'
-import { DISCOUNT_LABEL } from '~/lib/order-math'
+import { DISCOUNT_LABEL, splitTip } from '~/lib/order-math'
 import {
   LEVEL_NOTE,
   ORDER_STATUS_LABEL,
@@ -26,6 +26,7 @@ import {
   PAYMENT_TONE,
 } from '~/lib/orders'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
+import { Attachments } from '../tien/Attachments'
 import { CAUSE_LABEL, OUTCOME_LABEL, TicketSheet } from './TicketSheet'
 
 type Dialog =
@@ -36,6 +37,9 @@ type Dialog =
   | { kind: 'void'; paymentId: string; amount: number }
   | { kind: 'approve' }
   | { kind: 'voidTicket'; ticketId: string }
+  | { kind: 'tip' }
+  | { kind: 'voidTip'; tipId: string; amount: number }
+  | { kind: 'refund' }
 
 export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
   const d = props.order
@@ -51,16 +55,44 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
   const [payKey, setPayKey] = useState('')
   const [ticketOpen, setTicketOpen] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  // Tip giữ hộ (Q15): số tip, chia theo phần tiền hay khách chỉ định
+  const [tip, setTip] = useState<number | null>(null)
+  const [tipManual, setTipManual] = useState(false)
+  const [tipSplit, setTipSplit] = useState<Record<string, number | null>>({})
+
+  // Thợ của đơn và phần tiền từng người (để chia tip theo phần tiền)
+  const shares = [...new Map(d.items.flatMap((it) => it.staff.map((s) => [s.userId, s.name])))].map(
+    ([userId, name]) => ({
+      userId,
+      name,
+      amount: d.items.reduce(
+        (sum, it) =>
+          sum + it.staff.filter((s) => s.userId === userId).reduce((a, s) => a + s.allocatedNetAmount, 0),
+        0,
+      ),
+    }),
+  )
+  const autoSplit = splitTip(tip ?? 0, shares)
+  const manualSplit = shares.map((s) => ({ userId: s.userId, amount: tipSplit[s.userId] ?? 0 }))
+  const tipBody = () =>
+    tip && tip > 0 ? { amount: tip, split: tipManual ? manualSplit.filter((s) => s.amount > 0) : null } : null
 
   const open = (x: Dialog) => {
     setText('')
     setError(null)
+    setTip(null)
+    setTipManual(false)
+    setTipSplit({})
     if (x?.kind === 'payment') {
       setAmount(d.dueAmount)
       setMethod('cash')
-      // Mã thu tiền sinh khi mở; bấm lưu hai lần chỉ ra một khoản thu (test 17)
-      setPayKey(crypto.randomUUID())
     }
+    if (x?.kind === 'refund') {
+      setAmount(null)
+      setMethod('cash')
+    }
+    // Mã thu tiền, ghi tip, phiếu hoàn sinh khi mở; bấm lưu hai lần chỉ ra một khoản (test 17)
+    setPayKey(crypto.randomUUID())
     setDialog(x)
   }
 
@@ -86,9 +118,31 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
           break
         case 'payment':
           next = await api(`/api/orders/${d.id}/payments`, {
-            body: { idempotencyKey: payKey, amount: amount ?? 0, method },
+            body: {
+              idempotencyKey: payKey,
+              amount: amount ?? 0,
+              method,
+              tip: method === 'transfer' ? tipBody() : null,
+            },
           })
-          done = `Đã ghi thu ${formatVND(amount ?? 0)}.`
+          done = `Đã ghi thu ${formatVND(amount ?? 0)}${method === 'transfer' && tip ? ` và tip ${formatVND(tip)}` : ''}.`
+          break
+        case 'tip':
+          next = await api(`/api/orders/${d.id}/tips`, {
+            body: { idempotencyKey: payKey, ...tipBody() },
+          })
+          done = `Đã ghi tip ${formatVND(tip ?? 0)}.`
+          break
+        case 'voidTip':
+          next = await api(`/api/tips/${dialog.tipId}/void`, { body: { reason: text } })
+          done = 'Đã huỷ khoản tip.'
+          break
+        case 'refund':
+          next = await api(`/api/orders/${d.id}/refunds`, {
+            body: { idempotencyKey: payKey, amount: amount ?? 0, method, reason: text },
+          })
+          done = `Đã ghi hoàn ${formatVND(amount ?? 0)}.`
+          void qc.invalidateQueries({ queryKey: ['money'] })
           break
         case 'void':
           next = await api(`/api/payments/${dialog.paymentId}/void`, { body: { reason: text } })
@@ -148,6 +202,18 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
     }
   }
 
+  async function reviewRefund(refundId: string) {
+    try {
+      const next = await api<OrderDetail>(`/api/refunds/${refundId}/review`, { body: {} })
+      qc.setQueryData(['orders', 'detail', d.id], next)
+      await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
+      void qc.invalidateQueries({ queryKey: ['orders', 'overview'] })
+      toast('Đã đánh dấu xem lại phiếu hoàn.')
+    } catch (e) {
+      toast(errorText(e), 'error')
+    }
+  }
+
   async function markReviewed() {
     try {
       const next = await api<OrderDetail>(`/api/orders/${d.id}/review`, { body: {} })
@@ -161,6 +227,50 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
 
   const levelNote = LEVEL_NOTE[d.requiredLevel]
   const discountsOnLine = (pos: number) => d.discounts.filter((x) => x.scope === pos)
+
+  // Ô tip (Q15): khách chuyển khoản thêm tip → giữ hộ thợ; mặc định chia theo phần tiền, khách chỉ định thì nhập tay
+  const tipFields = (standalone: boolean) => (
+    <div className="flex flex-col gap-2">
+      <MoneyInput
+        label={standalone ? 'Số tip' : 'Tip khách chuyển thêm (không bắt buộc)'}
+        value={tip}
+        onValueChange={setTip}
+        hint="Tip giữ hộ thợ, không tính doanh thu. Cuối ngày trả tiền mặt cho thợ."
+      />
+      {tip && shares.length > 1 ? (
+        <SegmentedControl
+          ariaLabel="Chia tip"
+          className="w-full"
+          options={[
+            { value: 'auto', label: 'Chia theo phần tiền' },
+            { value: 'manual', label: 'Khách chỉ định' },
+          ]}
+          value={tipManual ? 'manual' : 'auto'}
+          onChange={(v) => setTipManual(v === 'manual')}
+        />
+      ) : null}
+      {tip && !tipManual ? (
+        <p className="caption m-0 text-ink-muted">
+          {autoSplit
+            .map((s) => `${shares.find((x) => x.userId === s.userId)?.name}: ${formatVND(s.amount)}`)
+            .join(' · ')}
+        </p>
+      ) : null}
+      {tip && tipManual
+        ? shares.map((s) => (
+            <MoneyInput
+              key={s.userId}
+              label={`Tip cho ${s.name}`}
+              value={tipSplit[s.userId] ?? null}
+              onValueChange={(v) => setTipSplit((x) => ({ ...x, [s.userId]: v }))}
+            />
+          ))
+        : null}
+      {tip && tipManual && manualSplit.reduce((a, s) => a + s.amount, 0) !== tip ? (
+        <Note tone="warning">Tổng chia phải bằng {formatVND(tip)}.</Note>
+      ) : null}
+    </div>
+  )
 
   return (
     <section className="flex flex-col gap-3">
@@ -292,6 +402,12 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             <Money value={d.paidAmount} />
           </div>
         ) : null}
+        {d.refundedAmount > 0 ? (
+          <div className="flex justify-between">
+            <span className="body text-ink-muted">Đã hoàn (trừ vào doanh thu)</span>
+            <Money value={-d.refundedAmount} tone="negative" />
+          </div>
+        ) : null}
         {d.status !== 'cancelled' && d.status !== 'in_progress' ? (
           <div className="flex justify-between">
             <span className="body text-ink-muted">Còn phải thu</span>
@@ -343,6 +459,91 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
               </div>
             ))}
           </div>
+        </section>
+      ) : null}
+
+      {d.refunds.length > 0 ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 px-4 text-ink-muted">Phiếu hoàn</h2>
+          <div className="border-t border-line">
+            {d.refunds.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-col gap-1 border-b border-line bg-surface-raised px-4 py-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="body-strong">
+                    Hoàn {formatVND(r.amount)} · {r.method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'}
+                  </span>
+                  <span className="caption text-ink-muted">{formatDateTimeShort(r.refundedAt)}</span>
+                </div>
+                <span className="body break-words">{r.reason}</span>
+                <span className="caption text-ink-muted">
+                  {r.refundedByName} · {r.accountName}
+                  {r.allocations.length
+                    ? ` · trừ ${r.allocations.map((a) => `${a.name} ${formatVND(a.amount)}`).join(', ')}`
+                    : ''}
+                </span>
+                {r.needsOwnerReview ? (
+                  <span className="flex items-center gap-2">
+                    <StatusChip tone="accent">Cần Linh xem lại</StatusChip>
+                    {c.reviewTicket ? (
+                      <button
+                        type="button"
+                        className="caption border-0 bg-transparent p-0 text-accent"
+                        onClick={() => void reviewRefund(r.id)}
+                      >
+                        Đã xem
+                      </button>
+                    ) : null}
+                  </span>
+                ) : null}
+                <Attachments ownerType="refund" ownerId={r.id} />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {d.tips.length > 0 || c.recordTip ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 px-4 text-ink-muted">Tip giữ hộ (khách chuyển khoản)</h2>
+          {d.tips.length ? (
+            <div className="border-t border-line">
+              {d.tips.map((t) => (
+                <div key={t.id} className="lo-row">
+                  <span className="lo-row-main">
+                    <span className={t.voided ? 'body text-ink-muted line-through' : 'body'}>
+                      {t.staffName}
+                    </span>
+                    <span className="lo-row-meta caption">
+                      {formatDateTimeShort(t.recordedAt)} · {t.recordedByName}
+                      {t.voided ? ` · đã huỷ: ${t.voidReason}` : t.paid ? ' · đã trả thợ' : ' · chưa trả thợ'}
+                    </span>
+                  </span>
+                  <span className="lo-row-side">
+                    <Money value={t.amount} tone={t.voided ? 'muted' : undefined} />
+                    {!t.voided && !t.paid && c.voidTip ? (
+                      <button
+                        type="button"
+                        className="caption border-0 bg-transparent p-0 text-danger"
+                        onClick={() => open({ kind: 'voidTip', tipId: t.id, amount: t.amount })}
+                      >
+                        Huỷ
+                      </button>
+                    ) : null}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {c.recordTip ? (
+            <div className="px-4 pt-1">
+              <Button block onClick={() => open({ kind: 'tip' })}>
+                Ghi tip khách chuyển khoản
+              </Button>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
@@ -465,10 +666,20 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             Sửa đơn
           </Button>
         ) : null}
-        {c.cancel ? (
+        {c.refund && d.refundable > 0 ? (
+          <Button block onClick={() => open({ kind: 'refund' })}>
+            Hoàn tiền cho khách
+          </Button>
+        ) : null}
+        {c.cancel && (d.status !== 'confirmed' || d.refundable === 0) ? (
           <Button block variant="danger" onClick={() => open({ kind: 'cancel' })}>
             Huỷ đơn
           </Button>
+        ) : null}
+        {c.cancel && d.status === 'confirmed' && d.refundable > 0 ? (
+          <p className="caption m-0 text-ink-muted">
+            Muốn huỷ đơn đã xác nhận: hoàn hết tiền đã thu ({formatVND(d.refundable)}) trước.
+          </p>
         ) : null}
       </div>
 
@@ -522,7 +733,13 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                   ? 'Ghi tiền thu'
                   : dialog?.kind === 'voidTicket'
                     ? 'Huỷ phiếu xử lý?'
-                    : 'Huỷ khoản thu?'
+                    : dialog?.kind === 'tip'
+                      ? 'Ghi tip khách chuyển khoản'
+                      : dialog?.kind === 'voidTip'
+                        ? 'Huỷ khoản tip?'
+                        : dialog?.kind === 'refund'
+                          ? `Hoàn tiền đơn ${d.codeLabel}`
+                          : 'Huỷ khoản thu?'
         }
         confirmLabel={
           dialog?.kind === 'confirm'
@@ -531,13 +748,23 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
               ? 'Duyệt'
               : dialog?.kind === 'cancel'
                 ? 'Huỷ đơn'
-                : dialog?.kind === 'payment'
+                : dialog?.kind === 'payment' || dialog?.kind === 'tip'
                   ? 'Lưu'
                   : dialog?.kind === 'voidTicket'
                     ? 'Huỷ phiếu'
-                    : 'Huỷ khoản thu'
+                    : dialog?.kind === 'voidTip'
+                      ? 'Huỷ tip'
+                      : dialog?.kind === 'refund'
+                        ? 'Hoàn tiền'
+                        : 'Huỷ khoản thu'
         }
-        danger={dialog?.kind === 'cancel' || dialog?.kind === 'void' || dialog?.kind === 'voidTicket'}
+        danger={
+          dialog?.kind === 'cancel' ||
+          dialog?.kind === 'void' ||
+          dialog?.kind === 'voidTicket' ||
+          dialog?.kind === 'voidTip' ||
+          dialog?.kind === 'refund'
+        }
         busy={busy}
         onConfirm={() => void run()}
         onCancel={() => setDialog(null)}
@@ -548,7 +775,39 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             {levelNote && !d.approval?.valid ? ' Xác nhận là đồng ý mức giảm giá trên đơn.' : ''}
           </p>
         ) : null}
-        {dialog?.kind === 'cancel' || dialog?.kind === 'void' || dialog?.kind === 'voidTicket' ? (
+        {dialog?.kind === 'cancel' && d.status === 'confirmed' ? (
+          <Note tone="warning">
+            Đơn đã xác nhận: huỷ thì bỏ khỏi doanh thu ngày {formatIsoDate(d.serviceDate)}.
+            {c.markReviewed || c.reviewTicket ? '' : ' Linh sẽ xem lại.'}
+          </Note>
+        ) : null}
+        {dialog?.kind === 'refund' ? (
+          <>
+            <p className="body m-0 text-ink-muted">
+              Hoàn tối đa {formatVND(d.refundable)}. Doanh thu đơn và phần của thợ giảm theo tỷ lệ; tiền ra
+              khỏi tài khoản chọn bên dưới.
+            </p>
+            <SegmentedControl
+              ariaLabel="Hoàn bằng"
+              className="w-full"
+              options={[
+                { value: 'cash', label: 'Tiền mặt' },
+                { value: 'transfer', label: 'Chuyển khoản' },
+              ]}
+              value={method}
+              onChange={(v) => setMethod(v as 'cash' | 'transfer')}
+            />
+            <MoneyInput label="Số tiền hoàn" value={amount} onValueChange={setAmount} />
+          </>
+        ) : null}
+        {dialog?.kind === 'voidTip' ? (
+          <p className="body m-0 text-ink-muted">Khoản tip {formatVND(dialog.amount)} nhập nhầm.</p>
+        ) : null}
+        {dialog?.kind === 'cancel' ||
+        dialog?.kind === 'void' ||
+        dialog?.kind === 'voidTicket' ||
+        dialog?.kind === 'voidTip' ||
+        dialog?.kind === 'refund' ? (
           <TextArea
             label="Lý do (bắt buộc)"
             value={text}
@@ -575,8 +834,10 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
               onChange={(v) => setMethod(v as 'cash' | 'transfer')}
             />
             <MoneyInput label="Số tiền" value={amount} onValueChange={setAmount} />
+            {method === 'transfer' && c.recordTip ? tipFields(false) : null}
           </>
         ) : null}
+        {dialog?.kind === 'tip' ? tipFields(true) : null}
         {error ? <Note tone="danger">{error}</Note> : null}
       </ConfirmDialog>
     </section>
@@ -597,6 +858,9 @@ const AUDIT_LABEL: Record<string, string> = {
   payment_voided: 'Huỷ khoản thu',
   ticket_created: 'Lập phiếu xử lý',
   ticket_voided: 'Huỷ phiếu xử lý',
+  deposit_applied: 'Trừ cọc của lịch',
+  tip_recorded: 'Ghi tip giữ hộ',
+  refunded: 'Hoàn tiền',
 }
 
 type AuditItem = {

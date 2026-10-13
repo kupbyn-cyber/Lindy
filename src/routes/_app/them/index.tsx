@@ -49,6 +49,13 @@ function MorePage() {
         {can('users.manage') ? (
           <Row to="/them/tai-khoan" label="Tài khoản" hint="Tạo tài khoản, mật khẩu, vai trò, khoá" />
         ) : null}
+        {can('review_queue.read') ? (
+          <Row
+            to="/them/can-xem-lai"
+            label="Cần xem lại"
+            hint="Việc người khác tự duyệt, tự xác nhận, hoàn tiền"
+          />
+        ) : null}
         {can('expense.request') ? (
           <Row to="/them/thu-chi" label="Thu chi" hint="Đề nghị chi, duyệt chi, đã chi" />
         ) : null}
