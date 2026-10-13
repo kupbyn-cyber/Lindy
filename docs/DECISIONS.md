@@ -146,3 +146,13 @@ Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-2-don-hang.md`.
 | **K13** | Lượt khách (Q-B) | **1 đơn = 1 lượt khách.** | Tổng quan và báo cáo ngày đếm lượt khách bằng số đơn đã xác nhận. |
 | **K14** | Ai sửa đơn Đang làm (P39) | **Người tạo đơn và Nhung, Linh.** Thợ được chia phần chỉ xem, muốn đổi thì báo người tạo hoặc Nhung. | Chặn ở API và trigger DB. Thợ có phần vẫn bấm Làm xong được. |
 | **K15** | Phiếu ưu đãi bù khiếu nại do người không phải chủ lập (P40) | Lập được ngay, đồng thời **vào danh sách Cần xem lại của Linh**. | Linh bấm "Đã xem" trên phiếu; Tổng quan đếm chung với đơn cần xem lại. |
+
+## K16–K18 — Sổ tiền và cọc Tết, trước Đợt 3 (13/10/2026, đã chốt)
+
+Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-3-so-tien-coc.md`.
+
+| Mã | Chủ đề | Đã chốt | Áp dụng trong app |
+|---|---|---|---|
+| **K16** | Lịch tạo trong mùa cọc mà khách chưa chuyển cọc (Q-C) | **Lưu được.** Lịch có nhãn **"Chưa cọc"** và nằm trong Cần xử lý của Linh, Nhung, Chin cho đến khi có khoản cọc. | Làm rõ test 30 module lịch ("Form yêu cầu cọc"): form hiện phần cọc và số gợi ý, nhưng không chặn lưu. |
+| **K17** | Chốt quỹ lệch tiền đếm (Q-D) | App ghi bút toán **"chênh lệch kiểm quỹ"** đúng bằng số lệch, kèm lý do, để **số dư tiền mặt trong app bằng tiền thật trong két**. Mọi lần lệch khác 0 vào **Cần xem lại của Linh**. | Tiền mặt đầu ngày hôm sau = số đếm khi chốt. Bút toán lệch chỉ thêm, không sửa. |
+| **K18** | Ai làm phiếu hoàn tiền, huỷ đơn đã xác nhận (Q-E) | **Nhung, Linh.** Phiếu hoàn và huỷ do Nhung làm vào **Cần xem lại của Linh** (như K15). | Quyền `order.refund` cho Linh, Nhung; kiểm ở API và DB. Hoàn phải có lý do; huỷ đơn đã xác nhận chỉ khi đã hoàn hết tiền thu. |

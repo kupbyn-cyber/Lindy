@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 3 — Sổ tiền và cọc Tết
 
-**Ngày:** 13/10/2026 · **Trạng thái:** CHỜ DUYỆT. Chưa code. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** CHỜ DUYỆT. Chưa code. Q-C, Q-D, Q-E đã chốt 13/10/2026 theo phương án (a) → K16, K17, K18. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (A02, A03, B01, C01–C04, K05, K09–K15); PRD v1.2 §4, §6.3, §6.6, §7, §11, §12, §13 (B, C, D), §14 (UI06, UI07, UI16), §17, §18; PRD v1.1 §7.3 (chứng từ, trạng thái phiếu chi), Q14–Q24, Q34; module lịch v1.2 §4, §5.1, §6, §9, §11, §12, §13 (test 29–36); kế hoạch Đợt 2 mục 6 (phần dời sang Đợt 3).
 
 Ký hiệu `[Pn]`: điểm phản biện số n ở mục 11 (nối tiếp P26–P45 của Đợt 2). `Sn`: test bảo mật ở mục 10.2.
@@ -161,7 +161,7 @@ Thêm vào `src/server/authz/catalog.ts` (`seedBase` tự gán khi khởi độn
 |---|---|---|---|---|
 | `cashbook.manage` — chuyển nội bộ, đối soát chuyển khoản, ghi và trả tip, chốt quỹ | Có | Có | Không | Không |
 | `cashbook.owner` — mở sổ, góp/rút vốn, thu khác, bút toán điều chỉnh | Có | Không | Không | Không |
-| `order.refund` — phiếu hoàn, huỷ đơn đã xác nhận | Có | Theo Q-E | Không | Không |
+| `order.refund` — phiếu hoàn, huỷ đơn đã xác nhận (K18) | Có | Có, vào Cần xem lại | Không | Không |
 
 Thợ xem được: tip của mình (đang giữ, đã nhận), phiếu chi mình đề nghị, cọc trên lịch. Không xem số dư, sổ, chốt quỹ, cọc đang giữ toàn quán.
 
@@ -171,7 +171,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 ### 3A — Sổ tiền nền và cọc Tết
 
-- [ ] **3.1 Chốt Q-C, Q-D, Q-E.** Ghi vào `DECISIONS.md` (K16–K18).
+- [x] **3.1 Chốt Q-C, Q-D, Q-E.** Ghi vào `DECISIONS.md` (K16–K18).
 - [ ] **3.2 Sổ bút toán.** Migration `0011_ledger` như 7.1: bảng sổ, trigger từ khoản thu (ghi, huỷ), ghi bù khoản thu đã có, RLS.
   *Kiểm tra:* trả 200.000đ chuyển khoản + 148.000đ tiền mặt → hai tài khoản tăng đúng, công nợ 0 (test 2); huỷ khoản thu → có bút toán đảo; `app_user` INSERT/UPDATE/DELETE bảng sổ → lỗi; thợ đọc sổ → 0 dòng; chạy lại trigger không ghi đôi.
 - [ ] **3.3 Mở sổ và màn Sổ tiền (UI06, phần xem).** Linh chọn tháng mở sổ, nhập số dư hai tài khoản. Thêm → Sổ tiền: hai thẻ số dư; danh sách bút toán theo ngày, theo tài khoản. Nhung xem được; thợ không thấy mục này.
