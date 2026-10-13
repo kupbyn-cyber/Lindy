@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 2 — Đơn hàng
 
-**Ngày:** 13/10/2026 · **Trạng thái:** CHỜ DUYỆT, chưa code. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026 (Q-A chọn a → K12, Q-B chọn a → K13), đang làm. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (mới nhất: K09–K11); PRD v1.2 §4, §5, §6, §10, §11, §12, §13, §14, §17, §18; module lịch v1.2 §5.3, §5.4, §10, §12, §13 (test 26–28); `data/services.csv`, `data/combos.csv`; `design/design-system/` (Fab, Money, SummaryCard, OrderRow).
 
 Ký hiệu `[Pn]`: điểm phản biện số n ở mục 11 (nối tiếp P1–P25 của Đợt 0–1). `Sn`: test bảo mật ở mục 10.2.
@@ -163,7 +163,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 ### 2A — Bán hàng
 
-- [ ] **2.1 Chốt Q-A, Q-B.** Ghi vào `DECISIONS.md`, xoá khỏi `OPEN_QUESTIONS.md`.
+- [x] **2.1 Chốt Q-A, Q-B.** Ghi vào `DECISIONS.md` (K12, K13), xoá khỏi `OPEN_QUESTIONS.md`.
 - [ ] **2.2 Danh mục.** Migration `0006_catalog` như 7.1; nạp 28 dịch vụ + 4 combo trong `seedBase`.
   *Kiểm tra:* đủ 28 + 4; chạy seed lần hai không nhân đôi, không ghi đè giá đã sửa; Trang gọi hàm sửa giá → permission denied; `app_user` không DELETE được.
 - [ ] **2.3 Tìm dịch vụ** `src/lib/catalog-search.ts`: bỏ dấu, khớp chữ cái đầu, xếp khớp đầu từ lên trước.

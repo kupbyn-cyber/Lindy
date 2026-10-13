@@ -1,7 +1,8 @@
-// Dữ liệu nền, chạy lại không nhân đôi: tổ chức, cơ sở, quyền, vai trò, cài đặt lịch.
+// Dữ liệu nền, chạy lại không nhân đôi: tổ chức, cơ sở, quyền, vai trò, cài đặt lịch, danh mục dịch vụ.
 // Không tạo tài khoản. Dùng chung cho seed local và bước chuẩn bị DB trên hosting.
 import type postgres from 'postgres'
 import { PERMISSIONS, ROLES } from '../authz/catalog'
+import { SEED_COMBOS, SEED_SERVICES } from './catalog-data'
 
 type Sql = postgres.Sql | postgres.TransactionSql
 
@@ -57,5 +58,37 @@ export async function seedBase(
     }
   }
 
+  if (await tableExists(sql, 'services')) await seedCatalog(sql, orgId)
+
   return { orgId, branchIds, roleIds }
+}
+
+async function tableExists(sql: Sql, name: string) {
+  const [t] = await sql<{ exists: boolean }[]>`select to_regclass(${`public.${name}`}) is not null as exists`
+  return !!t?.exists
+}
+
+/** Danh mục ban đầu (PRD §6.8): chỉ thêm mã chưa có, không ghi đè giá Linh đã sửa trong app. */
+async function seedCatalog(sql: Sql, orgId: string) {
+  for (const s of SEED_SERVICES) {
+    await sql`
+      insert into services (organization_id, code, category, name, price_mode, unit, price_min, price_max,
+                            has_hardening, sort_order)
+      values (${orgId}, ${s.code}, ${s.category}, ${s.name}, ${s.priceMode}, ${s.unit}, ${s.priceMin},
+              ${s.priceMax}, ${s.hasHardening}, ${s.sortOrder})
+      on conflict (organization_id, code) do nothing`
+  }
+  for (const c of SEED_COMBOS) {
+    const [row] = await sql<{ id: string }[]>`
+      insert into combos (organization_id, code, name, group_name, price, sort_order)
+      values (${orgId}, ${c.code}, ${c.name}, ${c.groupName}, ${c.price}, ${c.sortOrder})
+      on conflict (organization_id, code) do nothing
+      returning id`
+    if (!row) continue
+    for (const [i, code] of c.items.entries()) {
+      await sql`
+        insert into combo_items (combo_id, service_id, position)
+        select ${row.id}, id, ${i + 1} from services where organization_id = ${orgId} and code = ${code}`
+    }
+  }
 }
