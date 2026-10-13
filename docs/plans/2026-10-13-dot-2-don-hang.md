@@ -164,11 +164,11 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 ### 2A — Bán hàng
 
 - [x] **2.1 Chốt Q-A, Q-B.** Ghi vào `DECISIONS.md` (K12, K13), xoá khỏi `OPEN_QUESTIONS.md`.
-- [ ] **2.2 Danh mục.** Migration `0006_catalog` như 7.1; nạp 28 dịch vụ + 4 combo trong `seedBase`.
+- [x] **2.2 Danh mục.** Migration `0006_catalog` như 7.1; nạp 28 dịch vụ + 4 combo trong `seedBase`.
   *Kiểm tra:* đủ 28 + 4; chạy seed lần hai không nhân đôi, không ghi đè giá đã sửa; Trang gọi hàm sửa giá → permission denied; `app_user` không DELETE được.
-- [ ] **2.3 Tìm dịch vụ** `src/lib/catalog-search.ts`: bỏ dấu, khớp chữ cái đầu, xếp khớp đầu từ lên trước.
+- [x] **2.3 Tìm dịch vụ** `src/lib/catalog-search.ts`: bỏ dấu, khớp chữ cái đầu, xếp khớp đầu từ lên trước.
   *Kiểm tra:* test 51 ("son gel" → Sơn gel trơn; "tdc" → Tẩy da chết); "mat meo" → Mắt mèo; "cung mong" → 2 mục cứng móng.
-- [ ] **2.4 Hàm tiền** `src/lib/order-math.ts`:
+- [x] **2.4 Hàm tiền** `src/lib/order-math.ts`:
   - Thành tiền dòng = đơn giá × số lượng; giá khoảng tự điền giá thấp nhất (C14); cao hơn khoảng → `out_of_range`; thấp hơn khoảng hoặc niêm yết → khoản giảm `below_list` (theo Q-A).
   - Cộng dồn % trên giá gốc (C15). Giảm cả bill chia theo tỷ lệ thành tiền, lệch làm tròn đưa vào dòng cuối (§6.2).
   - Mức duyệt theo tổng % từng dòng (giảm của dòng + giảm cả bill), lấy mức cao nhất.
