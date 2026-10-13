@@ -24,7 +24,7 @@ Giao diện theo `design/design-system/README.md` và `tokens.json`. Dữ liệu
 
 ## Quy tắc không được tự thay đổi
 
-- Các quyết định D01–D17, Q01–Q44, G01–G26, A01–A05, B01–B15, C01–C16, T01–T03, K01–K08 đã chốt, không hỏi lại, không tự sửa.
+- Các quyết định D01–D17, Q01–Q44, G01–G26, A01–A05, B01–B15, C01–C16, T01–T03, K01–K11 đã chốt, không hỏi lại, không tự sửa.
 - **Không tự đoán tham số còn thiếu** (giờ ca, thời lượng dịch vụ, sức chứa, giá còn trống, hạn mức chưa có). Xem `docs/OPEN_QUESTIONS.md`; thiếu thì hỏi.
 - Tiền lưu bằng **số nguyên VND**. Hiển thị `8.450.000đ`. Múi giờ `Asia/Ho_Chi_Minh`.
 - Chỉ đơn **Đã xác nhận** mới vào doanh thu, hoa hồng, KPI; doanh thu ghi theo ngày làm dịch vụ.

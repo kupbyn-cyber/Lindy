@@ -132,3 +132,13 @@ Nguồn: kế hoạch `docs/plans/2026-10-12-dot-0-dot-1.md` mục 11, sau phả
 
 - **Hosting chạy thật: Vibe Host của Mắt Bão** (bảng quản lý `https://v2.tinhgon.xyz`), thay Nhân Hòa ở T02. Nguồn code giữ repo `github.com/kupbyn-cyber/Lindy`, nhánh `main`, kết nối bằng Git URL + mã truy cập.
 - Tên miền tạm do Vibe Host cấp, dạng `*.n2.tinhgon.xyz`. K07 áp dụng cho tên miền này.
+
+## K09–K11 — Đơn hàng, trước Đợt 2 (13/10/2026, đã chốt)
+
+Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-2-don-hang.md`.
+
+| Mã | Chủ đề | Đã chốt | Áp dụng trong app |
+|---|---|---|---|
+| **K09** | Thợ xem đơn nào | Thợ thấy đơn **mình tạo** và đơn **có phần mình làm**. Linh, Nhung thấy mọi đơn trong cơ sở. | Kiểm ở API và RLS. Danh sách đơn, chi tiết, lịch sử khách, Tổng quan của thợ chỉ gồm các đơn này; không thấy doanh thu tổng hợp của thợ khác. |
+| **K10** | Sửa đơn sau Làm xong | Đơn đã bấm **Làm xong** (Chờ xác nhận) thì **chỉ Nhung, Linh sửa**; thợ không sửa được nữa. | Kiểm ở API và trigger DB. Mỗi lần sửa lưu nội dung trước/sau, người sửa, thời điểm. |
+| **K11** | Trạng thái Đang làm | **Tạo đơn là Đang làm luôn**, không có nút bắt đầu riêng. "Nháp" chỉ là đơn đang soạn trên máy, chưa lưu. | Trạng thái đơn: Đang làm → Chờ xác nhận → Đã xác nhận; Huỷ có lý do. Đơn tạo từ lịch → lịch sang "Đang làm" ngay. Thay "Nháp" ở PRD §6.3; mã quyền `order.create_draft` giữ nguyên, nghĩa là "tạo đơn". |

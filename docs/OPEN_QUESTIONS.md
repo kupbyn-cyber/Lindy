@@ -7,6 +7,13 @@ Cập nhật: 12/10/2026 sau khi chốt nền tảng (T01). Trả lời xong câ
 - **PostgreSQL 16**: máy chưa có. Cần cài để chạy app ở local.
 - **Git trên dòng lệnh**: máy có git đi kèm GitHub Desktop nhưng chưa nằm trong PATH. Nên cài Git for Windows để Claude Code dùng được lệnh git (hoặc chỉ dùng GitHub Desktop để đồng bộ).
 
+## 1a. Trước khi code Đợt 2 (đơn hàng)
+
+Chi tiết và phương án đề xuất: `docs/plans/2026-10-13-dot-2-don-hang.md` mục 3.
+
+- **Q-A. Sửa giá thấp hơn khoảng hoặc niêm yết:** test 46 (PRD §18) ghi "Nhung duyệt", nhưng theo C15 khoản giảm 25% thì phải Linh duyệt. Chọn cách nào?
+- **Q-B. "Lượt khách"** ở Tổng quan (§5.2 "12 đơn | 15 lượt") và báo cáo ngày (§11): đếm thế nào?
+
 ## 2. Trước khi chạy thật trên Mắt Bão
 
 - Tên miền (anh mua sau) và HTTPS: bắt buộc để có PWA và Web Push trên iPhone.
