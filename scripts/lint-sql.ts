@@ -9,6 +9,7 @@ const root = process.cwd()
 const allowed = new Set([
   'scripts/migrate.ts',
   'scripts/db-bootstrap.ts',
+  'scripts/check-upgrade.ts',
   'scripts/lint-sql.ts',
   'src/server/ops/migrations.ts',
   'src/server/ops/release.ts',

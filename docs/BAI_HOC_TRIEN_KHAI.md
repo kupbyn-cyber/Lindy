@@ -59,13 +59,13 @@ Máy anh (code)  ──Push (GitHub Desktop)──▶  GitHub (repo riêng tư)
 2. Trước khi lên một hosting mới:
    - đọc nhật ký `[Detect]` để biết lệnh khởi động, cổng, phiên bản Node;
    - không giả định hosting có đặt `NODE_ENV`, cổng hay lệnh `start`.
-3. Giả lập môi trường hosting trên máy trước khi nhờ anh triển khai: bản build production, DB trống, chỉ có các biến mà hosting thật có.
+3. Giả lập môi trường hosting trên máy trước khi nhờ anh triển khai: bản build production, DB trống, chỉ có các biến mà hosting thật có. Đợt có migration mới thì chạy thêm `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối của bản đang chạy trên hosting, ví dụ `0010`). Script này dựng DB tạm như bản cũ, có lịch hẹn, rồi nâng cấp lên bản mới và thử tạo đơn, xác nhận, thu tiền; xong thì xoá DB tạm.
 4. Có trang báo tình trạng (`/api/health`) ngay từ đầu. Mọi lỗi cấu hình phải hiện ra thành tên biến hoặc mã lỗi, không có giá trị bí mật.
 5. `.env.example` không chỉ để người đọc: hosting cũng quét file này và tự điền biến.
 
 ## 5. Quy trình cập nhật lần sau
 
-1. Em: sửa code → `bun run check` (lint, typecheck, test) → `bun run build` → commit.
+1. Em: sửa code → `bun run check` (lint, typecheck, test) → `bun run build` → có migration mới thì `bun scripts/check-upgrade.ts` → commit.
 2. Anh: GitHub Desktop → **Push origin**.
 3. Anh: Vibe Host → Lindy → **Triển khai lại**, đợi 1–3 phút.
 4. Mở `/api/health`: `ready: true`, `badEnv: []`.
