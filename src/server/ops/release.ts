@@ -37,10 +37,20 @@ export type ReleaseOptions = {
 export async function runRelease(opts: ReleaseOptions) {
   const log = opts.log ?? defaultLog
   if (!PASSWORD_RE.test(opts.appPassword)) {
-    throw new Error('LINDY_APP_PASSWORD phải dài 24–128 ký tự, chỉ gồm chữ, số, "-" và "_".')
+    throw new ReleaseError(
+      'bad_LINDY_APP_PASSWORD',
+      'LINDY_APP_PASSWORD phải dài 24–128 ký tự, chỉ gồm chữ, số, "-" và "_".',
+    )
   }
-  const dbName = decodeURIComponent(new URL(opts.adminUrl).pathname.replace(/^\//, ''))
-  if (!IDENT_RE.test(dbName)) throw new Error(`Tên database không hợp lệ: ${dbName}`)
+  let parsed: URL
+  try {
+    parsed = new URL(opts.adminUrl)
+  } catch {
+    throw new ReleaseError('bad_admin_url', 'DATABASE_ADMIN_URL không đúng dạng postgres://…')
+  }
+  const dbName = decodeURIComponent(parsed.pathname.replace(/^\//, ''))
+  if (!IDENT_RE.test(dbName))
+    throw new ReleaseError('bad_db_name', 'Tên database trong DATABASE_ADMIN_URL không hợp lệ.')
 
   const admin = postgres(opts.adminUrl, { onnotice: () => {}, max: 1, transform: postgres.camel })
   try {
@@ -51,10 +61,11 @@ export async function runRelease(opts: ReleaseOptions) {
     log(
       `DB: user ${me!.name}, PostgreSQL ${me!.version}, superuser=${me!.rolsuper}, createrole=${me!.rolcreaterole}`,
     )
-    if (me!.version < 160000) throw new Error('Cần PostgreSQL 16 trở lên.')
+    if (me!.version < 160000) throw new ReleaseError('pg_version_old', 'Cần PostgreSQL 16 trở lên.')
     if (!me!.rolsuper && !me!.rolcreaterole) {
-      throw new Error(
-        `User ${me!.name} không được tạo role. Cần đổi sang phương án phân quyền dự phòng (kế hoạch mục 10).`,
+      throw new ReleaseError(
+        'cannot_create_role',
+        'User quản trị DB không được tạo role. Cần đổi sang phương án phân quyền dự phòng (kế hoạch mục 10).',
       )
     }
 
@@ -76,10 +87,12 @@ export async function runRelease(opts: ReleaseOptions) {
     await migrateUp(opts.adminUrl, (m) => log(m.trim()))
 
     // 4–5. Dữ liệu nền và tài khoản chủ đầu tiên
+    let hasAccounts = true
     await admin.begin(async (tx) => {
       const base = await seedBase(tx)
       const [count] = await tx<{ n: number }[]>`select count(*)::int as n from users`
       if ((count?.n ?? 0) > 0) return
+      hasAccounts = false
       const o = opts.initialOwner ?? {}
       const name = o.name?.trim()
       const phone = o.phone ? normalizeLoginPhone(o.phone) : null
@@ -90,9 +103,14 @@ export async function runRelease(opts: ReleaseOptions) {
         )
         return
       }
-      if (o.phone && !phone) throw new Error('INITIAL_OWNER_PHONE không hợp lệ (số Việt Nam 10–11 chữ số).')
+      if (o.phone && !phone) {
+        throw new ReleaseError(
+          'bad_INITIAL_OWNER_PHONE',
+          'INITIAL_OWNER_PHONE không hợp lệ (số Việt Nam 10–11 chữ số).',
+        )
+      }
       const policy = checkPasswordPolicy(o.password)
-      if (policy) throw new Error(`INITIAL_OWNER_PASSWORD: ${policy}`)
+      if (policy) throw new ReleaseError('bad_INITIAL_OWNER_PASSWORD', `INITIAL_OWNER_PASSWORD: ${policy}`)
       const [u] = await tx<{ id: string }[]>`
         insert into users (organization_id, display_name, phone, email)
         values (${base.orgId}, ${name}, ${phone}, ${email}) returning id`
@@ -102,8 +120,10 @@ export async function runRelease(opts: ReleaseOptions) {
                values (${u!.id}, ${base.branchIds.HTK!}, ${base.roleIds.owner!}, 'release')`
       await tx`insert into audit_logs (actor_label, action, entity_type, entity_id)
                values ('release', 'admin.initial_owner_created', 'user', ${u!.id})`
+      hasAccounts = true
       log(`Đã tạo tài khoản chủ "${name}". Đăng nhập rồi đổi mật khẩu.`)
     })
+    return { hasAccounts }
   } finally {
     await admin.end()
   }
@@ -111,10 +131,79 @@ export async function runRelease(opts: ReleaseOptions) {
 
 // ---------------------------------------------------------------- Chạy một lần mỗi tiến trình
 
-type ReleaseState = { promise: Promise<void> | null; done: boolean }
+export type ReleaseProblem = { code: string; text: string }
+type ReleaseState = {
+  promise: Promise<void> | null
+  done: boolean
+  problem: ReleaseProblem | null
+  hasAccounts: boolean | null
+}
 const g = globalThis as unknown as { __lindyRelease?: ReleaseState }
-g.__lindyRelease ??= { promise: null, done: false }
+g.__lindyRelease ??= { promise: null, done: false, problem: null, hasAccounts: null }
 const state: ReleaseState = g.__lindyRelease
+
+class ReleaseError extends Error {
+  constructor(
+    public code: string,
+    message: string,
+  ) {
+    super(message)
+  }
+}
+
+/**
+ * Đổi lỗi sang mã + câu do mình viết, để /api/health báo được mà không lộ chuỗi kết nối, mật khẩu
+ * (hosting không có log lúc chạy).
+ */
+export function classifyReleaseError(e: unknown): ReleaseProblem {
+  if (e instanceof ReleaseError) return { code: e.code, text: e.message }
+  const err = e as { code?: string; message?: string }
+  switch (err?.code) {
+    case 'ENOTFOUND':
+    case 'EAI_AGAIN':
+      return { code: 'db_host_not_found', text: 'Không tìm thấy máy chủ DB. Kiểm tra DATABASE_ADMIN_URL.' }
+    case 'ECONNREFUSED':
+    case 'ETIMEDOUT':
+    case 'CONNECT_TIMEOUT':
+      return {
+        code: 'db_unreachable',
+        text: 'Không kết nối được DB. Kiểm tra DB đang chạy và DATABASE_ADMIN_URL.',
+      }
+    case '28P01':
+      return { code: 'db_auth_failed', text: 'Sai user hoặc mật khẩu trong DATABASE_ADMIN_URL.' }
+    case '3D000':
+      return { code: 'db_not_found', text: 'Tên database trong DATABASE_ADMIN_URL không tồn tại.' }
+    case '42501':
+      return {
+        code: 'db_permission',
+        text: 'User trong DATABASE_ADMIN_URL thiếu quyền (tạo role hoặc tạo bảng).',
+      }
+    default:
+      if (err?.message?.startsWith('Invalid URL') || err?.code === 'ERR_INVALID_URL') {
+        return { code: 'bad_admin_url', text: 'DATABASE_ADMIN_URL không đúng dạng postgres://…' }
+      }
+      return { code: `other${err?.code ? `_${err.code}` : ''}`, text: 'Lỗi khác khi chuẩn bị DB.' }
+  }
+}
+
+/** Trạng thái để /api/health hiển thị (không có giá trị bí mật). */
+export function releaseStatus() {
+  const required = [
+    'DATABASE_ADMIN_URL',
+    'LINDY_APP_PASSWORD',
+    'VAPID_PUBLIC_KEY',
+    'VAPID_PRIVATE_KEY',
+    'APP_ORIGIN',
+  ]
+  return {
+    ready: state.done && !!env('DATABASE_URL'),
+    problem: state.problem,
+    // false: DB chưa có tài khoản nào → đặt INITIAL_OWNER_NAME, _PHONE, _PASSWORD rồi khởi động lại.
+    hasAccounts: state.hasAccounts,
+    // Sau khi xong, DATABASE_ADMIN_URL được xoá khỏi bộ nhớ nên không tính là thiếu.
+    missingEnv: required.filter((k) => !env(k) && !(state.done && k === 'DATABASE_ADMIN_URL')),
+  }
+}
 
 /** Gọi ở đầu mỗi request; chỉ chạy thật ở lần đầu. Lỗi thì lần sau thử lại. */
 export function ensureReady(): Promise<void> {
@@ -122,12 +211,21 @@ export function ensureReady(): Promise<void> {
   state.promise ??= (async () => {
     const adminUrl = env('DATABASE_ADMIN_URL')
     if (!adminUrl) {
+      if (env('NODE_ENV') === 'production' && !env('DATABASE_URL')) {
+        throw new ReleaseError('missing_DATABASE_ADMIN_URL', 'Thiếu biến DATABASE_ADMIN_URL.')
+      }
       state.done = true // local: DB dựng bằng script
       return
     }
     const appPassword = env('LINDY_APP_PASSWORD')
-    if (!appPassword) throw new Error('Thiếu biến LINDY_APP_PASSWORD.')
-    await runRelease({
+    if (!appPassword) throw new ReleaseError('missing_LINDY_APP_PASSWORD', 'Thiếu biến LINDY_APP_PASSWORD.')
+    if (!PASSWORD_RE.test(appPassword)) {
+      throw new ReleaseError(
+        'bad_LINDY_APP_PASSWORD',
+        'LINDY_APP_PASSWORD sai dạng (24–128 ký tự chữ, số, - và _).',
+      )
+    }
+    const res = await runRelease({
       adminUrl,
       appPassword,
       initialOwner: {
@@ -142,9 +240,12 @@ export function ensureReady(): Promise<void> {
     delete process.env.DATABASE_ADMIN_URL
     delete process.env.INITIAL_OWNER_PASSWORD
     state.done = true
+    state.problem = null
+    state.hasAccounts = res.hasAccounts
     defaultLog('Xong. App chạy bằng role lindy_app.')
   })().catch((e) => {
     state.promise = null
+    state.problem = classifyReleaseError(e)
     throw e
   })
   return state.promise

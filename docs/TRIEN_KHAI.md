@@ -42,6 +42,17 @@ Sau đó server chạy bằng role `lindy_app` và xoá `DATABASE_ADMIN_URL`, `I
 
 `INITIAL_OWNER_*` chỉ dùng một lần khi DB chưa có tài khoản; tạo xong có thể xoá khỏi Environment.
 
+## Kiểm tra trạng thái
+
+Hosting không có log lúc app chạy. Mở https://lindy.vibe.vnws.com/api/health:
+
+- `"ready": true` → đã chuẩn bị DB xong.
+- `"missingEnv": [...]` → tên biến còn thiếu hoặc gõ sai tên (ví dụ thừa ký tự ở đầu).
+- `"problem": {"code": ...}` → bước bị vướng: `missing_LINDY_APP_PASSWORD`, `bad_admin_url`, `db_host_not_found`, `db_auth_failed`, `cannot_create_role`, `bad_INITIAL_OWNER_PASSWORD`…
+- `"hasAccounts": false` → DB chưa có tài khoản nào: đặt `INITIAL_OWNER_*` rồi bấm Deploy lại.
+
+Đổi biến môi trường xong, bấm **Deploy** (hoặc Rebuild) để app khởi động lại với biến mới.
+
 ## Sau khi lên
 
 1. Linh đăng nhập ở https://lindy.vibe.vnws.com, đổi mật khẩu.

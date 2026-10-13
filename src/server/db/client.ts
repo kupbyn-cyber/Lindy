@@ -1,7 +1,8 @@
 // Kết nối PostgreSQL. lindy_app không có quyền trực tiếp trên bảng nào [P4]:
 // mọi truy vấn phải đi qua withUser (role app_user, RLS theo người) hoặc withWorker (role app_worker).
 import postgres from 'postgres'
-import { requiredEnv } from '../env'
+import { env } from '../env'
+import { dbUnavailable } from '../http/errors'
 
 export type Sql = postgres.Sql
 export type Tx = postgres.TransactionSql
@@ -10,7 +11,10 @@ let pool: Sql | undefined
 
 export function getSql(): Sql {
   if (!pool) {
-    pool = postgres(requiredEnv('DATABASE_URL'), {
+    const url = env('DATABASE_URL')
+    // Chưa có DATABASE_URL (bước chuẩn bị DB trên hosting chưa xong) → báo "Chưa kết nối được dữ liệu", không 500.
+    if (!url) throw dbUnavailable()
+    pool = postgres(url, {
       max: 10,
       idle_timeout: 30,
       onnotice: () => {},

@@ -6,6 +6,27 @@ import { normalizePhone } from '../../src/lib/phone'
 import { escapeLike, foldVietnamese } from '../../src/lib/text'
 import { addDays, fromLocal, startOfWeek, toLocalDate, toLocalTime, weekdayShort } from '../../src/lib/time'
 import { fromDbError } from '../../src/server/http/errors'
+import { classifyReleaseError } from '../../src/server/ops/release'
+
+describe('Lỗi khi chuẩn bị DB trên hosting → mã cho /api/health, không lộ bí mật', () => {
+  it('phân loại lỗi kết nối, sai mật khẩu, lỗi lạ', () => {
+    const secret = 'postgres://lindy_db:mat-khau-bi-mat@host:5432/lindy_db'
+    const cases: [unknown, string][] = [
+      [
+        Object.assign(new Error(`getaddrinfo ENOTFOUND ${secret}`), { code: 'ENOTFOUND' }),
+        'db_host_not_found',
+      ],
+      [Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' }), 'db_unreachable'],
+      [Object.assign(new Error('password authentication failed'), { code: '28P01' }), 'db_auth_failed'],
+      [new Error(`lỗi lạ ${secret}`), 'other'],
+    ]
+    for (const [e, code] of cases) {
+      const p = classifyReleaseError(e)
+      expect(p.code).toBe(code)
+      expect(JSON.stringify(p)).not.toContain('mat-khau-bi-mat')
+    }
+  })
+})
 
 describe('Lỗi DB → lỗi HTTP', () => {
   it('mất kết nối PostgreSQL → 503 có câu nói rõ, không phải "Có lỗi xảy ra"', () => {
