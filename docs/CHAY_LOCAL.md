@@ -1,6 +1,6 @@
 # Chạy LINDY OS ở local
 
-Cập nhật 13/10/2026, sau Đợt 0, Đợt 1 và Đợt 2 (đơn hàng). Máy: Windows 11, Node 24, Bun 1.4.
+Cập nhật 13/10/2026, sau Đợt 0 đến Đợt 3 (sổ tiền, cọc, thu chi, chốt quỹ, tip, hoàn tiền). Máy: Windows 11, Node 24, Bun 1.4.
 
 ## Chạy hằng ngày
 

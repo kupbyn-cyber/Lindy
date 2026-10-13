@@ -1,6 +1,6 @@
 # Câu hỏi còn chờ
 
-Cập nhật: 12/10/2026 sau khi chốt nền tảng (T01). Trả lời xong câu nào thì chuyển sang `DECISIONS.md` và xoá khỏi đây.
+Cập nhật: 13/10/2026 sau Đợt 3. Trả lời xong câu nào thì chuyển sang `DECISIONS.md` và xoá khỏi đây.
 
 ## 1. Chuẩn bị máy để chạy local (anh làm)
 
@@ -16,7 +16,12 @@ Cập nhật: 12/10/2026 sau khi chốt nền tảng (T01). Trả lời xong câ
 - Lịch quán đóng cửa Tết 2027.
 - Từng nhân viên nhận lương bằng chuyển khoản hay tiền mặt.
 
-## 3. Chưa cần ngay
+## 3. Sau phản biện Đợt 3 (chờ anh quyết)
+
+- **P61 — ảnh chứng từ làm DB phình:** mỗi phiếu tối đa 3 ảnh × 1MB, ảnh lưu trong DB. Giữ như hiện tại và theo dõi dung lượng DB trên Vibe Host, hay thêm hạn mức số ảnh mỗi người mỗi ngày?
+- **P62 — trả tip trước khi đối soát sao kê:** hiện Nhung trả tip tiền mặt cho thợ được ngay khi tip vừa ghi (tip ghi vào tài khoản ngân hàng, hiện ở "chuyển khoản chưa đối soát" khi chốt quỹ). Giữ như vậy, hay chỉ cho trả tip đã khớp sao kê (an toàn hơn, cuối ngày chậm hơn)?
+
+## 4. Chưa cần ngay
 
 - Ca nửa ngày (sáng hoặc chiều) tính 0,5 công hay 1 công. Hiện mọi người làm fulltime.
 - Thời lượng chuẩn từng dịch vụ. Lịch đặt đã có mặc định 120 phút.
