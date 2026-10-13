@@ -66,6 +66,12 @@ function MorePage() {
             hint="Ngày vào làm, cách nhận lương, lương cứng, hoa hồng theo tháng"
           />
         ) : null}
+        {can('payroll.read_own') || can('payroll.read_all_branch') ? (
+          <Row to="/them/luong" label="Lương" hint="Lương tạm tính, phiếu lương, bảng lương tháng" />
+        ) : null}
+        {can('advance.request') || can('advance.approve') ? (
+          <Row to="/them/tam-ung" label="Tạm ứng" hint="Đề nghị, duyệt, chi tạm ứng" />
+        ) : null}
         {can('expense.request') ? (
           <Row to="/them/thu-chi" label="Thu chi" hint="Đề nghị chi, duyệt chi, đã chi" />
         ) : null}

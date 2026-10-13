@@ -484,6 +484,12 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                     ? ` · trừ ${r.allocations.map((a) => `${a.name} ${formatVND(a.amount)}`).join(', ')}`
                     : ''}
                 </span>
+                {r.revenueDate !== d.serviceDate ? (
+                  <span className="caption text-ink-muted">
+                    Tháng làm dịch vụ đã khoá lương: giảm doanh thu, hoa hồng ngày{' '}
+                    {formatIsoDate(r.revenueDate)}.
+                  </span>
+                ) : null}
                 {r.needsOwnerReview ? (
                   <span className="flex items-center gap-2">
                     <StatusChip tone="accent">Cần Linh xem lại</StatusChip>

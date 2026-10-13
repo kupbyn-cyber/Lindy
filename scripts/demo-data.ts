@@ -18,6 +18,7 @@ import { confirmDeposit, listSeasons, recordDeposit, saveSeason } from '../src/s
 import { recordPayment } from '../src/server/orders/payments'
 import type { CreateOrderInput } from '../src/server/orders/schema'
 import { confirmOrder, createOrder, markDone } from '../src/server/orders/service'
+import { createAdvance } from '../src/server/payroll/advances'
 import { savePolicy, saveProfile, saveSettings } from '../src/server/staff/service'
 import { assertDisposableDb } from './lib/db-guard'
 import { loadEnv, ROOT, requireEnv } from './lib/env'
@@ -152,6 +153,13 @@ async function demoStaff(users: Map<string, string>, branchId: string, today: st
     userId: users.get('chin')!,
     date: yesterday,
     status: 'worked',
+  })
+  // Đợt 4B: Chin đề nghị tạm ứng 500.000đ (chờ Linh duyệt)
+  await createAdvance(await authOf(users, branchId, 'chin'), {
+    branchId,
+    createRequestId: randomUUID(),
+    amount: 500000,
+    reason: 'Tạm ứng (demo)',
   })
   await createLeave(await authOf(users, branchId, 'trang'), {
     branchId,

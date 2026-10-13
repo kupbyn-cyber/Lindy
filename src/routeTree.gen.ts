@@ -36,9 +36,11 @@ import { Route as AppThemCanXemLaiRouteImport } from './routes/_app/them/can-xem
 import { Route as AppThemChotNgayRouteImport } from './routes/_app/them/chot-ngay'
 import { Route as AppThemDanhMucRouteImport } from './routes/_app/them/danh-muc'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
+import { Route as AppThemLuongRouteImport } from './routes/_app/them/luong'
 import { Route as AppThemNhanVienRouteImport } from './routes/_app/them/nhan-vien'
 import { Route as AppThemSoTienRouteImport } from './routes/_app/them/so-tien'
 import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoan'
+import { Route as AppThemTamUngRouteImport } from './routes/_app/them/tam-ung'
 import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
 import { Route as AppThemThuChiRouteImport } from './routes/_app/them/thu-chi'
 import { Route as ApiAccountsIndexRouteImport } from './routes/api/accounts/index'
@@ -233,6 +235,11 @@ const AppThemDoiMatKhauRoute = AppThemDoiMatKhauRouteImport.update({
   path: '/them/doi-mat-khau',
   getParentRoute: () => AppRoute,
 } as any)
+const AppThemLuongRoute = AppThemLuongRouteImport.update({
+  id: '/them/luong',
+  path: '/them/luong',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppThemNhanVienRoute = AppThemNhanVienRouteImport.update({
   id: '/them/nhan-vien',
   path: '/them/nhan-vien',
@@ -246,6 +253,11 @@ const AppThemSoTienRoute = AppThemSoTienRouteImport.update({
 const AppThemTaiKhoanRoute = AppThemTaiKhoanRouteImport.update({
   id: '/them/tai-khoan',
   path: '/them/tai-khoan',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemTamUngRoute = AppThemTamUngRouteImport.update({
+  id: '/them/tam-ung',
+  path: '/them/tam-ung',
   getParentRoute: () => AppRoute,
 } as any)
 const AppThemThongBaoRoute = AppThemThongBaoRouteImport.update({
@@ -572,9 +584,11 @@ export interface FileRoutesByFullPath {
   '/them/chot-ngay': typeof AppThemChotNgayRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/luong': typeof AppThemLuongRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
+  '/them/tam-ung': typeof AppThemTamUngRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/them/thu-chi': typeof AppThemThuChiRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -662,9 +676,11 @@ export interface FileRoutesByTo {
   '/them/chot-ngay': typeof AppThemChotNgayRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/luong': typeof AppThemLuongRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
+  '/them/tam-ung': typeof AppThemTamUngRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/them/thu-chi': typeof AppThemThuChiRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -754,9 +770,11 @@ export interface FileRoutesById {
   '/_app/them/chot-ngay': typeof AppThemChotNgayRoute
   '/_app/them/danh-muc': typeof AppThemDanhMucRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/_app/them/luong': typeof AppThemLuongRoute
   '/_app/them/nhan-vien': typeof AppThemNhanVienRoute
   '/_app/them/so-tien': typeof AppThemSoTienRoute
   '/_app/them/tai-khoan': typeof AppThemTaiKhoanRoute
+  '/_app/them/tam-ung': typeof AppThemTamUngRoute
   '/_app/them/thong-bao': typeof AppThemThongBaoRoute
   '/_app/them/thu-chi': typeof AppThemThuChiRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -846,9 +864,11 @@ export interface FileRouteTypes {
     | '/them/chot-ngay'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
+    | '/them/luong'
     | '/them/nhan-vien'
     | '/them/so-tien'
     | '/them/tai-khoan'
+    | '/them/tam-ung'
     | '/them/thong-bao'
     | '/them/thu-chi'
     | '/api/appointments/$id'
@@ -936,9 +956,11 @@ export interface FileRouteTypes {
     | '/them/chot-ngay'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
+    | '/them/luong'
     | '/them/nhan-vien'
     | '/them/so-tien'
     | '/them/tai-khoan'
+    | '/them/tam-ung'
     | '/them/thong-bao'
     | '/them/thu-chi'
     | '/api/appointments/$id'
@@ -1027,9 +1049,11 @@ export interface FileRouteTypes {
     | '/_app/them/chot-ngay'
     | '/_app/them/danh-muc'
     | '/_app/them/doi-mat-khau'
+    | '/_app/them/luong'
     | '/_app/them/nhan-vien'
     | '/_app/them/so-tien'
     | '/_app/them/tai-khoan'
+    | '/_app/them/tam-ung'
     | '/_app/them/thong-bao'
     | '/_app/them/thu-chi'
     | '/api/appointments/$id'
@@ -1351,6 +1375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppThemDoiMatKhauRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/them/luong': {
+      id: '/_app/them/luong'
+      path: '/them/luong'
+      fullPath: '/them/luong'
+      preLoaderRoute: typeof AppThemLuongRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/them/nhan-vien': {
       id: '/_app/them/nhan-vien'
       path: '/them/nhan-vien'
@@ -1370,6 +1401,13 @@ declare module '@tanstack/react-router' {
       path: '/them/tai-khoan'
       fullPath: '/them/tai-khoan'
       preLoaderRoute: typeof AppThemTaiKhoanRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/tam-ung': {
+      id: '/_app/them/tam-ung'
+      path: '/them/tam-ung'
+      fullPath: '/them/tam-ung'
+      preLoaderRoute: typeof AppThemTamUngRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/them/thong-bao': {
@@ -1802,9 +1840,11 @@ interface AppRouteChildren {
   AppThemChotNgayRoute: typeof AppThemChotNgayRoute
   AppThemDanhMucRoute: typeof AppThemDanhMucRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
+  AppThemLuongRoute: typeof AppThemLuongRoute
   AppThemNhanVienRoute: typeof AppThemNhanVienRoute
   AppThemSoTienRoute: typeof AppThemSoTienRoute
   AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
+  AppThemTamUngRoute: typeof AppThemTamUngRoute
   AppThemThongBaoRoute: typeof AppThemThongBaoRoute
   AppThemThuChiRoute: typeof AppThemThuChiRoute
   AppDonHangIndexRoute: typeof AppDonHangIndexRoute
@@ -1827,9 +1867,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppThemChotNgayRoute: AppThemChotNgayRoute,
   AppThemDanhMucRoute: AppThemDanhMucRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
+  AppThemLuongRoute: AppThemLuongRoute,
   AppThemNhanVienRoute: AppThemNhanVienRoute,
   AppThemSoTienRoute: AppThemSoTienRoute,
   AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
+  AppThemTamUngRoute: AppThemTamUngRoute,
   AppThemThongBaoRoute: AppThemThongBaoRoute,
   AppThemThuChiRoute: AppThemThuChiRoute,
   AppDonHangIndexRoute: AppDonHangIndexRoute,

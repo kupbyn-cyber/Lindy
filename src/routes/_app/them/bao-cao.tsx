@@ -1,7 +1,7 @@
 // UI13 — Báo cáo doanh thu (PRD §11, bước 2.21). Linh, Nhung (revenue.read_branch).
 // Doanh thu theo ngày làm dịch vụ, chỉ đơn đã xác nhận; tiền thu theo ngày nhận tiền và tài khoản.
 // Đợt 3: cọc Tết (nhận, hoàn, doanh thu cọc khách bỏ hẹn tách riêng); doanh thu trừ phiếu hoàn; dòng tiền (PRD §7.5);
-// ngày: chốt quỹ, tip giữ hộ. Lương ở Đợt 4; xuất CSV/XLSX/PDF ở Đợt 5.
+// ngày: chốt quỹ, tip giữ hộ. Đợt 4: lương tháng (phải trả, đã trả, tạm ứng, KPI). Xuất CSV/XLSX/PDF ở Đợt 5.
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -88,9 +88,7 @@ function ReportPage() {
       {kind === 'day' ? <DayView q={day} /> : <MonthView q={mon} />}
 
       <div className="px-4">
-        <Note>
-          Doanh thu theo dịch vụ chưa trừ phần hoàn tiền. Lợi nhuận, lương ở Đợt 4; xuất file ở Đợt 5.
-        </Note>
+        <Note>Doanh thu theo dịch vụ chưa trừ phần hoàn tiền. Lợi nhuận, xuất file ở Đợt 5.</Note>
       </div>
     </section>
   )
@@ -315,6 +313,16 @@ function MonthView(props: { q: ReturnType<typeof useQuery<Month>> }) {
       <Staff rows={m.byStaff} />
       <Receipts rows={m.receipts} />
       <Cashflow f={m.cashflow} revenueNet={m.revenue.net} month />
+      {m.payroll ? (
+        <Card title={`Lương tháng (${m.payroll.locked ? 'đã khoá' : 'tạm tính'})`}>
+          <Line label={`Lương phải trả · ${m.payroll.people} người`} value={m.payroll.grossPay} strong />
+          <Line label="Trong đó hoa hồng" value={m.payroll.commission} />
+          <Line label="Trong đó thưởng KPI quản lý" value={m.payroll.kpiBonus} />
+          <Line label="Tạm ứng đã chi (trừ vào lương)" value={m.payroll.advances} />
+          <Line label="Đã trả" value={m.payroll.paid} />
+          <Line label="Còn phải trả" value={m.payroll.remaining} negative />
+        </Card>
+      ) : null}
       <Deposits d={m.deposits} period="trong tháng" />
       <Card title="Khách">
         <Line label="Khách mới" text={String(m.customers.new)} />

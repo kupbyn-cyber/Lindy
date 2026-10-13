@@ -9,7 +9,7 @@ import { Money, SegmentedControl, SummaryCard } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useMe } from '~/lib/me'
 import { formatVND } from '~/lib/money'
-import { formatIsoDate } from '~/lib/time'
+import { formatIsoDate, formatYearMonth } from '~/lib/time'
 import type { overview } from '~/server/reports/service'
 
 export const Route = createFileRoute('/_app/')({
@@ -55,6 +55,19 @@ function Overview() {
       </div>
 
       <AttendanceCard />
+
+      {d?.myPay ? (
+        <Link to="/them/luong" className="lo-card flex flex-col gap-1 no-underline">
+          <span className="overline text-ink-muted">
+            Lương tạm tính tháng {formatYearMonth(d.myPay.month)}
+          </span>
+          <Money value={d.myPay.grossPay} size="xl" />
+          <span className="caption text-ink-muted">
+            Gồm hoa hồng {formatVND(d.myPay.commission)}
+            {d.myPay.advances ? ` · đã tạm ứng ${formatVND(d.myPay.advances)}` : ''} · xem phiếu lương
+          </span>
+        </Link>
+      ) : null}
 
       {r ? (
         <SummaryCard
@@ -191,6 +204,38 @@ function Overview() {
             {a.leavesPending ? (
               <Link to="/lich/cham-cong" search={{ tab: 'duyet' }} className="lo-row lo-row-action">
                 <span className="body">{a.leavesPending} đơn nghỉ chờ duyệt</span>
+                <span className="label text-accent">Xem</span>
+              </Link>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {a && (a.advancesToApprove || a.advancesToPay || a.payrollToLock || a.payrollUnpaid) ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 text-ink-muted">Cần xử lý · lương</h2>
+          <div className="-mx-4 border-t border-line">
+            {a.payrollToLock ? (
+              <Link to="/them/luong" search={{ m: a.payrollToLock }} className="lo-row lo-row-action">
+                <span className="body">Bảng lương tháng {formatYearMonth(a.payrollToLock)} chờ khoá</span>
+                <span className="label text-accent">Xem</span>
+              </Link>
+            ) : null}
+            {a.payrollUnpaid ? (
+              <Link to="/them/luong" search={{}} className="lo-row lo-row-action">
+                <span className="body">{a.payrollUnpaid} phiếu lương đã khoá chưa trả đủ</span>
+                <span className="label text-accent">Xem</span>
+              </Link>
+            ) : null}
+            {a.advancesToApprove ? (
+              <Link to="/them/tam-ung" className="lo-row lo-row-action">
+                <span className="body">{a.advancesToApprove} đề nghị tạm ứng chờ duyệt</span>
+                <span className="label text-accent">Xem</span>
+              </Link>
+            ) : null}
+            {a.advancesToPay ? (
+              <Link to="/them/tam-ung" className="lo-row lo-row-action">
+                <span className="body">{a.advancesToPay} tạm ứng đã duyệt chờ chi</span>
                 <span className="label text-accent">Xem</span>
               </Link>
             ) : null}

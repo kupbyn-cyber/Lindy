@@ -2,7 +2,7 @@
 // DB tạm ở trạng thái bản đang chạy (migration đến --from, có tài khoản chủ, lịch hẹn; từ 0009 có đơn và khoản thu),
 // rồi chạy bước chuẩn bị DB của bản mới (runRelease, như lúc app khởi động trên hosting) và thử luồng chính bằng service
 // của app: đơn từ lịch, thu tiền; bút toán ghi bù; cọc Tết trừ vào bill; mở sổ và số dư; thu chi; tip, hoàn tiền,
-// chứng từ; nhân viên, chấm công.
+// chứng từ; nhân viên, chấm công; lương, tạm ứng.
 //   bun scripts/check-upgrade.ts --from=0010
 // Chỉ chạy với PostgreSQL local; DB tạm bị xoá khi xong.
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
@@ -336,6 +336,30 @@ try {
       people.people[0]?.current?.baseSalary !== 3500000
     )
       throw new Error('Chấm công sai.')
+
+    // Lương (0017): sổ doanh thu tính lương ghi bù đơn cũ đã xác nhận; lương tạm tính; tạm ứng Linh tự lập → chi tiền mặt
+    const { payslip } = await import('../src/server/payroll/service')
+    const { createAdvance, actOnAdvance } = await import('../src/server/payroll/advances')
+    const { saveSettings } = await import('../src/server/staff/service')
+    if (oldOrder) {
+      const [pe] = await db<{ shop: string }[]>`
+        select coalesce(sum(shop_revenue), 0) as shop from payroll_revenue_entries where order_id = ${oldOrder}`
+      log(`Sổ doanh thu tính lương ghi bù đơn cũ: ${pe!.shop}đ`)
+      if (Number(pe!.shop) !== 150000) throw new Error('Ghi bù sổ doanh thu tính lương sai.')
+    }
+    await saveSettings(auth, { startMonth: month })
+    const adv = await createAdvance(auth, {
+      createRequestId: crypto.randomUUID(),
+      amount: 300000,
+      reason: 'Thử nâng cấp',
+    })
+    await actOnAdvance(auth, adv.id, 'pay', { version: adv.version, method: 'cash' })
+    const sl = await payslip(auth, { month: today.slice(0, 7), userId: linh!.id })
+    log(
+      `Lương tạm tính Linh: phải trả ${sl.line.grossPay}đ (hoa hồng ${sl.line.commission}đ), tạm ứng ${sl.line.advances}đ`,
+    )
+    if (adv.status !== 'approved' || sl.line.advances !== 300000 || sl.line.commission <= 0)
+      throw new Error('Lương, tạm ứng sai.')
 
     const [n] = await db<Record<string, number>[]>`
       select (select count(*)::int from schema_migrations) as migrations,
