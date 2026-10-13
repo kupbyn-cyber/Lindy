@@ -228,9 +228,10 @@ describe('S21 — thợ không sửa đơn sau Làm xong (K10)', () => {
     const edited = await updateOrder(auth('nhung'), o.id, body)
     expect(edited.items[0]!.name).toBe('Cắt sửa')
     const confirmed = await confirmOrder(auth('nhung'), o.id, edited.version)
-    expect(
-      (await err(updateOrder(auth('nhung'), o.id, { ...body, version: confirmed.version }))).status,
-    ).toBe(403)
+    // Đơn đã xác nhận: thợ không sửa được; Nhung sửa phải có lý do (D04, bước 2.19)
+    const changed = { ...body, version: confirmed.version, items: [svc('CB02', ['trang'])] }
+    expect((await err(updateOrder(auth('trang'), o.id, changed))).status).toBe(403)
+    expect((await err(updateOrder(auth('nhung'), o.id, changed))).status).toBe(422)
   })
 })
 

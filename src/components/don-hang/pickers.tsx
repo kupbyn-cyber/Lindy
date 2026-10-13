@@ -172,6 +172,8 @@ export function CustomerPicker(props: {
   open: boolean
   onClose: () => void
   onPick: (c: PickedCustomer) => void
+  /** Nhãn nút "không chọn hồ sơ" (đơn: Khách lẻ; lịch: Bỏ liên kết) */
+  noneLabel?: string
 }) {
   const [q, setQ] = useState('')
   const [adding, setAdding] = useState(false)
@@ -232,7 +234,7 @@ export function CustomerPicker(props: {
           </>
         ) : (
           <Button block onClick={() => pick(null)}>
-            Khách lẻ
+            {props.noneLabel ?? 'Khách lẻ'}
           </Button>
         )
       }

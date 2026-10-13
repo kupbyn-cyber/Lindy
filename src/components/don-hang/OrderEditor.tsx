@@ -2,7 +2,7 @@
 // giá khoảng tự điền giá thấp nhất (C14); chọn thợ từng dòng, nhiều thợ nhập tay số tiền (C10); giảm giá theo
 // bậc (C15, K12). Tổng tính ngay trên máy bằng cùng hàm với server; server tính lại khi lưu [P26].
 // "Nháp" là đơn đang soạn trên máy, chưa lưu (K11).
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Minus, Plus, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -14,6 +14,7 @@ import {
   Note,
   SegmentedControl,
   StatusChip,
+  TextArea,
   TextField,
   useToast,
 } from '~/components/ui'
@@ -32,7 +33,7 @@ import {
   splitProportional,
 } from '~/lib/order-math'
 import { LEVEL_NOTE, lookupOf, type OrderDetail, useCatalog, useStaff } from '~/lib/orders'
-import { addDays, toLocalDate } from '~/lib/time'
+import { addDays, formatIsoDate, toLocalDate } from '~/lib/time'
 import {
   CustomerPicker,
   DiscountSheet,
@@ -97,6 +98,18 @@ export function OrderEditor(props: {
     null,
   )
   const [priceEdit, setPriceEdit] = useState<Set<string>>(new Set())
+  const [adjustReason, setAdjustReason] = useState('')
+  const confirmedEdit = props.order?.status === 'confirmed'
+  // Ưu đãi bù khiếu nại còn dùng được của khách đang chọn (bước 2.18)
+  const customerId = draft.customer?.id ?? null
+  const compensations = useQuery({
+    queryKey: ['customers', 'compensations', customerId, props.order?.id ?? null],
+    queryFn: () =>
+      api<{ items: { ticketId: string; percent: number; orderCodeLabel: string }[] }>(
+        `/api/customers/${customerId}/compensations${props.order ? `?excludeOrder=${props.order.id}` : ''}`,
+      ),
+    enabled: !!customerId,
+  })
   // Mã yêu cầu sinh khi mở màn tạo đơn; mất mạng thì gửi lại cùng mã, không tạo trùng [P3]
   const requestId = useRef('')
   useEffect(() => {
@@ -166,6 +179,7 @@ export function OrderEditor(props: {
 
   async function save(markDone: boolean) {
     if (computed.errors.length > 0) return setError(computed.errors[0]!)
+    if (confirmedEdit && !adjustReason.trim()) return setError('Cần ghi lý do sửa đơn đã xác nhận.')
     if (markDone && computed.doneProblems.length > 0) return setError(computed.doneProblems[0]!)
     setBusy(markDone ? 'done' : 'save')
     setError(null)
@@ -174,7 +188,11 @@ export function OrderEditor(props: {
       if (isEdit && props.order) {
         d = await api<OrderDetail>(`/api/orders/${props.order.id}`, {
           method: 'PUT',
-          body: { version, ...payload(draft) },
+          body: {
+            version,
+            ...payload(draft),
+            ...(confirmedEdit ? { adjustReason: adjustReason.trim() } : {}),
+          },
         })
       } else {
         const res = await api<{ order: OrderDetail }>('/api/orders', {
@@ -316,7 +334,9 @@ export function OrderEditor(props: {
           const label =
             d.kind === 'manual'
               ? `${d.percent ? `${d.percent}%` : formatVND(d.amount ?? 0)} · ${d.reason ?? ''}`
-              : DISCOUNT_LABEL[d.kind]
+              : d.kind === 'complaint_compensation'
+                ? `Ưu đãi bù khiếu nại ${d.percent}%`
+                : DISCOUNT_LABEL[d.kind]
           return (
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: khoản giảm không có mã riêng; vị trí là định danh (server lưu theo vị trí)
@@ -345,6 +365,34 @@ export function OrderEditor(props: {
             </div>
           )
         })}
+        {(compensations.data?.items ?? [])
+          .filter((c) => !draft.discounts.some((d) => d.ticketId === c.ticketId))
+          .map((c) => (
+            <Note key={c.ticketId} tone="warning">
+              Khách có ưu đãi bù khiếu nại {c.percent}% (phiếu từ đơn {c.orderCodeLabel}), quán chịu, dùng một
+              lần.{' '}
+              <button
+                type="button"
+                className="border-0 bg-transparent p-0 font-semibold text-accent underline"
+                onClick={() =>
+                  setDraft((d) => ({
+                    ...d,
+                    discounts: [
+                      ...d.discounts,
+                      {
+                        scope: 'order',
+                        kind: 'complaint_compensation',
+                        percent: c.percent,
+                        ticketId: c.ticketId,
+                      },
+                    ],
+                  }))
+                }
+              >
+                Áp ưu đãi
+              </button>
+            </Note>
+          ))}
         <Button icon="plus" disabled={draft.items.length === 0} onClick={() => setSheet('discount')}>
           Thêm giảm giá
         </Button>
@@ -373,6 +421,21 @@ export function OrderEditor(props: {
         ) : null}
       </section>
 
+      {confirmedEdit ? (
+        <div className="flex flex-col gap-2 px-4">
+          <TextArea
+            label="Lý do sửa đơn đã xác nhận (bắt buộc)"
+            value={adjustReason}
+            maxLength={500}
+            onChange={(e) => setAdjustReason(e.target.value)}
+          />
+          <Note>
+            Doanh thu ngày {props.order ? formatIsoDate(props.order.serviceDate) : ''} đổi theo. Thành tiền
+            mới không được nhỏ hơn số đã thu (hoàn tiền có ở Đợt 3).
+          </Note>
+        </div>
+      ) : null}
+
       <div className="flex flex-col gap-2 px-4">
         {computed.errors.slice(0, 3).map((e) => (
           <Note key={e} tone="danger">
@@ -390,14 +453,14 @@ export function OrderEditor(props: {
         ) : null}
         <Button
           block
-          variant={awaiting ? 'primary' : 'secondary'}
+          variant={awaiting || confirmedEdit ? 'primary' : 'secondary'}
           loading={busy === 'save'}
           disabled={!!busy || computed.errors.length > 0 || !catalog.data}
           onClick={() => void save(false)}
         >
           Lưu
         </Button>
-        {!awaiting ? (
+        {!isEdit || props.order?.status === 'in_progress' ? (
           <Button
             block
             variant="primary"
@@ -421,7 +484,16 @@ export function OrderEditor(props: {
       <CustomerPicker
         open={sheet === 'customer'}
         onClose={() => setSheet(null)}
-        onPick={(c) => setDraft((d) => ({ ...d, customer: c }))}
+        onPick={(c) =>
+          // Đổi khách thì bỏ ưu đãi bù khiếu nại của khách cũ
+          setDraft((d) => ({
+            ...d,
+            customer: c,
+            discounts: d.discounts.filter(
+              (x) => x.kind !== 'complaint_compensation' || c?.id === d.customer?.id,
+            ),
+          }))
+        }
       />
       <DiscountSheet
         open={sheet === 'discount'}

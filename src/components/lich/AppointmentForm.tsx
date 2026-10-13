@@ -7,8 +7,10 @@ import { ApiError, api } from '~/lib/api'
 import { addMinutes, type Detail, type ListItem, type Warnings } from '~/lib/appointments'
 import { useCan } from '~/lib/me'
 import { normalizePhone } from '~/lib/phone'
+import { CustomerPicker } from '../don-hang/pickers'
 
 type Values = {
+  customerId: string | null
   customerDisplayName: string
   phone: string
   date: string
@@ -23,6 +25,7 @@ const LIMITS = { name: 100, phone: 20, service: 200, notes: 1000 }
 
 function fromDetail(d: Detail): Values {
   return {
+    customerId: d.customerId,
     customerDisplayName: d.name,
     phone: d.phone ?? '',
     date: d.date,
@@ -55,6 +58,7 @@ export function AppointmentForm(props: {
   const [error, setError] = useState<string | null>(null)
   const [conflict, setConflict] = useState<Detail | null>(null)
   const [warnings, setWarnings] = useState<Warnings | null>(null)
+  const [picking, setPicking] = useState(false)
   const requestId = useRef<string>('')
 
   // Mở form: điền sẵn; mỗi lần mở form tạo mới thì sinh mã yêu cầu mới [P3]
@@ -70,6 +74,7 @@ export function AppointmentForm(props: {
     } else if (props.initial) {
       requestId.current = crypto.randomUUID()
       setV({
+        customerId: null,
         customerDisplayName: '',
         phone: '',
         date: props.initial.date,
@@ -128,6 +133,7 @@ export function AppointmentForm(props: {
     setBusy(confirm ? 'confirm' : 'save')
     setError(null)
     const fields = {
+      customerId: v.customerId,
       customerDisplayName: v.customerDisplayName.trim(),
       phone: v.phone.trim() || null,
       date: v.date,
@@ -173,157 +179,189 @@ export function AppointmentForm(props: {
 
   const canConfirm = !isEdit && can('appointments.confirm_all')
 
+  // Chọn hồ sơ khách có sẵn (module §10): điền tên, SĐT đầy đủ từ hồ sơ
+  async function pickCustomer(id: string | null) {
+    if (!id) {
+      set('customerId', null)
+      return
+    }
+    try {
+      const c = await api<{ id: string; name: string; phone: string | null }>(`/api/customers/${id}`)
+      setV((old) =>
+        old ? { ...old, customerId: c.id, customerDisplayName: c.name, phone: c.phone ?? old.phone } : old,
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Không tải được hồ sơ khách.')
+    }
+  }
+
   return (
-    <Sheet
-      open={props.open}
-      title={isEdit ? 'Sửa lịch' : 'Lịch mới'}
-      onClose={props.onClose}
-      footer={
-        canConfirm ? (
-          <>
-            <Button block loading={busy === 'save'} disabled={!!busy} onClick={() => void save(false)}>
+    <>
+      <Sheet
+        open={props.open}
+        title={isEdit ? 'Sửa lịch' : 'Lịch mới'}
+        onClose={props.onClose}
+        footer={
+          canConfirm ? (
+            <>
+              <Button block loading={busy === 'save'} disabled={!!busy} onClick={() => void save(false)}>
+                Lưu
+              </Button>
+              <Button
+                block
+                variant="primary"
+                loading={busy === 'confirm'}
+                disabled={!!busy}
+                onClick={() => void save(true)}
+              >
+                Tạo và chốt
+              </Button>
+            </>
+          ) : (
+            <Button block variant="primary" loading={!!busy} onClick={() => void save(false)}>
               Lưu
             </Button>
-            <Button
-              block
-              variant="primary"
-              loading={busy === 'confirm'}
-              disabled={!!busy}
-              onClick={() => void save(true)}
-            >
-              Tạo và chốt
-            </Button>
-          </>
-        ) : (
-          <Button block variant="primary" loading={!!busy} onClick={() => void save(false)}>
-            Lưu
-          </Button>
-        )
-      }
-    >
-      {conflict ? (
-        <div className="flex flex-col gap-2">
-          <Note tone="warning">
-            Lịch vừa được {conflict.updatedByName ?? 'người khác'} sửa ({conflict.startTime}–
-            {conflict.endTime}, {conflict.name}). Chọn tải bản mới hoặc giữ nội dung đang sửa.
-          </Note>
-          <div className="flex gap-2">
-            <Button
-              block
-              onClick={() => {
-                setV(fromDetail(conflict))
-                setVersion(conflict.version)
-                setConflict(null)
-              }}
-            >
-              Tải bản mới
-            </Button>
-            <Button
-              block
-              onClick={() => {
-                setVersion(conflict.version)
-                setConflict(null)
-              }}
-            >
-              Sửa tiếp
-            </Button>
+          )
+        }
+      >
+        {conflict ? (
+          <div className="flex flex-col gap-2">
+            <Note tone="warning">
+              Lịch vừa được {conflict.updatedByName ?? 'người khác'} sửa ({conflict.startTime}–
+              {conflict.endTime}, {conflict.name}). Chọn tải bản mới hoặc giữ nội dung đang sửa.
+            </Note>
+            <div className="flex gap-2">
+              <Button
+                block
+                onClick={() => {
+                  setV(fromDetail(conflict))
+                  setVersion(conflict.version)
+                  setConflict(null)
+                }}
+              >
+                Tải bản mới
+              </Button>
+              <Button
+                block
+                onClick={() => {
+                  setVersion(conflict.version)
+                  setConflict(null)
+                }}
+              >
+                Sửa tiếp
+              </Button>
+            </div>
           </div>
+        ) : null}
+        <TextField
+          label="Tên khách"
+          placeholder="Mai Anh, Nhóm 3 khách…"
+          value={v.customerDisplayName}
+          maxLength={LIMITS.name}
+          autoFocus={!isEdit}
+          enterKeyHint="done"
+          onChange={(e) => set('customerDisplayName', e.target.value)}
+        />
+        <div className="-mt-2 flex items-center justify-between gap-2">
+          <span className="caption text-ink-muted">
+            {v.customerId ? 'Đã gắn hồ sơ khách.' : 'Khách quen: chọn hồ sơ để giữ lịch sử.'}
+          </span>
+          <Button variant="quiet" onClick={() => setPicking(true)}>
+            {v.customerId ? 'Đổi khách' : 'Chọn khách có sẵn'}
+          </Button>
         </div>
-      ) : null}
-      <TextField
-        label="Tên khách"
-        placeholder="Mai Anh, Nhóm 3 khách…"
-        value={v.customerDisplayName}
-        maxLength={LIMITS.name}
-        autoFocus={!isEdit}
-        enterKeyHint="done"
-        onChange={(e) => set('customerDisplayName', e.target.value)}
-      />
-      <div className="grid grid-cols-[1.3fr_1fr_1fr] gap-2">
+        <div className="grid grid-cols-[1.3fr_1fr_1fr] gap-2">
+          <TextField
+            label="Ngày"
+            type="date"
+            value={v.date}
+            onChange={(e) => e.target.value && set('date', e.target.value)}
+          />
+          <TextField
+            label="Bắt đầu"
+            type="time"
+            step={900}
+            value={v.startTime}
+            onChange={(e) => {
+              const s = e.target.value
+              if (!s) return
+              setV((old) =>
+                old
+                  ? {
+                      ...old,
+                      startTime: s,
+                      endTime: endTouched ? old.endTime : addMinutes(s, props.defaultDurationMin),
+                    }
+                  : old,
+              )
+            }}
+          />
+          <TextField
+            label="Kết thúc"
+            type="time"
+            step={900}
+            value={v.endTime}
+            onChange={(e) => {
+              if (!e.target.value) return
+              setEndTouched(true)
+              set('endTime', e.target.value)
+            }}
+          />
+        </div>
+        <div className="lo-field">
+          <span className="lo-field-label label">Số khách</span>
+          <SegmentedControl
+            ariaLabel="Số khách"
+            options={['1', '2', '3', '4']}
+            value={String(v.guestCount)}
+            onChange={(x) => set('guestCount', Number(x))}
+          />
+        </div>
         <TextField
-          label="Ngày"
-          type="date"
-          value={v.date}
-          onChange={(e) => e.target.value && set('date', e.target.value)}
+          label="SĐT (không bắt buộc)"
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          value={v.phone}
+          maxLength={30}
+          error={v.phone && !phoneCheck.ok ? phoneCheck.error : undefined}
+          onChange={(e) => set('phone', e.target.value)}
         />
         <TextField
-          label="Bắt đầu"
-          type="time"
-          step={900}
-          value={v.startTime}
-          onChange={(e) => {
-            const s = e.target.value
-            if (!s) return
-            setV((old) =>
-              old
-                ? {
-                    ...old,
-                    startTime: s,
-                    endTime: endTouched ? old.endTime : addMinutes(s, props.defaultDurationMin),
-                  }
-                : old,
-            )
-          }}
+          label="Dịch vụ dự kiến (không bắt buộc)"
+          placeholder="sơn gel tay + chân"
+          value={v.serviceSummary}
+          maxLength={LIMITS.service}
+          onChange={(e) => set('serviceSummary', e.target.value)}
         />
-        <TextField
-          label="Kết thúc"
-          type="time"
-          step={900}
-          value={v.endTime}
-          onChange={(e) => {
-            if (!e.target.value) return
-            setEndTouched(true)
-            set('endTime', e.target.value)
-          }}
+        <TextArea
+          label="Ghi chú nội bộ"
+          hint="Không hiện trên thông báo màn hình khoá."
+          value={v.notes}
+          maxLength={LIMITS.notes}
+          onChange={(e) => set('notes', e.target.value)}
         />
-      </div>
-      <div className="lo-field">
-        <span className="lo-field-label label">Số khách</span>
-        <SegmentedControl
-          ariaLabel="Số khách"
-          options={['1', '2', '3', '4']}
-          value={String(v.guestCount)}
-          onChange={(x) => set('guestCount', Number(x))}
-        />
-      </div>
-      <TextField
-        label="SĐT (không bắt buộc)"
-        type="tel"
-        inputMode="tel"
-        autoComplete="off"
-        value={v.phone}
-        maxLength={30}
-        error={v.phone && !phoneCheck.ok ? phoneCheck.error : undefined}
-        onChange={(e) => set('phone', e.target.value)}
-      />
-      <TextField
-        label="Dịch vụ dự kiến (không bắt buộc)"
-        placeholder="sơn gel tay + chân"
-        value={v.serviceSummary}
-        maxLength={LIMITS.service}
-        onChange={(e) => set('serviceSummary', e.target.value)}
-      />
-      <TextArea
-        label="Ghi chú nội bộ"
-        hint="Không hiện trên thông báo màn hình khoá."
-        value={v.notes}
-        maxLength={LIMITS.notes}
-        onChange={(e) => set('notes', e.target.value)}
-      />
 
-      {warnings && warnings.overlapCount > 0 ? (
-        <Note>Cùng giờ có {warnings.overlapCount} lịch khác.</Note>
-      ) : null}
-      {warnings?.duplicates.map((d) => (
-        <Note key={d.id} tone="warning">
-          Có thể trùng khách với lịch lúc {d.startTime}.{' '}
-          <a href={`/lich/${d.id}`} className="underline">
-            Mở lịch kia
-          </a>
-        </Note>
-      ))}
-      {warnings?.outsideHours ? <Note tone="warning">Ngoài giờ mở cửa.</Note> : null}
-      {error ? <Note tone="danger">{error}</Note> : null}
-    </Sheet>
+        {warnings && warnings.overlapCount > 0 ? (
+          <Note>Cùng giờ có {warnings.overlapCount} lịch khác.</Note>
+        ) : null}
+        {warnings?.duplicates.map((d) => (
+          <Note key={d.id} tone="warning">
+            Có thể trùng khách với lịch lúc {d.startTime}.{' '}
+            <a href={`/lich/${d.id}`} className="underline">
+              Mở lịch kia
+            </a>
+          </Note>
+        ))}
+        {warnings?.outsideHours ? <Note tone="warning">Ngoài giờ mở cửa.</Note> : null}
+        {error ? <Note tone="danger">{error}</Note> : null}
+      </Sheet>
+      <CustomerPicker
+        open={picking}
+        noneLabel="Không gắn hồ sơ"
+        onClose={() => setPicking(false)}
+        onPick={(c) => void pickCustomer(c?.id ?? null)}
+      />
+    </>
   )
 }

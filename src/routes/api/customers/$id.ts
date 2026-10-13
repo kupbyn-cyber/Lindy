@@ -1,8 +1,10 @@
-// GET /api/customers/:id — chi tiết khách (đủ SĐT)
+// GET /api/customers/:id — hồ sơ khách (đủ SĐT), lịch sử đơn trong phạm vi được xem (K09)
+// PUT /api/customers/:id — sửa tên, SĐT (Nhung, Linh); bắt buộc version
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '~/server/auth/context'
-import { getCustomer } from '~/server/customers/service'
-import { handle } from '~/server/http/route'
+import { UpdateCustomerBody } from '~/server/customers/schema'
+import { getCustomer, updateCustomer } from '~/server/customers/service'
+import { handle, limitWrites, readBody } from '~/server/http/route'
 
 export const Route = createFileRoute('/api/customers/$id')({
   server: {
@@ -11,6 +13,13 @@ export const Route = createFileRoute('/api/customers/$id')({
         handle(request, async () => {
           const auth = await requireAuth(request)
           return Response.json(await getCustomer(auth, params.id))
+        }),
+      PUT: ({ request, params }) =>
+        handle(request, async () => {
+          const auth = await requireAuth(request)
+          limitWrites(auth.userId)
+          const body = await readBody(request, UpdateCustomerBody)
+          return Response.json(await updateCustomer(auth, params.id, body))
         }),
     },
   },

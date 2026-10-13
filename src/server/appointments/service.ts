@@ -18,6 +18,7 @@ export const MAX_ROWS = 500
 type Row = {
   id: string
   branchId: string
+  customerId: string | null
   customerDisplayName: string
   phone: string | null
   startAt: Date
@@ -67,6 +68,7 @@ export type Warnings = {
 }
 
 export type Detail = ListItem & {
+  customerId: string | null
   phone: string | null
   notes: string | null
   version: number
@@ -205,6 +207,14 @@ export async function checkWarnings(
   })
 }
 
+/** Hồ sơ khách chọn kèm lịch phải tồn tại (RLS: cùng tổ chức). */
+async function checkCustomer(tx: Tx, id: string | null | undefined) {
+  if (!id) return null
+  const [c] = await tx`select id from customers where id = ${id}`
+  if (!c) throw invalid('Không tìm thấy hồ sơ khách.')
+  return id
+}
+
 // ---------------------------------------------------------------- Tạo lịch (1.4)
 
 function requestHash(v: Record<string, unknown>) {
@@ -231,9 +241,11 @@ export async function createAppointment(auth: Auth, input: CreateInput) {
     const start = fromLocal(input.date, input.startTime, s.timezone)
     const end = fromLocal(input.date, input.endTime, s.timezone)
     if (end <= start) throw invalid('Giờ kết thúc phải sau giờ bắt đầu.')
+    const customerId = await checkCustomer(tx, input.customerId)
 
     const hash = requestHash({
       branch: branch.id,
+      ...(customerId ? { customerId } : {}),
       name,
       phone,
       start: start.toISOString(),
@@ -270,10 +282,10 @@ export async function createAppointment(auth: Auth, input: CreateInput) {
     }
 
     const [row] = await tx<Row[]>`
-      insert into appointments (branch_id, customer_display_name, phone, start_at, end_at, guest_count,
+      insert into appointments (branch_id, customer_id, customer_display_name, phone, start_at, end_at, guest_count,
                                 service_summary, notes, status, search_norm, created_by, updated_by,
                                 create_request_id, create_request_hash)
-      values (${branch.id}, ${name}, ${phone}, ${start}, ${end}, ${input.guestCount}, ${service}, ${notes},
+      values (${branch.id}, ${customerId}, ${name}, ${phone}, ${start}, ${end}, ${input.guestCount}, ${service}, ${notes},
               ${input.confirm ? 'confirmed' : 'pending'}, ${searchNorm(name, phone, service)},
               ${auth.userId}, ${auth.userId}, ${input.createRequestId}, ${hash})
       on conflict (created_by, create_request_id) do nothing
@@ -343,6 +355,7 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
   const orders = await linkedOrders(tx, row.id)
   return {
     ...toItem(row, auth.userId, s.timezone),
+    customerId: row.customerId,
     phone: row.phone,
     notes: row.notes,
     version: row.version,
@@ -500,8 +513,13 @@ export async function updateAppointment(auth: Auth, id: string, input: UpdateInp
     const start = fromLocal(date, input.startTime ?? toLocalTime(row.startAt, s.timezone), s.timezone)
     const end = fromLocal(date, input.endTime ?? toLocalTime(row.endAt, s.timezone), s.timezone)
     if (end <= start) throw invalid('Giờ kết thúc phải sau giờ bắt đầu.')
+    const customerId =
+      input.customerId !== undefined && input.customerId !== row.customerId
+        ? await checkCustomer(tx, input.customerId)
+        : row.customerId
 
     const same =
+      customerId === row.customerId &&
       name === row.customerDisplayName &&
       phone === row.phone &&
       service === row.serviceSummary &&
@@ -522,7 +540,7 @@ export async function updateAppointment(auth: Auth, id: string, input: UpdateInp
 
     const [updated] = await tx<Row[]>`
       update appointments set
-        customer_display_name = ${name}, phone = ${phone}, start_at = ${start}, end_at = ${end},
+        customer_id = ${customerId}, customer_display_name = ${name}, phone = ${phone}, start_at = ${start}, end_at = ${end},
         guest_count = ${guests}, service_summary = ${service}, notes = ${notes},
         search_norm = ${searchNorm(name, phone, service)}
       where id = ${id} and version = ${input.version}

@@ -2,6 +2,7 @@
 // và trigger orders_guard kiểm lại quyền ở DB; constraint trigger kiểm tổng tiền khi commit.
 // Máy chỉ gửi lựa chọn; server tính lại toàn bộ tiền từ danh mục và bỏ mọi số tiền máy gửi lên [P26].
 import { createHash } from 'node:crypto'
+import { formatVND } from '~/lib/money'
 import {
   type CatalogCombo,
   type CatalogLookup,
@@ -65,6 +66,9 @@ export type OrderRow = {
   reviewedBy: string | null
   reviewedAt: Date | null
   warrantyUntil: string | null
+  adjustedBy: string | null
+  adjustedAt: Date | null
+  adjustReason: string | null
   createdBy: string
   createdAt: Date
   updatedBy: string
@@ -79,8 +83,8 @@ const orderCols = (tx: Tx) => tx`
   o.has_hardening, o.required_level, o.content_rev, o.pricing_hash, o.discount_approved_by, o.discount_approved_at,
   o.discount_approved_level, o.discount_approval_hash, o.done_by, o.done_at, o.confirmed_by, o.confirmed_at,
   o.cancelled_by, o.cancelled_at, o.cancel_reason, o.needs_owner_review, o.reviewed_by, o.reviewed_at,
-  o.warranty_until::text as warranty_until, o.created_by, o.created_at, o.updated_by, o.updated_at, o.version,
-  o.create_request_hash`
+  o.warranty_until::text as warranty_until, o.adjusted_by, o.adjusted_at, o.adjust_reason, o.created_by, o.created_at,
+  o.updated_by, o.updated_at, o.version, o.create_request_hash`
 
 export async function loadRow(tx: Tx, id: string, lock = false) {
   if (!isUuid(id)) throw notFound('Không tìm thấy đơn.')
@@ -122,6 +126,7 @@ type DiscountRow = {
   amount: number
   reason: string
   appliedBy: string
+  ticketId: string | null
 }
 type AllocRow = {
   itemPosition: number
@@ -140,7 +145,7 @@ async function loadContent(tx: Tx, o: { id: string; contentRev: number }): Promi
            unallocated_reason
     from order_items where order_id = ${o.id} and rev = ${o.contentRev} order by position`
   const discounts = await tx<DiscountRow[]>`
-    select position, scope_position, kind, percent, amount::int as amount, reason, applied_by
+    select position, scope_position, kind, percent, amount::int as amount, reason, applied_by, ticket_id
     from order_discounts where order_id = ${o.id} and rev = ${o.contentRev} order by position`
   const allocs = await tx<AllocRow[]>`
     select item_position, staff_user_id, allocated_net_amount::int as allocated_net_amount,
@@ -179,6 +184,7 @@ export function toInput(c: Content): { items: ItemInput[]; discounts: DiscountIn
       percent: d.kind === 'manual' || d.kind === 'complaint_compensation' ? d.percent : null,
       amount: d.kind === 'manual' && d.percent == null ? d.amount : null,
       reason: d.kind === 'manual' ? d.reason : null,
+      ticketId: d.ticketId,
     }))
   return { items, discounts }
 }
@@ -240,7 +246,7 @@ export function pricingHash(c: ComputedOrder) {
       x.grossAmount,
       x.belowAmount,
     ]),
-    d: c.discounts.map((d) => [d.scope, d.kind, d.percent, d.amount]),
+    d: c.discounts.map((d) => [d.scope, d.kind, d.percent, d.amount, d.ticketId]),
   })
 }
 
@@ -296,6 +302,23 @@ export type PaymentView = {
   voidedByName: string | null
 }
 
+export type TicketView = {
+  id: string
+  issue: string
+  cause: 'technical' | 'customer_change'
+  withinWarranty: boolean
+  outcome: 'free_fix' | 'charged' | 'compensation'
+  repairedByName: string | null
+  compensationPercent: number | null
+  note: string | null
+  createdByName: string | null
+  createdAt: string
+  voided: boolean
+  voidReason: string | null
+  /** Đơn đã dùng ưu đãi của phiếu (nếu xem được) */
+  usedBy: { id: string; codeLabel: string } | null
+}
+
 export type OrderDetail = {
   id: string
   code: number
@@ -313,8 +336,15 @@ export type OrderDetail = {
     amount: number
     reason: string
     appliedByName: string | null
+    ticketId: string | null
   }[]
   input: { items: ItemInput[]; discounts: DiscountInput[] }
+  /** Còn trong hạn bảo hành tính đến hôm nay */
+  warrantyActive: boolean
+  tickets: TicketView[]
+  adjustedByName: string | null
+  adjustedAt: string | null
+  adjustReason: string | null
   grossAmount: number
   discountAmount: number
   netAmount: number
@@ -425,6 +455,35 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       appointment = { id: a.id, date: toLocalDate(a.startAt, tz), startTime: toLocalTime(a.startAt, tz) }
     }
   }
+  const tickets = await tx<
+    {
+      id: string
+      issue: string
+      cause: TicketView['cause']
+      withinWarranty: boolean
+      outcome: TicketView['outcome']
+      repairedBy: string | null
+      compensationPercent: number | null
+      note: string | null
+      createdBy: string
+      createdAt: Date
+      voidedAt: Date | null
+      voidReason: string | null
+      usedById: string | null
+      usedByCode: number | null
+    }[]
+  >`
+    select t.id, t.issue, t.cause, t.within_warranty, t.outcome, t.repaired_by, t.compensation_percent, t.note,
+           t.created_by, t.created_at, t.voided_at, t.void_reason, u.id as used_by_id, u.code as used_by_code
+    from order_service_tickets t
+    left join lateral (
+      select o2.id, o2.code from orders o2
+      join order_discounts d2 on d2.order_id = o2.id and d2.rev = o2.content_rev
+      where d2.ticket_id = t.id and o2.status <> 'cancelled' limit 1
+    ) u on true
+    where t.order_id = ${o.id} order by t.created_at`
+  const tz = await branchTz(tx, o.branchId)
+  const today = toLocalDate(new Date(), tz)
   const n = await names(tx, [
     o.createdBy,
     o.doneBy,
@@ -432,6 +491,8 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     o.cancelledBy,
     o.reviewedBy,
     o.discountApprovedBy,
+    o.adjustedBy,
+    ...tickets.flatMap((t) => [t.createdBy, t.repairedBy]),
     ...content.allocs.map((a) => a.staffUserId),
     ...content.discounts.map((d) => d.appliedBy),
     ...payments.flatMap((p) => [p.recordedBy, p.voidedBy]),
@@ -484,8 +545,28 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       amount: d.amount,
       reason: d.reason,
       appliedByName: get(d.appliedBy),
+      ticketId: d.ticketId,
     })),
     input: toInput(content),
+    warrantyActive: !!o.warrantyUntil && today <= o.warrantyUntil,
+    tickets: tickets.map((t) => ({
+      id: t.id,
+      issue: t.issue,
+      cause: t.cause,
+      withinWarranty: t.withinWarranty,
+      outcome: t.outcome,
+      repairedByName: get(t.repairedBy),
+      compensationPercent: t.compensationPercent,
+      note: t.note,
+      createdByName: get(t.createdBy),
+      createdAt: new Date(t.createdAt).toISOString(),
+      voided: !!t.voidedAt,
+      voidReason: t.voidReason,
+      usedBy: t.usedById ? { id: t.usedById, codeLabel: codeLabel(t.usedByCode!) } : null,
+    })),
+    adjustedByName: get(o.adjustedBy),
+    adjustedAt: iso(o.adjustedAt),
+    adjustReason: o.adjustReason,
     grossAmount: o.grossAmount,
     discountAmount: o.discountAmount,
     netAmount: o.netAmount,
@@ -537,6 +618,28 @@ export async function getOrder(auth: Auth, id: string) {
   return withUser(auth.userId, async (tx) => detailOf(tx, auth, await loadRow(tx, id)))
 }
 
+/** Lịch sử thao tác trên đơn (người xem được đơn thì xem được lịch sử). */
+export async function orderAudit(auth: Auth, id: string) {
+  return withUser(auth.userId, async (tx) => {
+    await loadRow(tx, id)
+    const rows = await tx<
+      {
+        id: string
+        action: string
+        actorName: string | null
+        beforeJson: unknown
+        afterJson: unknown
+        reason: string | null
+        occurredAt: Date
+      }[]
+    >`select e.id::text as id, e.action, u.display_name as actor_name, e.before_json, e.after_json, e.reason,
+             e.occurred_at
+      from order_audit_events e left join users u on u.id = e.actor_user_id
+      where e.order_id = ${id} order by e.id`
+    return rows.map((r) => ({ ...r, occurredAt: new Date(r.occurredAt).toISOString() }))
+  })
+}
+
 // ---------------------------------------------------------------- Ghi nội dung
 
 async function writeContent(tx: Tx, userId: string, orderId: string, rev: number, c: ComputedOrder) {
@@ -563,11 +666,12 @@ async function writeContent(tx: Tx, userId: string, orderId: string, rev: number
   if (d.length > 0) {
     await tx`
       insert into order_discounts (order_id, rev, position, scope_position, kind, percent, amount, shop_borne, reason,
-        applied_by)
-      select ${orderId}::uuid, ${rev}::int, *, ${userId}::uuid from unnest(
+        applied_by, ticket_id)
+      select ${orderId}::uuid, ${rev}::int, u.p, u.s, u.k, u.pc, u.a, u.sb, u.r, ${userId}::uuid, u.t from unnest(
         ${d.map((_, i) => i)}::int[], ${d.map((x) => (x.scope === 'order' ? null : x.scope))}::int[],
         ${d.map((x) => x.kind)}::text[], ${d.map((x) => x.percent)}::int[], ${d.map((x) => x.amount)}::bigint[],
-        ${d.map((x) => String(x.shopBorne))}::text[]::boolean[], ${d.map((x) => x.reason)}::text[])`
+        ${d.map((x) => String(x.shopBorne))}::text[]::boolean[], ${d.map((x) => x.reason)}::text[],
+        ${d.map((x) => x.ticketId)}::uuid[]) as u(p, s, k, pc, a, sb, r, t)`
   }
   const a = it.flatMap((x, i) => x.allocations.map((al) => ({ ...al, position: i })))
   if (a.length > 0) {
@@ -610,11 +714,25 @@ async function prepare(
   auth: Auth,
   branchId: string,
   input: OrderContentInput,
-  currentServiceDate: string | null,
+  current: { serviceDate: string; orderId: string } | null,
 ) {
+  const currentServiceDate = current?.serviceDate ?? null
   const catalog = await loadCatalog(tx)
   const computed = computeOrder({ items: input.items, discounts: input.discounts }, lookupOf(catalog))
   if (computed.errors.length > 0) throw invalid(computed.errors[0]!, { errors: computed.errors })
+
+  // Ưu đãi bù khiếu nại: phiếu còn dùng được của đúng khách, đúng %, đúng cơ sở (bước 2.18)
+  const compensations = computed.discounts.filter((d) => d.kind === 'complaint_compensation')
+  if (compensations.length > 0) {
+    if (!input.customerId) throw invalid('Ưu đãi bù khiếu nại cần chọn đúng khách của phiếu.')
+    const avail = await tx<{ ticketId: string; percent: number; branchId: string }[]>`
+      select ticket_id, percent, branch_id from app.customer_compensations(${input.customerId}, ${current?.orderId ?? null})`
+    for (const d of compensations) {
+      const t = avail.find((a) => a.ticketId === d.ticketId)
+      if (!t || t.percent !== d.percent || t.branchId !== branchId)
+        throw invalid('Ưu đãi bù khiếu nại không còn dùng được cho khách này.')
+    }
+  }
 
   const staff = new Set((await branchStaff(tx, branchId)).map((s) => s.id))
   for (const it of computed.items)
@@ -703,7 +821,10 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
             : 'Đơn đã xác nhận hoặc đã huỷ, không sửa được.',
       )
     }
-    const computed = await prepare(tx, auth, row.branchId, input, row.serviceDate)
+    const computed = await prepare(tx, auth, row.branchId, input, {
+      serviceDate: row.serviceDate,
+      orderId: row.id,
+    })
     const current = await loadContent(tx, row)
     const catalog = await loadCatalog(tx)
     const currentComputed = computeOrder(toInput(current), lookupOf(catalog))
@@ -722,6 +843,32 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
     if (same) return detailOf(tx, auth, row)
 
     const approve = selfApproves(auth, row.branchId, computed.requiredLevel)
+    // Sửa đơn đã xác nhận (D04, bước 2.19): lý do bắt buộc; không nhỏ hơn số đã thu (hoàn tiền ở Đợt 3);
+    // mức giảm phải còn được duyệt; người sửa có phần trong đơn → vào lại Cần xem lại [P31]
+    const adjusting = row.status === 'confirmed'
+    const reason = input.adjustReason?.trim() ?? ''
+    let flagReview = false
+    if (adjusting) {
+      if (!reason) throw invalid('Cần ghi lý do sửa đơn đã xác nhận.')
+      const [p] = await tx<{ paid: number }[]>`
+        select coalesce(sum(amount), 0)::int as paid from payments where order_id = ${id} and voided_at is null`
+      if (computed.netAmount < (p?.paid ?? 0))
+        throw invalid(
+          `Thành tiền mới ${formatVND(computed.netAmount)} nhỏ hơn số đã thu ${formatVND(p!.paid)}. Cần phiếu hoàn (có ở Đợt 3).`,
+        )
+      const stillApproved =
+        row.discountApprovalHash === pricingHash(computed) &&
+        levelAtLeast(row.discountApprovedLevel ?? 'none', computed.requiredLevel)
+      if (levelAtLeast(computed.requiredLevel, 'manager') && !stillApproved && !approve)
+        throw forbidden(
+          computed.requiredLevel === 'owner'
+            ? 'Mức giảm trên 20% cần Linh sửa hoặc duyệt.'
+            : 'Mức giảm cần Nhung hoặc Linh duyệt.',
+        )
+      flagReview =
+        computed.items.some((it) => it.allocations.some((a) => a.userId === auth.userId)) &&
+        !hasPerm(auth, row.branchId, 'review_queue.read')
+    }
     const [updated] = await tx<{ contentRev: number }[]>`
       update orders set
         customer_id = ${input.customerId}, service_date = ${input.serviceDate},
@@ -730,7 +877,11 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
         required_level = ${computed.requiredLevel}, pricing_hash = ${pricingHash(computed)},
         content_rev = content_rev + 1,
         discount_approved_by = ${approve ? auth.userId : row.discountApprovedBy},
-        discount_approval_hash = ${approve ? null : row.discountApprovalHash}
+        discount_approval_hash = ${approve ? null : row.discountApprovalHash},
+        adjust_reason = ${adjusting ? reason : null},
+        needs_owner_review = case when ${flagReview} then true else needs_owner_review end,
+        reviewed_by = case when ${flagReview} then null else reviewed_by end,
+        reviewed_at = case when ${flagReview} then null else reviewed_at end
       where id = ${id} and version = ${input.version}
       returning content_rev`
     if (!updated) {
@@ -740,10 +891,11 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
       )
     }
     await writeContent(tx, auth.userId, id, updated.contentRev, computed)
-    await audit(tx, auth, row, 'updated', {
+    await audit(tx, auth, row, adjusting ? 'adjusted' : 'updated', {
       rev: updated.contentRev,
       before: summaryOf(row.status, currentComputed),
       after: summaryOf(row.status, computed),
+      reason: adjusting ? reason : null,
     })
     return detailOf(tx, auth, await loadRow(tx, id))
   })

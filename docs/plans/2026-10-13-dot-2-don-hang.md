@@ -218,13 +218,13 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 ### 2B — Hoàn thiện
 
-- [ ] **2.17 Tab Khách (UI11–12).** Tìm tên/SĐT; hồ sơ; lịch sử đơn (thợ chỉ thấy đơn trong phạm vi K09); Nhung, Linh sửa tên/SĐT có lịch sử. Form lịch hẹn có chọn khách có sẵn (module §10).
+- [x] **2.17 Tab Khách (UI11–12).** Tìm tên/SĐT; hồ sơ; lịch sử đơn (thợ chỉ thấy đơn trong phạm vi K09); Nhung, Linh sửa tên/SĐT có lịch sử. Form lịch hẹn có chọn khách có sẵn (module §10).
   *Kiểm tra:* test 16 (khách quay lại thấy lịch sử; trùng tên không tự gộp), 43; S29 phần lịch sử khách.
-- [ ] **2.18 Phiếu xử lý bảo hành (§6.7, §13F).**
+- [x] **2.18 Phiếu xử lý bảo hành (§6.7, §13F).**
   - Từ đơn gốc: còn hay hết hạn. Kết quả: sửa miễn phí (lỗi kỹ thuật, trong hạn; không sinh doanh thu) / tính phí (tạo đơn mới) / ưu đãi bill sau 10–20%, quán chịu.
   - Đơn kế tiếp của khách hiện ưu đãi còn chờ; áp một lần, loại `complaint_compensation`, duyệt theo bậc C15.
   *Kiểm tra:* test 33 (doanh thu 400.000đ, cơ sở hoa hồng Chin 500.000đ), 50; ưu đãi đã dùng không áp lại được.
-- [ ] **2.19 Sửa đơn đã xác nhận** (D04: kỳ còn mở; Đợt 2 chưa có kỳ lương nên mọi kỳ đều mở). Nhung, Linh sửa, lý do bắt buộc, lưu trước/sau. Tổng mới nhỏ hơn số đã thu → 422 "Cần phiếu hoàn (có ở Đợt 3)". Nhung sửa thêm phần của mình → vào Cần xem lại [P31].
+- [x] **2.19 Sửa đơn đã xác nhận** (D04: kỳ còn mở; Đợt 2 chưa có kỳ lương nên mọi kỳ đều mở). Nhung, Linh sửa, lý do bắt buộc, lưu trước/sau. Tổng mới nhỏ hơn số đã thu → 422 "Cần phiếu hoàn (có ở Đợt 3)". Nhung sửa thêm phần của mình → vào Cần xem lại [P31].
   *Kiểm tra:* lịch sử có đủ trước/sau, người sửa, lý do; tổng mới < đã thu → 422; doanh thu ngày làm dịch vụ đổi theo; S27.
 - [ ] **2.20 Tổng quan (UI02) có số tiền.**
   - Linh, Nhung: doanh thu thuần, tiền đã thu, còn khách nợ; số đơn, lượt khách (Q-B); doanh thu từng thợ.

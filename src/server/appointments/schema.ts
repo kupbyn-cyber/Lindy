@@ -16,8 +16,12 @@ const notes = z.string().trim().max(1000, 'Ghi chú tối đa 1.000 ký tự.').
 const version = z.number().int().min(1)
 const reason = z.string().trim().max(500, 'Lý do tối đa 500 ký tự.')
 
+// Hồ sơ khách có sẵn (module §10); không chọn thì chỉ lưu tên hiển thị
+const customerId = z.uuid().nullable().optional()
+
 export const CreateBody = z.strictObject({
   branchId: z.uuid().optional(),
+  customerId,
   customerDisplayName: name,
   phone,
   date,
@@ -33,6 +37,7 @@ export type CreateInput = z.infer<typeof CreateBody>
 
 export const UpdateBody = z.strictObject({
   version,
+  customerId,
   customerDisplayName: name.optional(),
   phone,
   date: date.optional(),

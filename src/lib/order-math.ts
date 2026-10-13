@@ -92,6 +92,8 @@ export type DiscountInput = {
   percent?: number | null
   amount?: number | null
   reason?: string | null
+  /** Ưu đãi bù khiếu nại: phiếu xử lý cấp ưu đãi (bước 2.18). */
+  ticketId?: string | null
 }
 
 export const PRESET_PERCENT: Partial<Record<DiscountKind, number>> = {
@@ -150,6 +152,7 @@ export type ComputedDiscount = {
   amount: number
   shopBorne: boolean
   reason: string
+  ticketId: string | null
 }
 
 export type ComputedOrder = {
@@ -326,6 +329,7 @@ export function computeOrder(
       amount,
       shopBorne: d.kind === 'complaint_compensation',
       reason: reason.slice(0, 200),
+      ticketId: d.kind === 'complaint_compensation' ? (d.ticketId ?? null) : null,
     })
   }
 
@@ -356,6 +360,7 @@ export function computeOrder(
         amount: it.belowAmount,
         shopBorne: false,
         reason: it.belowReason ?? '',
+        ticketId: null,
       })
     }
   }

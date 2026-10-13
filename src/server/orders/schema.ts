@@ -42,14 +42,24 @@ export const ItemSchema = z.discriminatedUnion('type', [
   }),
 ])
 
-// Ưu đãi bù khiếu nại đi kèm phiếu xử lý bảo hành (bước 2.18), chưa nhận ở đây.
-export const DiscountSchema = z.strictObject({
-  scope: z.union([z.literal('order'), z.number().int().min(0).max(29)]),
-  kind: z.enum(['preset_5', 'preset_10', 'birthday', 'manual']),
-  percent: z.number().int().min(1).max(100).nullable().optional(),
-  amount: money.nullable().optional(),
-  reason: shortText,
-})
+// Ưu đãi bù khiếu nại chỉ áp được từ phiếu xử lý (bước 2.18): cả bill, đúng % của phiếu, server kiểm phiếu.
+export const DiscountSchema = z
+  .strictObject({
+    scope: z.union([z.literal('order'), z.number().int().min(0).max(29)]),
+    kind: z.enum(['preset_5', 'preset_10', 'birthday', 'manual', 'complaint_compensation']),
+    percent: z.number().int().min(1).max(100).nullable().optional(),
+    amount: money.nullable().optional(),
+    reason: shortText,
+    ticketId: z.uuid().nullable().optional(),
+  })
+  .refine(
+    (d) => (d.kind === 'complaint_compensation') === !!d.ticketId,
+    'Ưu đãi bù khiếu nại cần phiếu xử lý.',
+  )
+  .refine(
+    (d) => d.kind !== 'complaint_compensation' || d.scope === 'order',
+    'Ưu đãi bù khiếu nại áp cho cả bill.',
+  )
 
 const content = {
   customerId: z.uuid().nullable(),
@@ -65,7 +75,12 @@ export const CreateOrderBody = z.strictObject({
 })
 export type CreateOrderInput = z.infer<typeof CreateOrderBody>
 
-export const UpdateOrderBody = z.strictObject({ version, ...content })
+export const UpdateOrderBody = z.strictObject({
+  version,
+  ...content,
+  /** Bắt buộc khi sửa đơn đã xác nhận (D04, bước 2.19). */
+  adjustReason: z.string().trim().max(500, 'Lý do tối đa 500 ký tự.').nullable().optional(),
+})
 export type UpdateOrderInput = z.infer<typeof UpdateOrderBody>
 export type OrderContentInput = Pick<UpdateOrderInput, 'customerId' | 'serviceDate' | 'items' | 'discounts'>
 
@@ -83,6 +98,31 @@ export const PaymentBody = z.strictObject({
 
 export const VoidPaymentBody = z.strictObject({
   reason: z.string().trim().min(1, 'Cần ghi lý do huỷ khoản thu.').max(500),
+})
+
+// Phiếu xử lý dịch vụ (bước 2.18)
+export const TicketBody = z
+  .strictObject({
+    issue: z.string().trim().min(1, 'Ghi vấn đề khách gặp.').max(500, 'Tối đa 500 ký tự.'),
+    cause: z.enum(['technical', 'customer_change']),
+    outcome: z.enum(['free_fix', 'charged', 'compensation']),
+    repairedBy: z.uuid().nullable().optional(),
+    compensationPercent: z
+      .number()
+      .int()
+      .min(10, 'Ưu đãi từ 10%.')
+      .max(20, 'Ưu đãi tối đa 20%.')
+      .nullable()
+      .optional(),
+    note: z.string().trim().max(500).nullable().optional(),
+  })
+  .refine(
+    (t) => (t.outcome === 'compensation') === (t.compensationPercent != null),
+    'Chọn mức ưu đãi 10–20%.',
+  )
+
+export const VoidTicketBody = z.strictObject({
+  reason: z.string().trim().min(1, 'Cần ghi lý do huỷ phiếu.').max(500),
 })
 
 export const FromAppointmentBody = z.strictObject({

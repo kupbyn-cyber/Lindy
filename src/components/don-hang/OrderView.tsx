@@ -1,6 +1,6 @@
 // Chi tiết và xác nhận đơn (UI05, bước 2.14): dòng đơn, chia thợ, giảm giá, khoản thu, hạn bảo hành, lịch sử thao tác.
 // Nút hiện theo quyền; server vẫn kiểm lại. Nhãn "vượt khoảng", "nhập tay", "giảm chờ duyệt" để Nhung xem khi xác nhận [P28].
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { type ReactNode, useState } from 'react'
 import {
@@ -26,6 +26,7 @@ import {
   PAYMENT_TONE,
 } from '~/lib/orders'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
+import { CAUSE_LABEL, OUTCOME_LABEL, TicketSheet } from './TicketSheet'
 
 type Dialog =
   | null
@@ -34,6 +35,7 @@ type Dialog =
   | { kind: 'payment' }
   | { kind: 'void'; paymentId: string; amount: number }
   | { kind: 'approve' }
+  | { kind: 'voidTicket'; ticketId: string }
 
 export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
   const d = props.order
@@ -47,6 +49,8 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
   const [amount, setAmount] = useState<number | null>(null)
   const [method, setMethod] = useState<'cash' | 'transfer'>('cash')
   const [payKey, setPayKey] = useState('')
+  const [ticketOpen, setTicketOpen] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   const open = (x: Dialog) => {
     setText('')
@@ -89,6 +93,10 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
         case 'void':
           next = await api(`/api/payments/${dialog.paymentId}/void`, { body: { reason: text } })
           done = 'Đã huỷ khoản thu.'
+          break
+        case 'voidTicket':
+          next = await api(`/api/tickets/${dialog.ticketId}/void`, { body: { reason: text } })
+          done = 'Đã huỷ phiếu xử lý.'
           break
       }
       qc.setQueryData(['orders', 'detail', d.id], next)
@@ -184,7 +192,14 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             </Link>
           </Info>
         ) : null}
-        {d.warrantyUntil ? <Info label="Bảo hành">đến {formatIsoDate(d.warrantyUntil)}</Info> : null}
+        {d.warrantyUntil ? (
+          <Info label="Bảo hành">
+            đến {formatIsoDate(d.warrantyUntil)}{' '}
+            <span className={d.warrantyActive ? 'text-success' : 'text-ink-muted'}>
+              ({d.warrantyActive ? 'còn hạn' : 'hết hạn'})
+            </span>
+          </Info>
+        ) : null}
       </div>
 
       <div className="border-t border-line">
@@ -239,7 +254,12 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
           .map((x) => (
             <div key={`${x.kind}-${x.amount}`} className="flex justify-between gap-2">
               <span className="body text-ink-muted">
-                {x.kind === 'manual' ? `Giảm: ${x.reason}` : DISCOUNT_LABEL[x.kind]} (cả bill)
+                {x.kind === 'manual'
+                  ? `Giảm: ${x.reason}`
+                  : x.kind === 'complaint_compensation'
+                    ? `Ưu đãi bù khiếu nại ${x.percent}%`
+                    : DISCOUNT_LABEL[x.kind]}{' '}
+                (cả bill)
               </span>
               <Money value={-x.amount} tone="negative" />
             </div>
@@ -303,6 +323,56 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
               </div>
             ))}
           </div>
+        </section>
+      ) : null}
+
+      {d.status === 'confirmed' && (d.tickets.length > 0 || c.createTicket) ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 px-4 text-ink-muted">Bảo hành, xử lý khiếu nại</h2>
+          <div className="border-t border-line">
+            {d.tickets.map((t) => (
+              <div
+                key={t.id}
+                className="flex flex-col gap-0.5 border-b border-line bg-surface-raised px-4 py-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className={t.voided ? 'body text-ink-muted line-through' : 'body-strong'}>
+                    {OUTCOME_LABEL[t.outcome]}
+                    {t.compensationPercent ? ` ${t.compensationPercent}%` : ''}
+                  </span>
+                  <span className="caption text-ink-muted">{formatDateTimeShort(t.createdAt)}</span>
+                </div>
+                <span className="body break-words">{t.issue}</span>
+                <span className="caption text-ink-muted">
+                  {CAUSE_LABEL[t.cause]} · {t.withinWarranty ? 'trong hạn' : 'hết hạn'} · {t.createdByName}
+                  {t.repairedByName ? ` · thợ sửa ${t.repairedByName}` : ''}
+                  {t.note ? ` · ${t.note}` : ''}
+                </span>
+                {t.usedBy ? (
+                  <Link to="/don-hang/$id" params={{ id: t.usedBy.id }} className="caption text-accent">
+                    Đã dùng ở đơn {t.usedBy.codeLabel}
+                  </Link>
+                ) : null}
+                {t.voided ? <span className="caption text-ink-muted">Đã huỷ: {t.voidReason}</span> : null}
+                {!t.voided && !t.usedBy && c.createTicket ? (
+                  <button
+                    type="button"
+                    className="caption self-start border-0 bg-transparent p-0 text-danger"
+                    onClick={() => open({ kind: 'voidTicket', ticketId: t.id })}
+                  >
+                    Huỷ phiếu
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          {c.createTicket ? (
+            <div className="px-4 pt-1">
+              <Button block onClick={() => setTicketOpen(true)}>
+                Lập phiếu xử lý
+              </Button>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
@@ -381,8 +451,23 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             {d.cancelReason} <span className="text-ink-muted">({d.cancelledByName})</span>
           </Info>
         ) : null}
+        {d.adjustedByName && d.adjustedAt ? (
+          <Info label="Sửa sau xác nhận">
+            {d.adjustedByName} <span className="text-ink-muted">· {formatDateTimeShort(d.adjustedAt)}</span>
+            {d.adjustReason ? <span className="block caption">“{d.adjustReason}”</span> : null}
+          </Info>
+        ) : null}
         {d.reviewedByName ? <Info label="Đã xem lại">{d.reviewedByName}</Info> : null}
       </div>
+
+      <div className="px-4">
+        <Button variant="quiet" onClick={() => setShowHistory((x) => !x)}>
+          {showHistory ? 'Ẩn lịch sử thao tác' : 'Xem lịch sử thao tác'}
+        </Button>
+      </div>
+      {showHistory ? <History id={d.id} /> : null}
+
+      <TicketSheet open={ticketOpen} order={d} onClose={() => setTicketOpen(false)} />
 
       <ConfirmDialog
         open={!!dialog}
@@ -395,7 +480,9 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                 ? `Huỷ đơn ${d.codeLabel}?`
                 : dialog?.kind === 'payment'
                   ? 'Ghi tiền thu'
-                  : 'Huỷ khoản thu?'
+                  : dialog?.kind === 'voidTicket'
+                    ? 'Huỷ phiếu xử lý?'
+                    : 'Huỷ khoản thu?'
         }
         confirmLabel={
           dialog?.kind === 'confirm'
@@ -406,9 +493,11 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                 ? 'Huỷ đơn'
                 : dialog?.kind === 'payment'
                   ? 'Lưu'
-                  : 'Huỷ khoản thu'
+                  : dialog?.kind === 'voidTicket'
+                    ? 'Huỷ phiếu'
+                    : 'Huỷ khoản thu'
         }
-        danger={dialog?.kind === 'cancel' || dialog?.kind === 'void'}
+        danger={dialog?.kind === 'cancel' || dialog?.kind === 'void' || dialog?.kind === 'voidTicket'}
         busy={busy}
         onConfirm={() => void run()}
         onCancel={() => setDialog(null)}
@@ -419,7 +508,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             {levelNote && !d.approval?.valid ? ' Xác nhận là đồng ý mức giảm giá trên đơn.' : ''}
           </p>
         ) : null}
-        {dialog?.kind === 'cancel' || dialog?.kind === 'void' ? (
+        {dialog?.kind === 'cancel' || dialog?.kind === 'void' || dialog?.kind === 'voidTicket' ? (
           <TextArea
             label="Lý do (bắt buộc)"
             value={text}
@@ -451,6 +540,66 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
         {error ? <Note tone="danger">{error}</Note> : null}
       </ConfirmDialog>
     </section>
+  )
+}
+
+const AUDIT_LABEL: Record<string, string> = {
+  created: 'Tạo đơn',
+  created_from_appointment: 'Tạo đơn từ lịch',
+  updated: 'Sửa đơn',
+  adjusted: 'Sửa đơn đã xác nhận',
+  done: 'Làm xong',
+  confirmed: 'Xác nhận bill',
+  cancelled: 'Huỷ đơn',
+  discount_approved: 'Duyệt giảm giá',
+  reviewed: 'Đã xem lại',
+  payment_recorded: 'Ghi tiền thu',
+  payment_voided: 'Huỷ khoản thu',
+  ticket_created: 'Lập phiếu xử lý',
+  ticket_voided: 'Huỷ phiếu xử lý',
+}
+
+type AuditItem = {
+  id: string
+  action: string
+  actorName: string | null
+  beforeJson: { net?: number; lines?: string[] } | null
+  afterJson: { net?: number; lines?: string[]; amount?: number } | null
+  reason: string | null
+  occurredAt: string
+}
+
+function History(props: { id: string }) {
+  const q = useQuery({
+    queryKey: ['orders', 'audit', props.id],
+    queryFn: () => api<{ items: AuditItem[] }>(`/api/orders/${props.id}/audit`),
+  })
+  if (q.isLoading) return <p className="body px-4 text-ink-muted">Đang tải…</p>
+  if (q.isError) return <p className="body px-4 text-danger">{errorText(q.error)}</p>
+  return (
+    <div className="border-t border-line">
+      {q.data?.items.map((a) => (
+        <div key={a.id} className="border-b border-line bg-surface-raised px-4 py-2">
+          <div className="flex justify-between gap-2">
+            <span className="body-strong">{AUDIT_LABEL[a.action] ?? a.action}</span>
+            <span className="caption text-ink-muted">{formatDateTimeShort(a.occurredAt)}</span>
+          </div>
+          <div className="caption text-ink-muted">{a.actorName ?? 'Hệ thống'}</div>
+          {a.beforeJson?.net != null && a.afterJson?.net != null && a.beforeJson.net !== a.afterJson.net ? (
+            <div className="caption">
+              Thành tiền: {formatVND(a.beforeJson.net)} → {formatVND(a.afterJson.net)}
+            </div>
+          ) : null}
+          {a.afterJson?.lines?.length && a.action !== 'created' ? (
+            <div className="caption text-ink-muted">Sau: {a.afterJson.lines.join('; ')}</div>
+          ) : null}
+          {a.afterJson?.amount != null ? (
+            <div className="caption">{formatVND(a.afterJson.amount)}</div>
+          ) : null}
+          {a.reason ? <div className="caption">“{a.reason}”</div> : null}
+        </div>
+      ))}
+    </div>
   )
 }
 

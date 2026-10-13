@@ -58,6 +58,9 @@ create table orders (
   reviewed_by uuid references users(id),
   reviewed_at timestamptz,
   warranty_until date,
+  adjusted_by uuid references users(id),               -- sửa đơn đã xác nhận (D04, bước 2.19)
+  adjusted_at timestamptz,
+  adjust_reason text check (char_length(adjust_reason) <= 500),
   created_by uuid not null references users(id),
   created_at timestamptz not null default now(),
   updated_by uuid not null references users(id),
@@ -112,6 +115,34 @@ create table order_items (
   unique (order_id, rev, position)
 );
 
+-- Phiếu xử lý dịch vụ (PRD §6.7, §10, §13F; bước 2.18): gắn đơn gốc, tự tính còn/hết bảo hành.
+-- Lỗi kỹ thuật trong hạn → sửa miễn phí (không sinh doanh thu); khách đổi ý hoặc hết hạn → tính phí (đơn mới);
+-- lỗi kỹ thuật mà khách không đồng ý sửa → ưu đãi 10–20% bill sau, quán chịu, dùng một lần.
+create table order_service_tickets (
+  id uuid primary key default gen_random_uuid(),
+  branch_id uuid not null references branches(id),
+  order_id uuid not null references orders(id),
+  customer_id uuid references customers(id),
+  issue text not null check (char_length(btrim(issue)) between 1 and 500),
+  cause text not null check (cause in ('technical', 'customer_change')),
+  within_warranty boolean not null default false,
+  outcome text not null check (outcome in ('free_fix', 'charged', 'compensation')),
+  repaired_by uuid references users(id),
+  compensation_percent int check (compensation_percent between 10 and 20),
+  note text check (char_length(note) <= 500),
+  created_by uuid not null references users(id),
+  created_at timestamptz not null default now(),
+  voided_by uuid references users(id),
+  voided_at timestamptz,
+  void_reason text check (char_length(void_reason) <= 500),
+  check ((outcome = 'compensation') = (compensation_percent is not null)),
+  check (outcome <> 'free_fix' or (cause = 'technical' and within_warranty)),
+  check (outcome <> 'compensation' or (cause = 'technical' and customer_id is not null)),
+  check (voided_at is null or char_length(btrim(coalesce(void_reason, ''))) > 0)
+);
+create index service_tickets_order_idx on order_service_tickets(order_id);
+create index service_tickets_customer_idx on order_service_tickets(customer_id) where outcome = 'compensation';
+
 create table order_discounts (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null references orders(id),
@@ -125,7 +156,10 @@ create table order_discounts (
   shop_borne boolean not null default false,
   reason text not null check (char_length(btrim(reason)) between 1 and 200),
   applied_by uuid not null references users(id),
+  ticket_id uuid references order_service_tickets(id),           -- ưu đãi bù khiếu nại dùng phiếu nào
   check (shop_borne = (kind = 'complaint_compensation')),
+  check ((kind = 'complaint_compensation') = (ticket_id is not null)),
+  check (kind <> 'complaint_compensation' or scope_position is null),
   check (kind <> 'below_list' or scope_position is not null),
   unique (order_id, rev, position)
 );
@@ -303,6 +337,7 @@ declare
   v_today date;
   v_level text;
   v_content_changed boolean;
+  v_adjust boolean := false;
 begin
   if not v_priv and v_uid is null then
     raise exception 'Thiếu danh tính người thao tác.' using errcode = '42501';
@@ -337,6 +372,7 @@ begin
     new.cancelled_by := null; new.cancelled_at := null; new.cancel_reason := null;
     new.needs_owner_review := false; new.reviewed_by := null; new.reviewed_at := null;
     new.warranty_until := null;
+    new.adjusted_by := null; new.adjusted_at := null; new.adjust_reason := null;
   else
     -- UPDATE ------------------------------------------------------
     if new.id <> old.id or new.branch_id <> old.branch_id or new.code <> old.code or new.created_by <> old.created_by
@@ -369,29 +405,55 @@ begin
           if not (v_priv or app.has_perm(old.branch_id, 'order.confirm')) then
             raise exception 'Đơn đã bấm Làm xong, chỉ Nhung, Linh sửa được.' using errcode = '42501';
           end if;
+        when 'confirmed' then
+          -- D04: kỳ còn mở thì sửa được (Đợt 2 chưa có kỳ lương). Nhung, Linh; lý do bắt buộc; lưu trước/sau.
+          if new.status <> 'confirmed' then
+            raise exception 'Không đổi trạng thái khi sửa đơn đã xác nhận.' using errcode = 'P0001';
+          end if;
+          if not (v_priv or app.has_perm(old.branch_id, 'order.confirm')) then
+            raise exception 'Chỉ Nhung, Linh sửa được đơn đã xác nhận.' using errcode = '42501';
+          end if;
+          if char_length(btrim(coalesce(new.adjust_reason, ''))) = 0 then
+            raise exception 'Cần ghi lý do sửa đơn đã xác nhận.' using errcode = 'P0001';
+          end if;
         else
-          raise exception 'Đơn đã xác nhận hoặc đã huỷ, không sửa được.' using errcode = 'P0001';
+          raise exception 'Đơn đã huỷ, không sửa được.' using errcode = 'P0001';
       end case;
       new.content_tx := txid_current();
     else
       new.content_tx := old.content_tx;
     end if;
+    v_adjust := v_content_changed and old.status = 'confirmed';
 
     -- Cột do server đặt: giữ giá trị cũ trừ khi đúng chuyển trạng thái bên dưới
     new.done_by := old.done_by; new.done_at := old.done_at;
     new.confirmed_by := old.confirmed_by; new.confirmed_at := old.confirmed_at;
     new.warranty_until := old.warranty_until;
+    new.adjusted_by := old.adjusted_by; new.adjusted_at := old.adjusted_at;
+    if v_adjust then
+      new.adjusted_by := v_uid; new.adjusted_at := now();
+      new.warranty_until := new.service_date + (case when new.has_hardening then 7 else 3 end);
+    else
+      new.adjust_reason := old.adjust_reason;
+    end if;
     if new.status = old.status then
       new.cancelled_by := old.cancelled_by; new.cancelled_at := old.cancelled_at; new.cancel_reason := old.cancel_reason;
-      new.needs_owner_review := old.needs_owner_review;
-    end if;
-
-    -- Cần xem lại (Q04): chỉ người có review_queue.read đánh dấu đã xem
-    if new.reviewed_by is distinct from old.reviewed_by or new.reviewed_at is distinct from old.reviewed_at then
-      if old.reviewed_by is not null or not (v_priv or app.has_perm(old.branch_id, 'review_queue.read')) then
-        raise exception 'Chỉ chủ quán đánh dấu đã xem lại.' using errcode = '42501';
+      if v_adjust and new.needs_owner_review and new.reviewed_by is null and new.reviewed_at is null then
+        -- P31: người sửa có phần trong đơn đã xác nhận → vào lại Cần xem lại (constraint trigger kiểm khi commit)
+        null;
+      else
+        new.needs_owner_review := old.needs_owner_review;
+        -- Cần xem lại (Q04): chỉ người có review_queue.read đánh dấu đã xem
+        if new.reviewed_by is distinct from old.reviewed_by or new.reviewed_at is distinct from old.reviewed_at then
+          if old.reviewed_by is not null or not old.needs_owner_review
+             or not (v_priv or app.has_perm(old.branch_id, 'review_queue.read')) then
+            raise exception 'Chỉ chủ quán đánh dấu đã xem lại.' using errcode = '42501';
+          end if;
+          new.reviewed_by := v_uid; new.reviewed_at := now();
+        end if;
       end if;
-      new.reviewed_by := v_uid; new.reviewed_at := now();
+    else
+      new.reviewed_by := old.reviewed_by; new.reviewed_at := old.reviewed_at;
     end if;
 
     if new.status <> old.status then
@@ -598,6 +660,35 @@ begin
     if o.warranty_until is distinct from (o.service_date + (case when o.has_hardening then 7 else 3 end)) then
       raise exception 'Hạn bảo hành không đúng.' using errcode = 'P0001';
     end if;
+    -- P31: người sửa đơn đã xác nhận có phần trong đơn (và không phải chủ) → đơn phải nằm trong Cần xem lại
+    if o.adjusted_by is not null
+       and exists (select 1 from order_staff_allocations a where a.order_id = o.id and a.rev = o.content_rev
+                   and a.staff_user_id = o.adjusted_by)
+       and not exists (select 1 from user_branch_roles ubr join role_permissions rp on rp.role_id = ubr.role_id
+                       where ubr.user_id = o.adjusted_by and ubr.branch_id = o.branch_id and ubr.revoked_at is null
+                         and rp.permission_code = 'review_queue.read')
+       and not (o.needs_owner_review and (o.reviewed_at is null or o.reviewed_at > o.adjusted_at)) then
+      raise exception 'Đơn có phần của người sửa phải vào danh sách Cần xem lại.' using errcode = 'P0001';
+    end if;
+  end if;
+
+  -- Ưu đãi bù khiếu nại: đúng phiếu của khách, đúng %, phiếu chưa huỷ, chỉ một đơn (chưa huỷ) dùng
+  if o.status <> 'cancelled' then
+    perform 1 from order_service_tickets t
+    where t.id in (select d.ticket_id from order_discounts d where d.order_id = o.id and d.rev = o.content_rev
+                   and d.ticket_id is not null)
+    for update;
+    if exists (
+      select 1 from order_discounts d
+      join order_service_tickets t on t.id = d.ticket_id
+      where d.order_id = o.id and d.rev = o.content_rev
+        and (t.voided_at is not null or t.outcome <> 'compensation' or t.compensation_percent is distinct from d.percent
+             or t.customer_id is distinct from o.customer_id or t.branch_id <> o.branch_id
+             or exists (select 1 from orders o2 join order_discounts d2 on d2.order_id = o2.id and d2.rev = o2.content_rev
+                        where d2.ticket_id = t.id and o2.id <> o.id and o2.status <> 'cancelled'))
+    ) then
+      raise exception 'Ưu đãi bù khiếu nại không hợp lệ hoặc đã dùng cho đơn khác.' using errcode = 'P0001';
+    end if;
   end if;
 end $$;
 
@@ -675,6 +766,89 @@ end $$;
 
 create trigger payments_guard before insert or update on payments
   for each row execute function app.payments_guard();
+
+-- ---------------------------------------------------------------- Phiếu xử lý dịch vụ (bước 2.18)
+
+create function app.tickets_guard() returns trigger
+language plpgsql set search_path = pg_catalog, public as $$
+declare
+  v_uid uuid := app.uid();
+  v_priv boolean := current_user <> 'app_user';
+  v_order record;
+begin
+  if not v_priv and v_uid is null then
+    raise exception 'Thiếu danh tính người thao tác.' using errcode = '42501';
+  end if;
+  if tg_op = 'INSERT' then
+    select id, branch_id, status, customer_id, warranty_until into v_order from orders where id = new.order_id;
+    if v_order.id is null or v_order.branch_id <> new.branch_id then
+      raise exception 'Không tìm thấy đơn gốc.' using errcode = '22P02';
+    end if;
+    if v_order.status <> 'confirmed' then
+      raise exception 'Chỉ lập phiếu xử lý cho đơn đã xác nhận.' using errcode = 'P0001';
+    end if;
+    if not v_priv and (new.created_by is distinct from v_uid or not app.has_perm(new.branch_id, 'order.confirm')) then
+      raise exception 'Chỉ Nhung, Linh lập phiếu xử lý.' using errcode = '42501';
+    end if;
+    if new.repaired_by is not null
+       and not exists (select 1 from app.branch_staff(new.branch_id) s where s.id = new.repaired_by) then
+      raise exception 'Thợ sửa không thuộc cơ sở này.' using errcode = 'P0001';
+    end if;
+    -- Còn hay hết bảo hành tính ở DB theo ngày hôm nay của cơ sở (C12)
+    new.customer_id := v_order.customer_id;
+    new.within_warranty := (now() at time zone app.branch_tz(new.branch_id))::date <= v_order.warranty_until;
+    new.created_at := now();
+    new.voided_by := null; new.voided_at := null; new.void_reason := null;
+    return new;
+  end if;
+  -- UPDATE: phiếu không sửa; chỉ huỷ một lần, có lý do, khi ưu đãi chưa dùng cho đơn nào
+  if row(new.id, new.branch_id, new.order_id, new.customer_id, new.issue, new.cause, new.within_warranty, new.outcome,
+         new.repaired_by, new.compensation_percent, new.note, new.created_by, new.created_at)
+     is distinct from
+     row(old.id, old.branch_id, old.order_id, old.customer_id, old.issue, old.cause, old.within_warranty, old.outcome,
+         old.repaired_by, old.compensation_percent, old.note, old.created_by, old.created_at) then
+    raise exception 'Phiếu xử lý không sửa được; huỷ phiếu rồi lập lại.' using errcode = '42501';
+  end if;
+  if old.voided_at is not null then
+    raise exception 'Phiếu này đã huỷ.' using errcode = 'P0001';
+  end if;
+  if not (v_priv or app.has_perm(old.branch_id, 'order.confirm')) then
+    raise exception 'Chỉ Nhung, Linh huỷ được phiếu xử lý.' using errcode = '42501';
+  end if;
+  if char_length(btrim(coalesce(new.void_reason, ''))) = 0 then
+    raise exception 'Cần ghi lý do huỷ phiếu.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from orders o join order_discounts d on d.order_id = o.id and d.rev = o.content_rev
+             where d.ticket_id = old.id and o.status <> 'cancelled') then
+    raise exception 'Ưu đãi của phiếu đã áp vào đơn, không huỷ được phiếu.' using errcode = 'P0001';
+  end if;
+  new.voided_by := coalesce(v_uid, new.voided_by);
+  new.voided_at := now();
+  return new;
+end $$;
+
+create trigger tickets_guard before insert or update on order_service_tickets
+  for each row execute function app.tickets_guard();
+create trigger tickets_no_delete before delete on order_service_tickets
+  for each row execute function app.forbid_mutation();
+create trigger tickets_no_truncate before truncate on order_service_tickets
+  for each statement execute function app.forbid_mutation();
+
+-- Ưu đãi bù khiếu nại còn dùng được của khách. Thợ lập bill sau cần thấy, kể cả khi không mở được đơn gốc (K09).
+-- p_exclude_order: đơn đang sửa (ưu đãi đang áp vào chính đơn này vẫn tính là dùng được).
+create function app.customer_compensations(p_customer uuid, p_exclude_order uuid)
+returns table (ticket_id uuid, percent int, created_at timestamptz, order_code int, branch_id uuid)
+language sql stable security definer set search_path = pg_catalog, public as $$
+  select t.id, t.compensation_percent, t.created_at, o.code, t.branch_id
+  from order_service_tickets t join orders o on o.id = t.order_id
+  where t.customer_id = p_customer and t.outcome = 'compensation' and t.voided_at is null
+    and app.has_perm(t.branch_id, 'order.create_draft')
+    and not exists (select 1 from orders o2 join order_discounts d2 on d2.order_id = o2.id and d2.rev = o2.content_rev
+                    where d2.ticket_id = t.id and o2.status <> 'cancelled'
+                      and (p_exclude_order is null or o2.id <> p_exclude_order))
+  order by t.created_at
+$$;
+grant execute on function app.customer_compensations(uuid, uuid) to app_user;
 
 -- ---------------------------------------------------------------- Cập nhật tức thời
 
@@ -1025,6 +1199,16 @@ create policy payments_insert on payments for insert to app_user
 create policy payments_update on payments for update to app_user
   using (app.has_perm(branch_id, 'order.confirm')) with check (app.has_perm(branch_id, 'order.confirm'));
 create policy payments_worker on payments for select to app_worker using (true);
+
+alter table order_service_tickets enable row level security;
+grant select, insert, update on order_service_tickets to app_user;
+grant select on order_service_tickets to app_worker;
+create policy tickets_read on order_service_tickets for select to app_user using (app.order_visible(order_id));
+create policy tickets_insert on order_service_tickets for insert to app_user
+  with check (app.has_perm(branch_id, 'order.confirm') and created_by = app.uid());
+create policy tickets_update on order_service_tickets for update to app_user
+  using (app.has_perm(branch_id, 'order.confirm')) with check (app.has_perm(branch_id, 'order.confirm'));
+create policy tickets_worker on order_service_tickets for select to app_worker using (true);
 
 grant select, insert on order_audit_events to app_user;
 create policy order_audit_read on order_audit_events for select to app_user using (app.order_visible(order_id));
