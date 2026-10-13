@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 5 — Hoàn thiện
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. Đang làm 5A. Q-K, Q-L, Q-M đã chốt 13/10/2026 theo phương án (a) → K23, K24, K25. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 5A ĐÃ LÀM (kết quả mục 14). 5B chờ app chạy ổn ở quán (Q42) và file mẫu từ Google Sheets. Q-K, Q-L, Q-M đã chốt 13/10/2026 theo phương án (a) → K23, K24, K25. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (D14, Q40, Q42, K20–K22); PRD v1.2 §1 (điểm đích), §4 (`profit.read`, `payroll.export_all_branch`), §7.1 (lợi nhuận tạm tính), §11, §15, §16, §17, §18 (test 19, 27, 29), §19.6; PRD v1.1 §15, §16 (chi tiết nhập dữ liệu cũ); kế hoạch Đợt 2–4 (phần dời sang Đợt 5).
 
 Ký hiệu `[Pn]`: điểm phản biện ở mục 11 (nối tiếp P76). `Sn`: test bảo mật ở mục 10.2 (nối tiếp S62).
@@ -131,17 +131,17 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 ### 5A — Báo cáo, xuất dữ liệu, sao lưu
 
 - [x] **5.1 Chốt Q-K, Q-L, Q-M.** Ghi vào `DECISIONS.md` (K23–K25).
-- [ ] **5.2 Lợi nhuận ước tính.** Báo cáo tháng có khối "Lợi nhuận ước tính" (Linh): doanh thu, cọc bỏ hẹn, chi vận hành theo nhóm, chi nhân sự, lương, kết quả; các khoản không tính hiện riêng. Tổng quan (Linh, xem Tháng): "Lãi/lỗ tạm tính tháng".
+- [x] **5.2 Lợi nhuận ước tính.** Báo cáo tháng có khối "Lợi nhuận ước tính" (Linh): doanh thu, cọc bỏ hẹn, chi vận hành theo nhóm, chi nhân sự, lương, kết quả; các khoản không tính hiện riêng. Tổng quan (Linh, xem Tháng): "Lãi/lỗ tạm tính tháng".
   *Kiểm tra:* tháng mẫu khớp tính tay; Nhung, thợ gọi API → không có trường lợi nhuận (test 27); tháng trước tháng bắt đầu tính lương dùng phiếu chi nhóm Lương.
-- [ ] **5.3 Báo cáo đã chốt.** Migration `0018_reports` phần bản chụp; khoá lương ghi bản chụp; báo cáo tháng hiện số đã chốt và "phát sinh sau khi chốt" (theo Q-L).
+- [x] **5.3 Báo cáo đã chốt.** Migration `0018_reports` phần bản chụp; khoá lương ghi bản chụp; báo cáo tháng hiện số đã chốt và "phát sinh sau khi chốt" (theo Q-L).
   *Kiểm tra:* khoá tháng M, xác nhận đơn tháng M muộn → báo cáo tháng M hiện số chốt không đổi, dòng phát sinh +tiền đơn đó; xoá, sửa bản chụp → lỗi DB.
-- [ ] **5.4 Xuất file (máy chủ).** Bộ ghi CSV, XLSX; `GET /api/export/:loai?month=&format=csv|xlsx`. Loại: báo cáo tháng (XLSX nhiều trang: tổng hợp, theo ngày, theo thợ, theo dịch vụ, dòng tiền, lương, lợi nhuận nếu là Linh), đơn hàng tháng (mỗi đơn một dòng, dùng kê khai doanh thu), sổ tiền tháng, thu chi tháng, bảng lương tháng (`payroll.export_all_branch`), khách hàng. Mỗi lần tải ghi audit.
+- [x] **5.4 Xuất file (máy chủ).** Bộ ghi CSV, XLSX; `GET /api/export/:loai?month=&format=csv|xlsx`. Loại: báo cáo tháng (XLSX nhiều trang: tổng hợp, theo ngày, theo thợ, theo dịch vụ, dòng tiền, lương, lợi nhuận nếu là Linh), đơn hàng tháng (mỗi đơn một dòng, dùng kê khai doanh thu), sổ tiền tháng, thu chi tháng, bảng lương tháng (`payroll.export_all_branch`), khách hàng. Mỗi lần tải ghi audit.
   *Kiểm tra:* quyền theo Q-M (S63, S64); CSV có BOM, tiền là số nguyên, ngày dd/mm/yyyy; XLSX giải nén được, đủ trang; ô bắt đầu bằng `=` được chặn [P77].
-- [ ] **5.5 Giao diện xuất, in.** Thêm → **Xuất dữ liệu** (chọn tháng, loại, CSV/XLSX). Nút **In / Lưu PDF** ở Báo cáo tháng và phiếu lương; kiểu trang in ẩn thanh điều hướng, nền trắng, khổ A4.
+- [x] **5.5 Giao diện xuất, in.** Thêm → **Xuất dữ liệu** (chọn tháng, loại, CSV/XLSX). Nút **In / Lưu PDF** ở Báo cáo tháng và phiếu lương; kiểu trang in ẩn thanh điều hướng, nền trắng, khổ A4.
   *Kiểm tra:* 375px; tải được trên Safari iPhone (anh thử) và máy tính; bản in một trang báo cáo tháng gọn.
-- [ ] **5.6 Sao lưu, khôi phục.** Thêm → Xuất dữ liệu → **Tải bản sao lưu** (Linh, JSON). `scripts/restore-check.ts --file=…` dựng DB tạm cùng phiên bản migration, nạp, so số đơn, doanh thu từng tháng, số dư từng tài khoản, số ảnh. Việc anh làm trên Vibe Host: bật sao lưu tự động, xem có bản sao lưu hằng ngày.
+- [x] **5.6 Sao lưu, khôi phục.** Thêm → Xuất dữ liệu → **Tải bản sao lưu** (Linh, JSON). `scripts/restore-check.ts --file=…` dựng DB tạm cùng phiên bản migration, nạp, so số đơn, doanh thu từng tháng, số dư từng tài khoản, số ảnh. Việc anh làm trên Vibe Host: bật sao lưu tự động, xem có bản sao lưu hằng ngày.
   *Kiểm tra:* test tự động xuất → nạp lại → số liệu khớp (test 19); bản sao lưu không có mật khẩu, phiên (S65); Nhung, thợ tải → 403 (S66).
-- [ ] **5.7 Chốt 5A.** Phản biện lại; `bun run check`, build, `scan-bundle`, `check-upgrade`; cập nhật tài liệu; báo kết quả.
+- [x] **5.7 Chốt 5A.** Phản biện lại; `bun run check`, build, `scan-bundle`, `check-upgrade`; cập nhật tài liệu; báo kết quả.
 
 ### 5B — Nhập dữ liệu cũ (sau khi app chạy ổn, Q42)
 
@@ -200,3 +200,27 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 | Bản sao lưu lộ dữ liệu | Chỉ Linh; không gồm mật khẩu, phiên; audit | — |
 | Migration lỗi khi triển khai | `check-upgrade` từ 0017 và 0005; sao lưu DB trước | Khôi phục bản sao lưu Vibe Host, triển khai lại bản trước |
 | Nhập dữ liệu cũ sai, trùng | Xem trước, danh sách lỗi, nhập lại không nhân đôi; bảng riêng không đụng tiền | Huỷ một lần nhập (đánh dấu, không xoá) |
+
+## 14. Kết quả 5A (13/10/2026)
+
+**Đã làm:** migration `0018_reports` (bản chụp báo cáo tháng ghi khi khoá lương — K24; hàm sao lưu `app.backup_dump`); quyền `data.export` (chỉ Linh — K25); lợi nhuận ước tính trong Báo cáo tháng và Tổng quan của Linh (K23); khối **Doanh thu đã chốt** và **Phát sinh sau khi chốt**; Thêm → **Xuất dữ liệu** (báo cáo tháng XLSX nhiều trang; đơn hàng, sổ tiền, thu chi, bảng lương, khách hàng CSV/XLSX; **Tải bản sao lưu**); nút **In / PDF** ở Báo cáo và phiếu lương với kiểu trang in A4; `scripts/restore-check.ts` (khôi phục thử vào DB tạm, so số liệu).
+
+**Kiểm tra:**
+- `bun run check`: 309/309 test (thêm `tests/acceptance/bao-cao-xuat.test.ts`, `tests/integration/backup.test.ts`: PRD 19, 27; K23, K24, K25; S63–S68). Build chạy được; `scan-bundle` sạch (60 file).
+- `restore-check --from=dev`: nạp 381 dòng, 58 bảng; số dòng, số dư, doanh thu từng tháng khớp. Test tự động làm lại cùng việc trên DB test.
+- `check-upgrade --from=0017` và `--from=0005` đạt (lợi nhuận, file đơn hàng, bản sao lưu sau nâng cấp).
+- Trình duyệt 375×812 (Linh): báo cáo tháng có lợi nhuận; tháng 9 đã khoá hiện số đã chốt; 12 file tải được đúng tên, đúng kiểu; XLSX giải nén bằng `tar`, mọi XML đọc được, chữ tiếng Việt, ký tự đặc biệt giữ đúng; Tổng quan Tháng có lãi/lỗ tạm tính. Không cuộn ngang, không lỗi console.
+- **Chưa kiểm:** mở file XLSX bằng Excel / Numbers thật (anh thử một lần); bản in thật trên iPhone (In / Lưu PDF); giao diện tối.
+
+**Phản biện cuối 5A:**
+
+| Mã | Mức | Điểm yếu | Kết quả |
+|---|---|---|---|
+| P77 | 🟡 | Chèn công thức Excel qua tên khách, ghi chú | Đã chặn: CSV thêm `'`; XLSX ghi dạng chữ (S68) |
+| P78 | ⚪ | File xuất, bản sao lưu bị chuyển ra ngoài | Chỉ Linh tải; mỗi lần tải có audit |
+| P79 | 🟡 | Tải bản sao lưu liên tục làm nặng máy chủ | Đã chặn: mỗi người một lần mỗi phút |
+| P80 | 🟡 | Lãi/lỗ tháng đang chạy: doanh thu đến hôm nay nhưng trừ lương cả tháng → đầu tháng trông lỗ nặng | **Đã sửa:** ghi rõ trên Báo cáo và Tổng quan |
+| P81 | ⚪ | Quyền `data.export` ở một cơ sở tải được dữ liệu cả tổ chức | Ghi nhận: chỉ vai trò chủ có quyền này; khi có cơ sở thứ hai do người khác làm chủ thì tách |
+| P82 | ⚪ | Link tải là GET: trang khác có thể khiến máy Linh tải file | Trang khác không đọc được nội dung (cùng nguồn); chỉ tốn lượt tải, có giới hạn và audit |
+
+**Việc anh làm (ngoài code):** bật sao lưu tự động trên Vibe Host và xem có bản sao lưu hằng ngày; mở thử một file XLSX trên máy tính và iPhone; in thử báo cáo tháng ra PDF.

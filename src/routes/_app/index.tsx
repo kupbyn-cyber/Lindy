@@ -103,6 +103,16 @@ function Overview() {
         </Link>
       ) : null}
 
+      {d?.profit != null ? (
+        <Link to="/them/bao-cao" className="lo-card flex flex-col gap-1 no-underline">
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="body">Lãi/lỗ tạm tính tháng này</span>
+            <Money value={d.profit} tone={d.profit < 0 ? 'negative' : undefined} />
+          </span>
+          <span className="caption text-ink-muted">Doanh thu đến hôm nay, đã trừ lương cả tháng.</span>
+        </Link>
+      ) : null}
+
       {d?.money ? (
         <section className="flex flex-col gap-1">
           <h2 className="overline m-0 text-ink-muted">Tiền trong quỹ</h2>

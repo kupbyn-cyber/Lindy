@@ -84,6 +84,9 @@ function MorePage() {
         {can('revenue.read_branch') ? (
           <Row to="/them/bao-cao" label="Báo cáo doanh thu" hint="Theo ngày, tháng, thợ, dịch vụ" />
         ) : null}
+        {can('data.export') ? (
+          <Row to="/them/xuat-du-lieu" label="Xuất dữ liệu" hint="Tải CSV, XLSX; bản sao lưu" />
+        ) : null}
         {can('catalog.manage') ? (
           <Row to="/them/danh-muc" label="Danh mục dịch vụ" hint="Dịch vụ, combo, giá" />
         ) : null}

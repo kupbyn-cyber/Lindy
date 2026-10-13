@@ -1,6 +1,6 @@
 # Chạy LINDY OS ở local
 
-Cập nhật 13/10/2026, sau Đợt 0 đến Đợt 3 (sổ tiền, cọc, thu chi, chốt quỹ, tip, hoàn tiền) và Đợt 4 (nhân viên, chấm công, lương, tạm ứng). Máy: Windows 11, Node 24, Bun 1.4.
+Cập nhật 13/10/2026, sau Đợt 0 đến Đợt 3 (sổ tiền, cọc, thu chi, chốt quỹ, tip, hoàn tiền) Đợt 4 (nhân viên, chấm công, lương, tạm ứng) và Đợt 5A (lợi nhuận, báo cáo đã chốt, xuất dữ liệu, sao lưu). Máy: Windows 11, Node 24, Bun 1.4.
 
 ## Chạy hằng ngày
 
@@ -96,7 +96,14 @@ Demo có tháng bắt đầu tính lương = tháng này và một đề nghị 
 4. Khoá: từ ngày 5 tháng sau, khi mọi ngày công đã duyệt và ai có hồ sơ cũng có chính sách lương → **Khoá bảng lương** → **Trả lương** từng người. Muốn thử khoá trên DB dev: đặt tháng bắt đầu là tháng trước và duyệt đủ công tháng đó.
 5. Sau khi khoá: đơn tháng đó xác nhận muộn, phiếu hoàn → hoa hồng, KPI vào tháng đang mở (phiếu lương ghi "dời từ tháng đã khoá").
 
-Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0017` nếu đã có Đợt 4).
+## Thử báo cáo, xuất dữ liệu, sao lưu (Đợt 5A)
+
+1. `linh@lindy.test` → **Thêm → Báo cáo doanh thu → Tháng**: khối **Lợi nhuận ước tính** (chỉ Linh; Nhung không thấy). Tháng đã khoá lương: **Doanh thu đã chốt** và **Phát sinh sau khi chốt**. **Tổng quan → Tháng**: lãi/lỗ tạm tính.
+2. Linh → **Thêm → Xuất dữ liệu**: chọn tháng, tải CSV / XLSX (báo cáo tháng, đơn hàng, sổ tiền, thu chi, bảng lương, khách hàng); **Tải bản sao lưu**. Nhung, thợ không có mục này.
+3. **In / PDF** ở Báo cáo và trong phiếu lương: Safari iPhone → Chia sẻ → In → Lưu PDF; máy tính → In → Lưu PDF.
+4. Khôi phục thử bản sao lưu vào DB tạm: `bun scripts/restore-check.ts --file=đường-dẫn.json` (file Linh tải) hoặc `bun scripts/restore-check.ts --from=dev`. Cần `PG_ADMIN_URL` (PostgreSQL local). Tài khoản sau khôi phục không có mật khẩu: đặt lại bằng `bun scripts/user.ts reset-password`.
+
+Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0018` nếu đã có Đợt 5A).
 
 ## Quản trị tài khoản (CLI, chưa có màn hình)
 

@@ -1,15 +1,16 @@
 // UI13 — Báo cáo doanh thu (PRD §11, bước 2.21). Linh, Nhung (revenue.read_branch).
 // Doanh thu theo ngày làm dịch vụ, chỉ đơn đã xác nhận; tiền thu theo ngày nhận tiền và tài khoản.
 // Đợt 3: cọc Tết (nhận, hoàn, doanh thu cọc khách bỏ hẹn tách riêng); doanh thu trừ phiếu hoàn; dòng tiền (PRD §7.5);
-// ngày: chốt quỹ, tip giữ hộ. Đợt 4: lương tháng (phải trả, đã trả, tạm ứng, KPI). Xuất CSV/XLSX/PDF ở Đợt 5.
+// ngày: chốt quỹ, tip giữ hộ. Đợt 4: lương tháng (phải trả, đã trả, tạm ứng, KPI). Đợt 5: số đã chốt khi khoá lương và
+// phần phát sinh sau đó (K24); lợi nhuận ước tính chỉ Linh (K23); In / Lưu PDF; Linh tải file (K25).
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { Money, Note, SegmentedControl, TextField } from '~/components/ui'
+import { Button, Money, Note, SegmentedControl, TextField } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
-import { formatIsoDate, toLocalDate } from '~/lib/time'
+import { formatDateTimeShort, formatIsoDate, toLocalDate } from '~/lib/time'
 import type { dayReport, monthReport } from '~/server/reports/service'
 
 export const Route = createFileRoute('/_app/them/bao-cao')({
@@ -52,8 +53,24 @@ function ReportPage() {
         <Link to="/them" className="label text-accent">
           ← Thêm
         </Link>
-        <h1 className="screen-title m-0">Báo cáo doanh thu</h1>
-        <div className="grid grid-cols-[1fr_1fr] gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="screen-title m-0">Báo cáo doanh thu</h1>
+          <div className="no-print flex gap-1">
+            {can('data.export') ? (
+              <Link
+                to="/them/xuat-du-lieu"
+                search={{ m: kind === 'month' ? month : date.slice(0, 7) }}
+                className="lo-btn lo-btn-quiet button-label no-underline"
+              >
+                Tải file
+              </Link>
+            ) : null}
+            <Button variant="quiet" onClick={() => window.print()}>
+              In / PDF
+            </Button>
+          </div>
+        </div>
+        <div className="no-print grid grid-cols-[1fr_1fr] gap-2">
           <SegmentedControl
             ariaLabel="Loại báo cáo"
             options={[
@@ -88,7 +105,7 @@ function ReportPage() {
       {kind === 'day' ? <DayView q={day} /> : <MonthView q={mon} />}
 
       <div className="px-4">
-        <Note>Doanh thu theo dịch vụ chưa trừ phần hoàn tiền. Lợi nhuận, xuất file ở Đợt 5.</Note>
+        <Note>Doanh thu theo dịch vụ chưa trừ phần hoàn tiền.</Note>
       </div>
     </section>
   )
@@ -131,6 +148,85 @@ function Revenue(props: { r: Day['revenue'] }) {
       <Line label="Đơn · lượt khách" text={`${r.orders} · ${r.guests}`} />
       <Line label="Đã thu của các đơn này" value={r.paid} />
       <Line label="Còn phải thu" value={r.due} negative />
+    </Card>
+  )
+}
+
+/** Tháng đã khoá lương (K24): số đã chốt; phần khác đi sau đó tách riêng */
+function Closed(props: { c: NonNullable<Month['closed']> }) {
+  const { c } = props
+  const f = c.figures
+  const a = c.after
+  return (
+    <>
+      <Card
+        title={`Doanh thu đã chốt (khoá lương ${formatDateTimeShort(c.at)}${c.byName ? `, ${c.byName}` : ''})`}
+      >
+        <Line label="Doanh thu gộp" value={f.gross} />
+        <Line label="Giảm giá" value={f.discount} />
+        {f.refunded ? <Line label="Đã hoàn tiền" value={f.refunded} /> : null}
+        <Line label="Doanh thu thuần" value={f.net} strong />
+        <Line label="Đơn đã xác nhận" text={String(f.orders)} />
+        {f.forfeited ? <Line label="Doanh thu cọc khách bỏ hẹn" value={f.forfeited} /> : null}
+        {f.byStaff.map((s) => (
+          <Line key={s.userId} label={`· ${s.name}`} value={s.amount} />
+        ))}
+      </Card>
+      {a.net || a.orders || a.forfeited ? (
+        <Card title="Phát sinh sau khi chốt">
+          <Line label={`Doanh thu thuần (${a.orders} đơn xác nhận muộn, sửa đơn)`} value={a.net} strong />
+          {a.forfeited ? <Line label="Cọc khách bỏ hẹn" value={a.forfeited} /> : null}
+          {a.byStaff.map((s) => (
+            <Line key={s.userId} label={`· ${s.name}`} value={s.amount} />
+          ))}
+          <p className="caption m-0 text-ink-muted">
+            Không đổi số đã chốt. Hoa hồng, KPI của phần này tính vào tháng lương đang mở.
+          </p>
+        </Card>
+      ) : null}
+    </>
+  )
+}
+
+/** Lợi nhuận ước tính (K23) — chỉ Linh */
+function Profit(props: { p: NonNullable<Month['profit']> }) {
+  const { p } = props
+  return (
+    <Card title="Lợi nhuận ước tính (chỉ Linh)">
+      <Line label="Doanh thu thuần" value={p.revenue} />
+      {p.forfeited ? <Line label="Doanh thu cọc khách bỏ hẹn" value={p.forfeited} /> : null}
+      {p.operating.map((e) => (
+        <Line key={e.name} label={`Chi: ${e.name}`} value={-e.amount} />
+      ))}
+      {p.staff.map((e) => (
+        <Line key={e.name} label={`Chi nhân sự ngoài bảng lương: ${e.name}`} value={-e.amount} />
+      ))}
+      {p.payroll.fromApp ? (
+        <Line
+          label={`Lương phải trả (${p.payroll.locked ? 'đã khoá' : 'tạm tính'})`}
+          value={-p.payroll.amount}
+        />
+      ) : null}
+      <Line label="Lợi nhuận ước tính" value={p.profit} strong />
+      {p.partial ? (
+        <p className="caption m-0 text-ink-muted">
+          Tháng chưa hết: doanh thu, chi tính đến hôm nay; lương trừ cả tháng (tạm tính), nên đầu tháng thường
+          âm.
+        </p>
+      ) : null}
+      {!p.payroll.fromApp ? (
+        <p className="caption m-0 text-ink-muted">
+          Tháng này làm lương trên Sheets: chưa trừ lương (trừ phiếu chi nhóm Lương).
+        </p>
+      ) : null}
+      {p.excluded.length ? (
+        <>
+          <span className="overline mt-1 text-ink-muted">Không tính vào lợi nhuận</span>
+          {p.excluded.map((x) => (
+            <Line key={x.label} label={x.label} value={x.amount} />
+          ))}
+        </>
+      ) : null}
     </Card>
   )
 }
@@ -293,7 +389,8 @@ function MonthView(props: { q: ReturnType<typeof useQuery<Month>> }) {
       <p className="body m-0 px-4 text-ink-muted">
         Tháng {m.month.slice(5, 7)}/{m.month.slice(0, 4)}
       </p>
-      <Revenue r={m.revenue} />
+      {m.closed ? <Closed c={m.closed} /> : <Revenue r={m.revenue} />}
+      {m.profit ? <Profit p={m.profit} /> : null}
       <Card title="Doanh thu theo ngày">
         {m.byDay.length === 0 ? <span className="body text-ink-muted">Chưa có đơn đã xác nhận.</span> : null}
         {m.byDay.map((d) => (

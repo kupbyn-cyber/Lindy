@@ -2,7 +2,7 @@
 // DB tạm ở trạng thái bản đang chạy (migration đến --from, có tài khoản chủ, lịch hẹn; từ 0009 có đơn và khoản thu),
 // rồi chạy bước chuẩn bị DB của bản mới (runRelease, như lúc app khởi động trên hosting) và thử luồng chính bằng service
 // của app: đơn từ lịch, thu tiền; bút toán ghi bù; cọc Tết trừ vào bill; mở sổ và số dư; thu chi; tip, hoàn tiền,
-// chứng từ; nhân viên, chấm công; lương, tạm ứng.
+// chứng từ; nhân viên, chấm công; lương, tạm ứng; báo cáo, xuất dữ liệu, sao lưu.
 //   bun scripts/check-upgrade.ts --from=0010
 // Chỉ chạy với PostgreSQL local; DB tạm bị xoá khi xong.
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
@@ -360,6 +360,19 @@ try {
     )
     if (adv.status !== 'approved' || sl.line.advances !== 300000 || sl.line.commission <= 0)
       throw new Error('Lương, tạm ứng sai.')
+
+    // Báo cáo, xuất dữ liệu, sao lưu (0018): lợi nhuận (Linh), file đơn hàng CSV, bản sao lưu không có mật khẩu
+    const { monthReport } = await import('../src/server/reports/service')
+    const { exportFile } = await import('../src/server/export/service')
+    const { backupDump } = await import('../src/server/export/backup')
+    const rep = await monthReport(auth, { month: today.slice(0, 7) })
+    const csv = await exportFile(auth, { kind: 'don-hang', month: today.slice(0, 7), format: 'csv' })
+    const bk = await backupDump(auth)
+    log(
+      `Báo cáo: lợi nhuận ước tính ${rep.profit?.profit}đ; file ${csv.filename}; sao lưu ${Math.round(bk.json.length / 1024)} KB`,
+    )
+    if (!rep.profit || !(csv.body as string).includes('#0002') || bk.json.includes('password_hash'))
+      throw new Error('Báo cáo, xuất dữ liệu, sao lưu sai.')
 
     const [n] = await db<Record<string, number>[]>`
       select (select count(*)::int from schema_migrations) as migrations,

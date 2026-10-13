@@ -66,8 +66,11 @@ export async function monthProfit(
     const label = EXCLUDED[o.type]!
     excluded.set(label, (excluded.get(label) ?? 0) + n(o.amount))
   }
+  const [t] = await tx<{ today: string }[]>`select app.branch_today(${branchId})::text as today`
   return {
     month: ym,
+    /** Tháng chưa hết: doanh thu, chi tính đến hôm nay; lương tính cả tháng (tạm tính) [P80] */
+    partial: last >= t!.today,
     revenue: revenue.net,
     forfeited: revenue.forfeited,
     operating,

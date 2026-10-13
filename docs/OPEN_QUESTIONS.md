@@ -1,6 +1,6 @@
 # Câu hỏi còn chờ
 
-Cập nhật: 13/10/2026 sau Đợt 4. Trả lời xong câu nào thì chuyển sang `DECISIONS.md` và xoá khỏi đây.
+Cập nhật: 13/10/2026 sau Đợt 5A. Trả lời xong câu nào thì chuyển sang `DECISIONS.md` và xoá khỏi đây.
 
 ## 1. Chuẩn bị máy để chạy local (anh làm)
 
@@ -16,6 +16,8 @@ Cập nhật: 13/10/2026 sau Đợt 4. Trả lời xong câu nào thì chuyển 
 - Lịch quán đóng cửa Tết 2027 (Linh nhập ở Cài đặt lịch → Ngày quán đóng cửa).
 - Ngày vào làm, cách nhận lương (chuyển khoản / tiền mặt) của từng người; tháng bắt đầu tính lương trên app (Linh nhập ở Thêm → Nhân viên). Chạy song song với bảng lương Sheets ít nhất một tháng.
 - Hệ số ngày lễ (Q30, hiện như ngày thường): chỉ cần khi anh muốn trả thêm ngày lễ.
+- Bật sao lưu tự động trên Vibe Host; mở thử file XLSX xuất từ app trên máy tính và iPhone; in thử báo cáo tháng ra PDF.
+- **Nhập dữ liệu cũ (Đợt 5B):** khi app đã chạy ổn ở quán (Q42), anh xuất 1–2 tab tháng (2025, 2026) từ Google Sheets ra CSV gửi em để chốt cách đọc cột.
 
 ## 3. Sau phản biện Đợt 3 (chờ anh quyết)
 

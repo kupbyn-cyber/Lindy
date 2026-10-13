@@ -621,3 +621,54 @@ select.lo-input {
     animation: none;
   }
 }
+
+/* Trang in (Đợt 5A, bước 5.5): In / Lưu PDF báo cáo, phiếu lương. Ẩn điều hướng, nút; nền trắng, khổ A4. File này nằm
+   ngoài layer của Tailwind và đứng sau các quy tắc khác nên ghi đè được mà không cần !important.
+   Đang mở phiếu lương (sheet) thì chỉ in phần sheet. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .lo-appbar,
+  .lo-nav,
+  .lo-fab,
+  .lo-backdrop,
+  .lo-btn,
+  .lo-icon-btn,
+  .lo-toast,
+  .no-print {
+    display: none;
+  }
+  main {
+    padding-bottom: 0;
+  }
+  .lo-card {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+  body:has(.lo-sheet) * {
+    visibility: hidden;
+  }
+  body:has(.lo-sheet) .lo-sheet,
+  body:has(.lo-sheet) .lo-sheet * {
+    visibility: visible;
+  }
+  body:has(.lo-sheet) .lo-sheet {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-height: none;
+    box-shadow: none;
+    animation: none;
+  }
+  body:has(.lo-sheet) .lo-sheet-body {
+    overflow: visible;
+    max-height: none;
+  }
+}

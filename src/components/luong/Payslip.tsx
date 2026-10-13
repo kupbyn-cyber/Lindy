@@ -57,6 +57,14 @@ export function Payslip(props: { month: string; userId: string }) {
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="body-strong">
+          {l.name} · tháng {formatYearMonth(d.month)}
+        </span>
+        <Button variant="quiet" onClick={() => window.print()}>
+          In / PDF
+        </Button>
+      </div>
       <section className="lo-card flex flex-col gap-1">
         <span className="caption text-ink-muted">
           Tháng {l.daysInMonth} ngày · nghỉ được hưởng {l.leaveAllowance} · công chuẩn {l.standardDays} ·

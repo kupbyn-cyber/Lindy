@@ -44,6 +44,7 @@ import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoa
 import { Route as AppThemTamUngRouteImport } from './routes/_app/them/tam-ung'
 import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
 import { Route as AppThemThuChiRouteImport } from './routes/_app/them/thu-chi'
+import { Route as AppThemXuatDuLieuRouteImport } from './routes/_app/them/xuat-du-lieu'
 import { Route as ApiAccountsIndexRouteImport } from './routes/api/accounts/index'
 import { Route as ApiAdvancesIndexRouteImport } from './routes/api/advances/index'
 import { Route as ApiAppointmentsIndexRouteImport } from './routes/api/appointments/index'
@@ -275,6 +276,11 @@ const AppThemThongBaoRoute = AppThemThongBaoRouteImport.update({
 const AppThemThuChiRoute = AppThemThuChiRouteImport.update({
   id: '/them/thu-chi',
   path: '/them/thu-chi',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemXuatDuLieuRoute = AppThemXuatDuLieuRouteImport.update({
+  id: '/them/xuat-du-lieu',
+  path: '/them/xuat-du-lieu',
   getParentRoute: () => AppRoute,
 } as any)
 const ApiAccountsIndexRoute = ApiAccountsIndexRouteImport.update({
@@ -604,6 +610,7 @@ export interface FileRoutesByFullPath {
   '/them/tam-ung': typeof AppThemTamUngRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/them/thu-chi': typeof AppThemThuChiRoute
+  '/them/xuat-du-lieu': typeof AppThemXuatDuLieuRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
@@ -698,6 +705,7 @@ export interface FileRoutesByTo {
   '/them/tam-ung': typeof AppThemTamUngRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/them/thu-chi': typeof AppThemThuChiRoute
+  '/them/xuat-du-lieu': typeof AppThemXuatDuLieuRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
@@ -794,6 +802,7 @@ export interface FileRoutesById {
   '/_app/them/tam-ung': typeof AppThemTamUngRoute
   '/_app/them/thong-bao': typeof AppThemThongBaoRoute
   '/_app/them/thu-chi': typeof AppThemThuChiRoute
+  '/_app/them/xuat-du-lieu': typeof AppThemXuatDuLieuRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
@@ -890,6 +899,7 @@ export interface FileRouteTypes {
     | '/them/tam-ung'
     | '/them/thong-bao'
     | '/them/thu-chi'
+    | '/them/xuat-du-lieu'
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
@@ -984,6 +994,7 @@ export interface FileRouteTypes {
     | '/them/tam-ung'
     | '/them/thong-bao'
     | '/them/thu-chi'
+    | '/them/xuat-du-lieu'
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
@@ -1079,6 +1090,7 @@ export interface FileRouteTypes {
     | '/_app/them/tam-ung'
     | '/_app/them/thong-bao'
     | '/_app/them/thu-chi'
+    | '/_app/them/xuat-du-lieu'
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
@@ -1455,6 +1467,13 @@ declare module '@tanstack/react-router' {
       path: '/them/thu-chi'
       fullPath: '/them/thu-chi'
       preLoaderRoute: typeof AppThemThuChiRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/xuat-du-lieu': {
+      id: '/_app/them/xuat-du-lieu'
+      path: '/them/xuat-du-lieu'
+      fullPath: '/them/xuat-du-lieu'
+      preLoaderRoute: typeof AppThemXuatDuLieuRouteImport
       parentRoute: typeof AppRoute
     }
     '/api/accounts/': {
@@ -1887,6 +1906,7 @@ interface AppRouteChildren {
   AppThemTamUngRoute: typeof AppThemTamUngRoute
   AppThemThongBaoRoute: typeof AppThemThongBaoRoute
   AppThemThuChiRoute: typeof AppThemThuChiRoute
+  AppThemXuatDuLieuRoute: typeof AppThemXuatDuLieuRoute
   AppDonHangIndexRoute: typeof AppDonHangIndexRoute
   AppKhachIndexRoute: typeof AppKhachIndexRoute
   AppLichIndexRoute: typeof AppLichIndexRoute
@@ -1914,6 +1934,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppThemTamUngRoute: AppThemTamUngRoute,
   AppThemThongBaoRoute: AppThemThongBaoRoute,
   AppThemThuChiRoute: AppThemThuChiRoute,
+  AppThemXuatDuLieuRoute: AppThemXuatDuLieuRoute,
   AppDonHangIndexRoute: AppDonHangIndexRoute,
   AppKhachIndexRoute: AppKhachIndexRoute,
   AppLichIndexRoute: AppLichIndexRoute,
