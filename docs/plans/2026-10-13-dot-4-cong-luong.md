@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 4 — Công và lương
 
-**Ngày:** 13/10/2026 · **Trạng thái:** CHỜ DUYỆT. Chưa viết code. Q-F, Q-G, Q-H đã chốt 13/10/2026 theo phương án (a) → K20, K21, K22. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. Đang làm 4A. Q-F, Q-G, Q-H đã chốt 13/10/2026 theo phương án (a) → K20, K21, K22. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (D04, D08, D09, D13, A01, A05, C04, C05, K09–K19); PRD v1.2 §4, §6.1 (D04), §6.3 (Q34), §8, §9, §11, §12, §14 (UI08, UI09, UI10, UI16), §17, §18; PRD v1.1 §8, §9 (Q25–Q41, chi tiết hơn bản 1.2); `data/staff.csv`; kế hoạch Đợt 2, Đợt 3 (phần dời sang Đợt 4).
 
 Ký hiệu `[Pn]`: điểm phản biện ở mục 11 (nối tiếp P64 của Đợt 3). `Sn`: test bảo mật ở mục 10.2 (nối tiếp S48).

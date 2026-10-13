@@ -3,6 +3,7 @@
 // Linh, Nhung (revenue.read_branch) xem số toàn quán; thợ chỉ thấy số của mình (K09). Đợt 3A: Tiền trong quỹ
 // (money_accounts.read_balance), cọc nhận / hoàn / giữ, doanh thu cọc khách bỏ hẹn tách riêng. Tip, thu chi ở 3B.
 import { isIsoDate, toLocalDate } from '~/lib/time'
+import { attendanceAttention } from '../attendance/service'
 import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
@@ -166,6 +167,8 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
         reviewTotal: isOwner ? await reviewCount(tx, branch.id) : 0,
         /** Tip giữ hộ chưa trả (RLS: Nhung, Linh thấy cả quán; thợ thấy tip của mình) */
         tipsPending: (await tipsHolding(tx, branch.id)).amount,
+        /** Đợt 4A: ngày công chưa duyệt (trước hôm nay), đơn nghỉ chờ duyệt — Nhung, Linh */
+        ...(await attendanceAttention(tx, auth, branch.id)),
       },
     }
   })

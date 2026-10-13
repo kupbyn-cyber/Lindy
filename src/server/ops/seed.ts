@@ -70,6 +70,17 @@ export async function seedBase(
     }
   }
 
+  // Cài đặt lương (nháp ngày 5, trả ngày 10; tháng bắt đầu Linh tự chọn) và mốc KPI quản lý bảng tháng 10/2026 (Q31)
+  if (await tableExists(sql, 'payroll_settings')) {
+    for (const id of Object.values(branchIds)) {
+      await sql`insert into payroll_settings (branch_id) values (${id}) on conflict (branch_id) do nothing`
+      await sql`
+        insert into kpi_policy_versions (branch_id, effective_month, tier1_min, tier1_bps, tier2_min, tier2_bps)
+        values (${id}, '2026-10-01', 85000000, 100, 102000000, 150)
+        on conflict (branch_id, effective_month) do nothing`
+    }
+  }
+
   return { orgId, branchIds, roleIds }
 }
 

@@ -1,21 +1,26 @@
-// Dữ liệu demo cho DB dev (bước 1.19, 2.16, 3.11): lịch mẫu tuần này, SĐT giả 0900000xxx; 5 đơn mẫu hôm nay, hôm qua;
-// mùa cọc thử và 3 lịch có cọc.
+// Dữ liệu demo cho DB dev (bước 1.19, 2.16, 3.11, 4.2): lịch mẫu tuần này, SĐT giả 0900000xxx; 5 đơn mẫu hôm nay,
+// hôm qua; mùa cọc thử và 3 lịch có cọc; hồ sơ, chính sách lương, chấm công mẫu.
 // Chỉ chạy trên DB localhost _dev.
 //   bun scripts/demo-data.ts
 import { createHash, randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import postgres from 'postgres'
 import type { ItemInput } from '../src/lib/order-math'
 import { foldVietnamese } from '../src/lib/text'
-import { addDays, fromLocal, toLocalDate } from '../src/lib/time'
+import { addDays, addMonths, fromLocal, toLocalDate } from '../src/lib/time'
 import { createAppointment } from '../src/server/appointments/service'
+import { createLeave } from '../src/server/attendance/leave'
+import { decideDay } from '../src/server/attendance/service'
 import type { Auth } from '../src/server/auth/context'
 import { closeSql } from '../src/server/db/client'
 import { confirmDeposit, listSeasons, recordDeposit, saveSeason } from '../src/server/deposits/service'
 import { recordPayment } from '../src/server/orders/payments'
 import type { CreateOrderInput } from '../src/server/orders/schema'
 import { confirmOrder, createOrder, markDone } from '../src/server/orders/service'
+import { savePolicy, saveProfile, saveSettings } from '../src/server/staff/service'
 import { assertDisposableDb } from './lib/db-guard'
-import { loadEnv, requireEnv } from './lib/env'
+import { loadEnv, ROOT, requireEnv } from './lib/env'
 
 loadEnv()
 const url = requireEnv('MIGRATE_DATABASE_URL')
@@ -76,6 +81,9 @@ try {
   console.log(`Đã tạo ${n} lịch demo từ hôm nay đến 5 ngày tới.`)
   console.log(`Đã tạo ${await demoOrders(users, branch!.id, today)} đơn demo (Đợt 2).`)
   console.log(`Đã tạo ${await demoDeposits(users, branch!.id, today)} lịch có mùa cọc demo (Đợt 3).`)
+  console.log(
+    `Đã tạo hồ sơ, chính sách lương, chấm công demo cho ${await demoStaff(users, branch!.id, today)} người (Đợt 4).`,
+  )
 } finally {
   await sql.end()
   await closeSql()
@@ -96,6 +104,63 @@ async function authOf(users: Map<string, string>, branchId: string, key: string)
     mustChangePassword: false,
     branches: [{ id: branchId, name: b!.name, shortLabel: b!.shortLabel, perms: perms.map((p) => p.code) }],
   }
+}
+
+// Nhân viên demo (Đợt 4A, chỉ DB dev): hồ sơ (ngày vào làm giả: đầu tháng trước), chính sách lương theo
+// data/staff.csv (bảng tháng 10/2026, Q31) từ tháng trước, tháng bắt đầu tính lương = tháng này; hôm qua Chin, Trang
+// vào ca, Nhung mới duyệt Chin; Trang đăng ký nghỉ tuần sau (chờ duyệt).
+async function demoStaff(users: Map<string, string>, branchId: string, today: string) {
+  const linh = await authOf(users, branchId, 'linh')
+  const prevMonth = `${addMonths(today.slice(0, 7), -1)}-01`
+  const rows = readFileSync(join(ROOT, 'data', 'staff.csv'), 'utf8')
+    .trim()
+    .split('\n')
+    .slice(1)
+  let n = 0
+  for (const line of rows) {
+    const [name, , base, rate, leave] = line.split(',')
+    const userId = users.get(name!.toLowerCase())
+    if (!userId) continue
+    await saveProfile(linh, { branchId, userId, startDate: prevMonth, endDate: null, payMethod: 'transfer' })
+    await savePolicy(linh, {
+      branchId,
+      userId,
+      effectiveMonth: prevMonth,
+      baseSalary: Number(base),
+      commissionBps: Math.round(Number(rate) * 10_000),
+      leaveDays: Number(leave),
+      managerKpi: name === 'Nhung',
+      reason: 'Bảng tháng 10/2026 (demo)',
+    })
+    n++
+  }
+  await saveSettings(linh, { branchId, startMonth: `${today.slice(0, 7)}-01` })
+  const yesterday = addDays(today, -1)
+  const [b] = await sql<{ timezone: string }[]>`select timezone from branches where id = ${branchId}`
+  for (const [key, at] of [
+    ['chin', '08:52'],
+    ['trang', '09:05'],
+  ] as const) {
+    await sql`
+      insert into attendance_days (branch_id, user_id, work_date, check_in_at, check_out_at)
+      values (${branchId}, ${users.get(key)!}, ${yesterday}::date, ${fromLocal(yesterday, at, b!.timezone)},
+              ${fromLocal(yesterday, '21:05', b!.timezone)})
+      on conflict do nothing`
+  }
+  await decideDay(await authOf(users, branchId, 'nhung'), {
+    branchId,
+    userId: users.get('chin')!,
+    date: yesterday,
+    status: 'worked',
+  })
+  await createLeave(await authOf(users, branchId, 'trang'), {
+    branchId,
+    createRequestId: randomUUID(),
+    fromDate: addDays(today, 7),
+    toDate: addDays(today, 7),
+    reason: 'Việc gia đình (demo)',
+  })
+  return n
 }
 
 // Cọc demo (Đợt 3, chỉ DB dev): mùa cọc thử 10 ngày từ hôm nay nếu chưa có mùa nào đang bật; 3 lịch: chưa cọc,

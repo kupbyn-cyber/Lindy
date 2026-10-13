@@ -94,6 +94,28 @@ export function startOfWeek(iso: string) {
   return addDays(iso, wd === 0 ? -6 : 1 - wd)
 }
 
+/** "2026-10" hợp lệ. */
+export function isYearMonth(s: string) {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(s)
+}
+
+/** "2026-10" → ngày đầu và ngày cuối tháng ("2026-10-01", "2026-10-31"). */
+export function monthRange(ym: string) {
+  const [y, m] = ym.split('-').map(Number) as [number, number]
+  return { first: `${ym}-01`, last: new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10) }
+}
+
+/** "2026-10" + n tháng. */
+export function addMonths(ym: string, n: number) {
+  const [y, m] = ym.split('-').map(Number) as [number, number]
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7)
+}
+
+/** "2026-10" hoặc "2026-10-01" → "10/2026" */
+export function formatYearMonth(s: string) {
+  return `${s.slice(5, 7)}/${s.slice(0, 4)}`
+}
+
 export function isIsoDate(s: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`))
 }

@@ -40,6 +40,7 @@ export const PERMISSIONS = {
   'expense.approve_above_limit': 'Duyệt chi trên hạn mức',
   'advance.approve': 'Duyệt tạm ứng',
   'attendance.approve': 'Duyệt công',
+  'attendance.own': 'Vào ca / Ra ca, đăng ký nghỉ, xem công của mình',
   'review_queue.read': 'Xem danh sách Cần xem lại',
   'catalog.manage': 'Quản lý danh mục dịch vụ',
   'users.manage': 'Quản lý tài khoản: tạo, đặt lại mật khẩu, đổi vai trò, khoá',
@@ -88,6 +89,7 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       'expense.request',
       'expense.approve_within_limit',
       'attendance.approve',
+      'attendance.own',
     ],
   },
   // Quyền lịch mở rộng không kéo theo quyền lương, thu chi, lợi nhuận, xác nhận bill hay xác nhận cọc (D17).
@@ -101,6 +103,7 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       'discount.apply_up_to_10pct',
       'payroll.read_own',
       'expense.request',
+      'attendance.own',
     ],
   },
   staff: {
@@ -112,6 +115,7 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       'discount.apply_up_to_10pct',
       'payroll.read_own',
       'expense.request',
+      'attendance.own',
     ],
   },
 }
