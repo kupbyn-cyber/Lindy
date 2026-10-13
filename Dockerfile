@@ -26,10 +26,11 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000
 
-COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/db/migrations ./db/migrations
-COPY --from=builder /app/release.mjs ./release.mjs
-COPY --from=builder /app/package.json ./package.json
+# --chown: mã nguồn hosting kéo về có thể chỉ cho root đọc; thiếu dòng này user node đọc migration báo EACCES.
+COPY --from=builder --chown=node:node /app/.output ./.output
+COPY --from=builder --chown=node:node /app/db/migrations ./db/migrations
+COPY --from=builder --chown=node:node /app/release.mjs ./release.mjs
+COPY --from=builder --chown=node:node /app/package.json ./package.json
 
 USER node
 EXPOSE 3000

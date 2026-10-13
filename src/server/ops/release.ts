@@ -223,6 +223,12 @@ export function classifyReleaseError(e: unknown): ReleaseProblem {
         code: 'db_permission',
         text: 'User DB trong biến ở dbUrlFrom thiếu quyền (tạo role hoặc tạo bảng).',
       }
+    case 'EACCES':
+    case 'ENOENT':
+      return {
+        code: `files_${err.code}`,
+        text: 'Không đọc được file migration trong ảnh (thiếu file hoặc thiếu quyền). Kiểm tra Dockerfile.',
+      }
     default:
       if (err?.message?.startsWith('Invalid URL') || err?.code === 'ERR_INVALID_URL') {
         return { code: 'bad_admin_url', text: 'Biến ở dbUrlFrom không đúng dạng postgres://…' }
