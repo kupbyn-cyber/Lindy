@@ -135,6 +135,9 @@ create table order_service_tickets (
   voided_by uuid references users(id),
   voided_at timestamptz,
   void_reason text check (char_length(void_reason) <= 500),
+  needs_owner_review boolean not null default false,   -- K15: phiếu ưu đãi do người không phải chủ lập
+  reviewed_by uuid references users(id),
+  reviewed_at timestamptz,
   check ((outcome = 'compensation') = (compensation_percent is not null)),
   check (outcome <> 'free_fix' or (cause = 'technical' and within_warranty)),
   check (outcome <> 'compensation' or (cause = 'technical' and customer_id is not null)),
@@ -142,6 +145,8 @@ create table order_service_tickets (
 );
 create index service_tickets_order_idx on order_service_tickets(order_id);
 create index service_tickets_customer_idx on order_service_tickets(customer_id) where outcome = 'compensation';
+create index service_tickets_review_idx on order_service_tickets(branch_id)
+  where needs_owner_review and reviewed_at is null and voided_at is null;
 
 create table order_discounts (
   id uuid primary key default gen_random_uuid(),
@@ -397,8 +402,10 @@ begin
       end if;
       case old.status
         when 'in_progress' then
-          if not (v_priv or app.has_perm(old.branch_id, 'order.create_draft')) then
-            raise exception 'Không có quyền sửa đơn.' using errcode = '42501';
+          -- K14: người tạo đơn và Nhung, Linh; thợ được chia phần chỉ xem [P39]
+          if not (v_priv or app.has_perm(old.branch_id, 'order.confirm')
+                  or (old.created_by = v_uid and app.has_perm(old.branch_id, 'order.create_draft'))) then
+            raise exception 'Chỉ người tạo đơn hoặc Nhung, Linh sửa được đơn.' using errcode = '42501';
           end if;
         when 'awaiting_confirmation' then
           -- K10: sau Làm xong chỉ Nhung, Linh sửa
@@ -799,15 +806,31 @@ begin
     new.within_warranty := (now() at time zone app.branch_tz(new.branch_id))::date <= v_order.warranty_until;
     new.created_at := now();
     new.voided_by := null; new.voided_at := null; new.void_reason := null;
+    -- K15: ưu đãi bù khiếu nại (quán chịu) do người không phải chủ lập → Cần xem lại của Linh [P40]
+    new.needs_owner_review := new.outcome = 'compensation' and not v_priv
+                              and not app.has_perm(new.branch_id, 'review_queue.read');
+    new.reviewed_by := null; new.reviewed_at := null;
     return new;
   end if;
-  -- UPDATE: phiếu không sửa; chỉ huỷ một lần, có lý do, khi ưu đãi chưa dùng cho đơn nào
+  -- UPDATE: phiếu không sửa; chỉ huỷ một lần, có lý do, khi ưu đãi chưa dùng cho đơn nào; hoặc Linh đánh dấu đã xem
   if row(new.id, new.branch_id, new.order_id, new.customer_id, new.issue, new.cause, new.within_warranty, new.outcome,
-         new.repaired_by, new.compensation_percent, new.note, new.created_by, new.created_at)
+         new.repaired_by, new.compensation_percent, new.note, new.created_by, new.created_at, new.needs_owner_review)
      is distinct from
      row(old.id, old.branch_id, old.order_id, old.customer_id, old.issue, old.cause, old.within_warranty, old.outcome,
-         old.repaired_by, old.compensation_percent, old.note, old.created_by, old.created_at) then
+         old.repaired_by, old.compensation_percent, old.note, old.created_by, old.created_at, old.needs_owner_review) then
     raise exception 'Phiếu xử lý không sửa được; huỷ phiếu rồi lập lại.' using errcode = '42501';
+  end if;
+  if new.reviewed_by is distinct from old.reviewed_by or new.reviewed_at is distinct from old.reviewed_at then
+    if not old.needs_owner_review or old.reviewed_by is not null
+       or not (v_priv or app.has_perm(old.branch_id, 'review_queue.read')) then
+      raise exception 'Chỉ chủ quán đánh dấu đã xem lại.' using errcode = '42501';
+    end if;
+    if new.voided_at is distinct from old.voided_at or new.void_reason is distinct from old.void_reason then
+      raise exception 'Đánh dấu đã xem và huỷ phiếu là hai thao tác riêng.' using errcode = 'P0001';
+    end if;
+    new.reviewed_by := coalesce(v_uid, new.reviewed_by);
+    new.reviewed_at := now();
+    return new;
   end if;
   if old.voided_at is not null then
     raise exception 'Phiếu này đã huỷ.' using errcode = 'P0001';

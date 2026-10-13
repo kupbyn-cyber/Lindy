@@ -136,6 +136,18 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
     }
   }
 
+  async function reviewTicket(ticketId: string) {
+    try {
+      const next = await api<OrderDetail>(`/api/tickets/${ticketId}/review`, { body: {} })
+      qc.setQueryData(['orders', 'detail', d.id], next)
+      await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
+      await qc.invalidateQueries({ queryKey: ['orders', 'overview'] })
+      toast('Đã đánh dấu xem lại phiếu.')
+    } catch (e) {
+      toast(errorText(e), 'error')
+    }
+  }
+
   async function markReviewed() {
     try {
       const next = await api<OrderDetail>(`/api/orders/${d.id}/review`, { body: {} })
@@ -354,6 +366,23 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                   </Link>
                 ) : null}
                 {t.voided ? <span className="caption text-ink-muted">Đã huỷ: {t.voidReason}</span> : null}
+                {t.needsOwnerReview ? (
+                  <span className="flex items-center gap-2">
+                    <StatusChip tone="accent">Cần Linh xem lại</StatusChip>
+                    {c.reviewTicket ? (
+                      <button
+                        type="button"
+                        className="caption border-0 bg-transparent p-0 text-accent"
+                        onClick={() => void reviewTicket(t.id)}
+                      >
+                        Đã xem
+                      </button>
+                    ) : null}
+                  </span>
+                ) : null}
+                {t.reviewedByName ? (
+                  <span className="caption text-ink-muted">{t.reviewedByName} đã xem lại</span>
+                ) : null}
                 {!t.voided && !t.usedBy && c.createTicket ? (
                   <button
                     type="button"
@@ -377,6 +406,9 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       ) : null}
 
       <div className="flex flex-col gap-2 px-4">
+        {d.status === 'in_progress' && !c.edit ? (
+          <Note>Chỉ người tạo đơn ({d.createdByName}) hoặc Nhung, Linh sửa được đơn này.</Note>
+        ) : null}
         {c.done ? (
           <>
             {d.doneProblems.map((p) => (

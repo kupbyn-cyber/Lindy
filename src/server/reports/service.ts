@@ -2,11 +2,12 @@
 // Doanh thu chỉ tính đơn Đã xác nhận, theo ngày làm dịch vụ (Q01, Q02). Lượt khách = số đơn đã xác nhận (K13).
 // Linh, Nhung (revenue.read_branch) xem số toàn quán; thợ chỉ thấy số của mình (K09). Tiền trong quỹ, cọc, tip, thu chi
 // có ở Đợt 3.
-import { addDays, isIsoDate, toLocalDate } from '~/lib/time'
+import { isIsoDate, toLocalDate } from '~/lib/time'
 import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
 import { forbidden, invalid } from '../http/errors'
+import { reviewPending } from '../orders/service'
 
 const n = (v: unknown) => Number(v ?? 0)
 
@@ -80,15 +81,18 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
     const from = input.period === 'month' ? `${today.slice(0, 8)}01` : today
     const t = all ? await totals(tx, branch.id, from, today) : null
     const staff = await byStaff(tx, branch.id, from, today, all ? null : auth.userId)
+    // P41: đếm mọi ngày (đơn ngày cũ chưa xác nhận thì chưa vào doanh thu, không được quên)
     const [c] = await tx<Record<string, unknown>[]>`
       select
-        count(*) filter (where status = 'awaiting_confirmation') as awaiting,
-        count(*) filter (where status = 'in_progress' and created_by = ${auth.userId}) as my_in_progress,
-        count(*) filter (where status in ('in_progress', 'awaiting_confirmation') and required_level = 'owner'
-                         and (discount_approval_hash is distinct from pricing_hash
-                              or discount_approved_level is distinct from 'owner')) as owner_approval,
-        count(*) filter (where needs_owner_review and reviewed_at is null) as review
-      from orders where branch_id = ${branch.id} and service_date > ${addDays(today, -31)}::date`
+        count(*) filter (where o.status = 'awaiting_confirmation') as awaiting,
+        count(*) filter (where o.status = 'in_progress' and o.created_by = ${auth.userId}) as my_in_progress,
+        count(*) filter (where o.status in ('in_progress', 'awaiting_confirmation') and o.required_level = 'owner'
+                         and (o.discount_approval_hash is distinct from o.pricing_hash
+                              or o.discount_approved_level is distinct from 'owner')) as owner_approval,
+        count(*) filter (where ${reviewPending(tx)}) as review
+      from orders o
+      where o.branch_id = ${branch.id}
+        and (o.status in ('in_progress', 'awaiting_confirmation') or ${reviewPending(tx)})`
     return {
       period: input.period,
       from,

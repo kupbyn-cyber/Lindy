@@ -91,4 +91,28 @@ export function limitWrites(userId: string, now = Date.now()) {
 
 export function resetWriteLimits() {
   buckets.clear()
+  sensitive.clear()
+}
+
+// ---------------------------------------------------------------- Giới hạn mở hồ sơ có SĐT đầy đủ [P38]
+
+export const SENSITIVE_LIMIT = 60
+const SENSITIVE_WINDOW_MS = 10 * 60_000
+const sensitive = new Map<string, Map<string, number>>()
+
+/**
+ * Hồ sơ khách, chi tiết lịch, chi tiết đơn trả SĐT đầy đủ: mỗi người mở tối đa 60 hồ sơ khác nhau trong 10 phút.
+ * Đếm theo hồ sơ khác nhau nên tải lại cùng một hồ sơ (cập nhật tức thời) không bị tính thêm.
+ */
+export function limitSensitiveReads(userId: string, key: string, now = Date.now()) {
+  const seen = sensitive.get(userId) ?? new Map<string, number>()
+  for (const [k, t] of seen) if (now - t >= SENSITIVE_WINDOW_MS) seen.delete(k)
+  if (!seen.has(key)) {
+    if (seen.size >= SENSITIVE_LIMIT) {
+      sensitive.set(userId, seen)
+      throw tooMany('Mở quá nhiều hồ sơ trong thời gian ngắn. Thử lại sau ít phút.')
+    }
+    seen.set(key, now)
+  }
+  sensitive.set(userId, seen)
 }

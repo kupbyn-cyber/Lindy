@@ -137,6 +137,12 @@ export async function getCustomer(auth: Auth, id: string) {
     const [row] = await tx<CustomerRow[]>`
       select id, name, phone, version, created_at from customers where id = ${id}`
     if (!row) throw notFound('Không tìm thấy khách.')
+    // Ghi lại ai xem SĐT đầy đủ của khách [P38]
+    if (row.phone) {
+      await tx`
+        insert into audit_logs (actor_user_id, action, entity_type, entity_id)
+        values (${auth.userId}, 'customer.phone_viewed', 'customer', ${row.id})`
+    }
     // Lịch sử đơn: RLS chỉ trả đơn người xem được thấy (K09); không tự gộp khách trùng tên (test 16)
     const orders = await tx<CustomerOrder[]>`
       select o.id, '#' || lpad(o.code::text, 4, '0') as code_label, b.short_label as branch_name,

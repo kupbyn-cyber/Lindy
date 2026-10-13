@@ -24,6 +24,8 @@ export type OrderCan = {
   markReviewed: boolean
   /** Lập phiếu xử lý bảo hành từ đơn gốc (bước 2.18) */
   createTicket: boolean
+  /** K15: Linh đánh dấu đã xem phiếu ưu đãi do người khác lập */
+  reviewTicket: boolean
 }
 
 export function orderCan(
@@ -50,10 +52,11 @@ export function orderCan(
         : 'Giảm giá cần Nhung duyệt trước.'
       : null
   return {
-    // K10: sau Làm xong chỉ Nhung, Linh; đơn đã xác nhận sửa có lý do (D04, bước 2.19)
+    // K14: đơn Đang làm chỉ người tạo và Nhung, Linh sửa [P39]; K10: sau Làm xong chỉ Nhung, Linh;
+    // đơn đã xác nhận sửa có lý do (D04, bước 2.19)
     edit:
-      (o.status === 'in_progress' && has('order.create_draft')) ||
-      ((o.status === 'awaiting_confirmation' || o.status === 'confirmed') && has('order.confirm')),
+      (o.status === 'in_progress' && o.createdBy === userId && has('order.create_draft')) ||
+      (o.status !== 'cancelled' && has('order.confirm')),
     done: o.status === 'in_progress' && has('order.create_draft'),
     confirm: canConfirmRole && !confirmBlocked,
     confirmBlocked,
@@ -66,5 +69,6 @@ export function orderCan(
     voidPayment: has('order.confirm'),
     markReviewed: o.needsOwnerReview && !o.reviewedAt && has('review_queue.read'),
     createTicket: o.status === 'confirmed' && has('order.confirm'),
+    reviewTicket: has('review_queue.read'),
   }
 }

@@ -315,6 +315,9 @@ export type TicketView = {
   createdAt: string
   voided: boolean
   voidReason: string | null
+  /** K15: phiếu ưu đãi do người không phải chủ lập, chờ Linh xem */
+  needsOwnerReview: boolean
+  reviewedByName: string | null
   /** Đơn đã dùng ưu đãi của phiếu (nếu xem được) */
   usedBy: { id: string; codeLabel: string } | null
 }
@@ -469,12 +472,15 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       createdAt: Date
       voidedAt: Date | null
       voidReason: string | null
+      needsOwnerReview: boolean
+      reviewedBy: string | null
       usedById: string | null
       usedByCode: number | null
     }[]
   >`
     select t.id, t.issue, t.cause, t.within_warranty, t.outcome, t.repaired_by, t.compensation_percent, t.note,
-           t.created_by, t.created_at, t.voided_at, t.void_reason, u.id as used_by_id, u.code as used_by_code
+           t.created_by, t.created_at, t.voided_at, t.void_reason, t.needs_owner_review, t.reviewed_by,
+           u.id as used_by_id, u.code as used_by_code
     from order_service_tickets t
     left join lateral (
       select o2.id, o2.code from orders o2
@@ -492,7 +498,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     o.reviewedBy,
     o.discountApprovedBy,
     o.adjustedBy,
-    ...tickets.flatMap((t) => [t.createdBy, t.repairedBy]),
+    ...tickets.flatMap((t) => [t.createdBy, t.repairedBy, t.reviewedBy]),
     ...content.allocs.map((a) => a.staffUserId),
     ...content.discounts.map((d) => d.appliedBy),
     ...payments.flatMap((p) => [p.recordedBy, p.voidedBy]),
@@ -562,6 +568,8 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       createdAt: new Date(t.createdAt).toISOString(),
       voided: !!t.voidedAt,
       voidReason: t.voidReason,
+      needsOwnerReview: t.needsOwnerReview && !t.reviewedBy && !t.voidedAt,
+      reviewedByName: get(t.reviewedBy),
       usedBy: t.usedById ? { id: t.usedById, codeLabel: codeLabel(t.usedByCode!) } : null,
     })),
     adjustedByName: get(o.adjustedBy),
@@ -817,7 +825,7 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
         row.status === 'awaiting_confirmation'
           ? 'Đơn đã bấm Làm xong, chỉ Nhung, Linh sửa được.'
           : row.status === 'in_progress'
-            ? 'Không có quyền sửa đơn.'
+            ? 'Chỉ người tạo đơn hoặc Nhung, Linh sửa được đơn. Báo người tạo nếu cần đổi.'
             : 'Đơn đã xác nhận hoặc đã huỷ, không sửa được.',
       )
     }
@@ -1111,6 +1119,13 @@ export async function createOrderFromAppointment(
 
 // ---------------------------------------------------------------- Danh sách (UI03)
 
+/** Đơn cần Linh xem lại: Nhung tự xác nhận/sửa đơn có phần mình (Q04, P31), hoặc có phiếu ưu đãi bù khiếu nại
+ *  do người không phải chủ lập (K15). Dùng chung cho danh sách và Tổng quan. */
+export const reviewPending = (tx: Tx) => tx`(
+  (o.needs_owner_review and o.reviewed_at is null)
+  or exists (select 1 from order_service_tickets t where t.order_id = o.id and t.needs_owner_review
+             and t.reviewed_at is null and t.voided_at is null))`
+
 export type OrderListItem = {
   id: string
   codeLabel: string
@@ -1162,12 +1177,16 @@ export async function listOrders(
     const codeQ = /^#?\d{1,6}$/.test(q) ? Number(q.replace('#', '')) : null
     const like = q && codeQ === null ? `%${escapeLike(q)}%` : null
     const staffId = input.staffId && isUuid(input.staffId) ? (readAll ? input.staffId : auth.userId) : null
+    // P41: đơn Đang làm, Chờ xác nhận, Cần xem lại xem mọi ngày, để đơn ngày cũ không bị quên (chưa vào doanh thu)
+    const allDates = filter === 'awaiting_confirmation' || filter === 'in_progress' || !!input.review
 
-    const rows = await tx<(OrderRow & { customerName: string | null; customerPhone: string | null })[]>`
-      select ${orderCols(tx)}, c.name as customer_name, c.phone as customer_phone
+    const rows = await tx<
+      (OrderRow & { customerName: string | null; customerPhone: string | null; reviewPending: boolean })[]
+    >`
+      select ${orderCols(tx)}, c.name as customer_name, c.phone as customer_phone, ${reviewPending(tx)} as review_pending
       from orders o left join customers c on c.id = o.customer_id
       where o.branch_id = ${branch.id}
-        and o.service_date between ${from}::date and ${to}::date
+        and (${allDates} or o.service_date between ${from}::date and ${to}::date)
         and case ${filter}
               when 'in_progress' then o.status = 'in_progress'
               when 'awaiting_confirmation' then o.status = 'awaiting_confirmation'
@@ -1184,7 +1203,7 @@ export async function listOrders(
               where a.order_id = o.id and a.rev = o.content_rev and a.staff_user_id = ${staffId}::uuid))
         and (${input.method ?? null}::text is null or exists (
               select 1 from payments p where p.order_id = o.id and p.voided_at is null and p.method = ${input.method ?? null}))
-        and (${!!input.review} = false or (o.needs_owner_review and o.reviewed_at is null))
+        and (${!!input.review} = false or ${reviewPending(tx)})
       order by o.service_date desc, o.created_at desc
       limit ${MAX_ROWS}`
 
@@ -1232,7 +1251,7 @@ export async function listOrders(
         paymentStatus: paymentStatus(r.netAmount, p),
         needsApproval: levelAtLeast(r.requiredLevel, 'manager') && !approvalValid(r),
         flagged: flagged.get(r.id) ?? false,
-        needsOwnerReview: r.needsOwnerReview && !r.reviewedAt,
+        needsOwnerReview: r.reviewPending,
         mine: r.createdBy === auth.userId,
       }
     })
@@ -1261,6 +1280,6 @@ export async function listOrders(
         .map(([userId, amount]) => ({ userId, name: n.get(userId) ?? '—', amount }))
         .sort((a, b) => b.amount - a.amount),
     }
-    return { items, summary, from, to, today, readAll, revenueAll }
+    return { items, summary, from, to, today, readAll, revenueAll, allDates }
   })
 }

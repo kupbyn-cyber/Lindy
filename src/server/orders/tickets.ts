@@ -72,6 +72,25 @@ export async function voidTicket(auth: Auth, ticketId: string, reason: string) {
   })
 }
 
+/** K15: Linh đánh dấu đã xem phiếu ưu đãi do người khác lập. */
+export async function markTicketReviewed(auth: Auth, ticketId: string) {
+  if (!isUuid(ticketId)) throw notFound('Không tìm thấy phiếu.')
+  return withUser(auth.userId, async (tx) => {
+    const [t] = await tx<
+      { orderId: string; branchId: string; needsOwnerReview: boolean; reviewedAt: Date | null }[]
+    >`
+      select order_id, branch_id, needs_owner_review, reviewed_at from order_service_tickets where id = ${ticketId}`
+    if (!t) throw notFound('Không tìm thấy phiếu.')
+    if (!hasPerm(auth, t.branchId, 'review_queue.read')) throw forbidden('Chỉ chủ quán đánh dấu đã xem lại.')
+    if (!t.needsOwnerReview || t.reviewedAt) throw invalid('Phiếu này không cần xem lại.')
+    await tx`update order_service_tickets set reviewed_by = ${auth.userId}, reviewed_at = now() where id = ${ticketId}`
+    await tx`
+      insert into order_audit_events (order_id, branch_id, actor_user_id, action, after_json)
+      values (${t.orderId}, ${t.branchId}, ${auth.userId}, 'ticket_reviewed', ${tx.json({ ticketId })})`
+    return detailOf(tx, auth, await loadRow(tx, t.orderId))
+  })
+}
+
 /** Ưu đãi bù khiếu nại còn dùng được của khách, để thợ áp khi lập bill sau (kể cả không xem được đơn gốc). */
 export async function customerCompensations(auth: Auth, customerId: string, excludeOrderId?: string | null) {
   if (!isUuid(customerId)) throw notFound('Không tìm thấy khách.')

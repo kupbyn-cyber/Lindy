@@ -401,7 +401,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 - Phiếu xử lý, sửa đơn đã xác nhận gộp vào migration `0009_orders` (chưa đẩy đi đâu); thêm `0010_catalog_manage`. DB dev dựng lại một lần nữa bằng dữ liệu mẫu.
 - Báo cáo tính bằng truy vấn trực tiếp, không cần view riêng.
 
-## 17. Phản biện sau khi làm (13/10/2026) — chưa sửa, chờ chủ chọn
+## 17. Phản biện sau khi làm (13/10/2026) — P38–P41 đã sửa, P42–P45 chưa
 
 | Điểm | Mức | Vấn đề | Đề xuất |
 |---|---|---|---|
@@ -413,3 +413,14 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 | P43 | ⚪ | Chưa có test ngẫu nhiên so mức duyệt tính ở TypeScript với SQL (chỉ có test theo ca); lệch thì lưu đơn báo "Mức duyệt không khớp" | Cần kiểm tra thêm: thêm test sinh đơn ngẫu nhiên chạy qua DB |
 | P44 | ⚪ | `app_user` tự thêm được dòng lịch sử đơn dưới tên mình cho đơn mình thấy (chỉ qua SQL trực tiếp) | Chuyển ghi lịch sử vào hàm/trigger, bỏ quyền INSERT trực tiếp |
 | P45 | ⚪ | Hai người cùng thêm dịch vụ mới một lúc có thể trùng mã `DVxxx` → lỗi chung "Dữ liệu đã tồn tại"; bấm lại là được | Khoá khi sinh mã hoặc thử lại tự động |
+
+### Đã sửa P38–P41 (13/10/2026)
+
+| Điểm | Cách sửa | Kiểm |
+|---|---|---|
+| P38 | Mỗi người mở tối đa 60 hồ sơ có SĐT đầy đủ khác nhau trong 10 phút (hồ sơ khách, chi tiết lịch, chi tiết đơn; mở lại cùng hồ sơ không tính thêm) → 429. Mỗi lần xem hồ sơ khách có SĐT ghi `audit_logs` (`customer.phone_viewed`) | `tests/security/phan-bien-dot2.test.ts` |
+| P39 | K14: đơn Đang làm chỉ người tạo và Nhung, Linh sửa; thợ được chia phần chỉ xem (vẫn bấm Làm xong). Chặn ở `orders_guard` và `policy.ts`; màn xem hiện lý do | Test API + SQL; thử giao diện bằng Trang |
+| P40 | K15: phiếu ưu đãi bù khiếu nại do người không có `review_queue.read` lập → `needs_owner_review`; đơn gốc hiện trong Cần xem lại, Linh bấm "Đã xem" trên phiếu; chỉ Linh đánh dấu được (DB chặn) | Test service + SQL; Tổng quan đếm đúng |
+| P41 | Lọc Đang làm, Chờ xác nhận, Cần xem lại xem mọi ngày (dòng hiện ngày làm); Tổng quan đếm đơn chờ xác nhận, cần xem lại ở mọi ngày | Test đơn chờ 45 ngày trước; thử giao diện |
+
+P42–P45 (mức thấp) chưa sửa.

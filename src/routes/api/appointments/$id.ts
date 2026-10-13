@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { UpdateBody } from '~/server/appointments/schema'
 import { getAppointment, updateAppointment } from '~/server/appointments/service'
 import { requireAuth } from '~/server/auth/context'
-import { handle, limitWrites, readBody } from '~/server/http/route'
+import { handle, limitSensitiveReads, limitWrites, readBody } from '~/server/http/route'
 
 export const Route = createFileRoute('/api/appointments/$id')({
   server: {
@@ -12,6 +12,7 @@ export const Route = createFileRoute('/api/appointments/$id')({
       GET: ({ request, params }) =>
         handle(request, async () => {
           const auth = await requireAuth(request)
+          limitSensitiveReads(auth.userId, `appointment:${params.id}`) // có SĐT đầy đủ [P38]
           return Response.json(await getAppointment(auth, params.id))
         }),
       PATCH: ({ request, params }) =>

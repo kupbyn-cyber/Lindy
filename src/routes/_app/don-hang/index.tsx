@@ -44,9 +44,11 @@ function OrdersPage() {
   const review = !!search.xl
   const list = useOrders(
     review
-      ? { from: addDays(today, -31), to: today, filter: 'all', review: true }
+      ? { from: today, to: today, filter: 'all', review: true }
       : { from: date, to: date, filter, q: qd || undefined },
   )
+  // P41: Đang làm, Chờ xác nhận, Cần xem lại xem mọi ngày (server bỏ lọc ngày)
+  const allDates = review || filter === 'in_progress' || filter === 'awaiting_confirmation'
   const go = (patch: Partial<Search>) =>
     navigate({ search: (prev: Search) => ({ ...prev, ...patch }), replace: true })
   const dayChoice = date === today ? 'today' : date === addDays(today, -1) ? 'yesterday' : 'other'
@@ -106,7 +108,8 @@ function OrdersPage() {
       {review ? (
         <div className="px-4">
           <Note>
-            Đơn Nhung tự xác nhận có phần của mình, 31 ngày gần nhất. Mở đơn rồi bấm “Đã xem lại”.{' '}
+            Đơn Nhung tự xác nhận hoặc sửa có phần của mình, đơn có phiếu ưu đãi do Nhung lập (mọi ngày). Mở
+            đơn rồi bấm “Đã xem lại” hoặc “Đã xem” trên phiếu.{' '}
             <button
               type="button"
               className="border-0 bg-transparent p-0 text-accent underline"
@@ -118,7 +121,13 @@ function OrdersPage() {
         </div>
       ) : null}
 
-      {s && !review ? (
+      {allDates && !review ? (
+        <div className="px-4">
+          <Note>Đang xem mọi ngày, mới nhất trước. Đơn chưa xác nhận thì chưa vào doanh thu.</Note>
+        </div>
+      ) : null}
+
+      {s && !allDates ? (
         <div className="mx-4 lo-card flex flex-col gap-1">
           <span className="overline text-ink-muted">
             {date === today ? 'Hôm nay' : formatIsoDate(date)} · {s.orderCount} đơn đã xác nhận
@@ -153,7 +162,7 @@ function OrdersPage() {
           <p className="body m-0 px-4 py-3 text-ink-muted">Không có đơn nào.</p>
         ) : null}
         {list.data?.items.map((o) => (
-          <OrderRow key={o.id} o={o} />
+          <OrderRow key={o.id} o={o} showDate={allDates} />
         ))}
       </div>
     </section>
@@ -170,7 +179,7 @@ function Row(props: { label: string; value: number; strong?: boolean }) {
 }
 
 /** Một dòng đơn (design OrderRow): mã, khách, giờ, thợ bên trái; tiền, trạng thái bên phải. */
-export function OrderRow(props: { o: OrderListItem }) {
+export function OrderRow(props: { o: OrderListItem; showDate?: boolean }) {
   const o = props.o
   const chip =
     o.status === 'confirmed' ? (
@@ -185,6 +194,7 @@ export function OrderRow(props: { o: OrderListItem }) {
           <span className="label text-ink-muted">{o.codeLabel}</span> {o.customerName ?? 'Khách lẻ'}
         </span>
         <span className="lo-row-meta caption">
+          {props.showDate ? `${formatIsoDate(o.serviceDate).slice(0, 5)} ` : ''}
           {o.createdTime}
           {o.staffNames.length ? ` · ${o.staffNames.join(', ')}` : ''}
           {o.needsApproval ? ' · giảm chờ duyệt' : ''}

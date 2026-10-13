@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '~/server/auth/context'
 import { UpdateCustomerBody } from '~/server/customers/schema'
 import { getCustomer, updateCustomer } from '~/server/customers/service'
-import { handle, limitWrites, readBody } from '~/server/http/route'
+import { handle, limitSensitiveReads, limitWrites, readBody } from '~/server/http/route'
 
 export const Route = createFileRoute('/api/customers/$id')({
   server: {
@@ -12,6 +12,7 @@ export const Route = createFileRoute('/api/customers/$id')({
       GET: ({ request, params }) =>
         handle(request, async () => {
           const auth = await requireAuth(request)
+          limitSensitiveReads(auth.userId, `customer:${params.id}`) // có SĐT đầy đủ [P38]
           return Response.json(await getCustomer(auth, params.id))
         }),
       PUT: ({ request, params }) =>
