@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 5 — Hoàn thiện
 
-**Ngày:** 13/10/2026 · **Trạng thái:** CHỜ DUYỆT. Chưa viết code. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** CHỜ DUYỆT. Chưa viết code. Q-K, Q-L, Q-M đã chốt 13/10/2026 theo phương án (a) → K23, K24, K25. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (D14, Q40, Q42, K20–K22); PRD v1.2 §1 (điểm đích), §4 (`profit.read`, `payroll.export_all_branch`), §7.1 (lợi nhuận tạm tính), §11, §15, §16, §17, §18 (test 19, 27, 29), §19.6; PRD v1.1 §15, §16 (chi tiết nhập dữ liệu cũ); kế hoạch Đợt 2–4 (phần dời sang Đợt 5).
 
 Ký hiệu `[Pn]`: điểm phản biện ở mục 11 (nối tiếp P76). `Sn`: test bảo mật ở mục 10.2 (nối tiếp S62).
@@ -106,7 +106,7 @@ Chặn bước 5.4.
 ### 7.1. `0018_reports` (5A)
 
 - `month_report_snapshots`: `branch_id`, `month`, `figures` (jsonb: doanh thu gộp, giảm, hoàn, thuần, số đơn, theo thợ, cọc bỏ hẹn), `created_by`, `created_at`. Khoá chính `(branch_id, month)`; chỉ thêm. `app.payroll_lock` ghi bản chụp trong cùng giao dịch (theo Q-L).
-- Quyền mới `data.export` (Linh; theo Q-M có thể thêm Nhung một phần).
+- Quyền mới `data.export` (chỉ Linh, K25).
 - `app.backup_dump()` (`SECURITY DEFINER`, chỉ người có `data.export` ở mọi cơ sở): trả JSON từng bảng nghiệp vụ; bỏ `user_credentials`, `sessions`, `login_attempts`, đăng ký push, hàng đợi gửi push. Ghi audit.
 
 ### 7.2. `0019_legacy` (5B, chốt sau khi có file mẫu)
@@ -118,7 +118,7 @@ Chặn bước 5.4.
 | Quyền | Linh | Nhung | Chin | Thợ |
 |---|---|---|---|---|
 | `profit.read` (có sẵn) — lợi nhuận ước tính | Có | Không | Không | Không |
-| `data.export` (mới) — tải file báo cáo, đơn hàng, sổ tiền, thu chi, khách hàng; bản sao lưu | Có | Theo Q-M | Không | Không |
+| `data.export` (mới) — tải file báo cáo, đơn hàng, sổ tiền, thu chi, khách hàng; bản sao lưu | Có | Không (K25) | Không | Không |
 | `payroll.export_all_branch` (có sẵn) — tải bảng lương toàn quán | Có | Không | Không | Không |
 | `legacy.import` (mới, 5B) — nhập dữ liệu cũ | Có | Không | Không | Không |
 
@@ -130,7 +130,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 ### 5A — Báo cáo, xuất dữ liệu, sao lưu
 
-- [ ] **5.1 Chốt Q-K, Q-L, Q-M.** Ghi vào `DECISIONS.md` (K23–K25).
+- [x] **5.1 Chốt Q-K, Q-L, Q-M.** Ghi vào `DECISIONS.md` (K23–K25).
 - [ ] **5.2 Lợi nhuận ước tính.** Báo cáo tháng có khối "Lợi nhuận ước tính" (Linh): doanh thu, cọc bỏ hẹn, chi vận hành theo nhóm, chi nhân sự, lương, kết quả; các khoản không tính hiện riêng. Tổng quan (Linh, xem Tháng): "Lãi/lỗ tạm tính tháng".
   *Kiểm tra:* tháng mẫu khớp tính tay; Nhung, thợ gọi API → không có trường lợi nhuận (test 27); tháng trước tháng bắt đầu tính lương dùng phiếu chi nhóm Lương.
 - [ ] **5.3 Báo cáo đã chốt.** Migration `0018_reports` phần bản chụp; khoá lương ghi bản chụp; báo cáo tháng hiện số đã chốt và "phát sinh sau khi chốt" (theo Q-L).
@@ -166,7 +166,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 | Mã | Tình huống | Kết quả bắt buộc |
 |---|---|---|
 | S63 | Thợ, Chin tải bất kỳ file nào | 403 |
-| S64 | Nhung tải bảng lương, khách hàng, lợi nhuận | 403 (theo Q-M, các loại khác) |
+| S64 | Nhung tải bất kỳ file nào (K25) | 403 |
 | S65 | Bản sao lưu chứa mật khẩu, mã phiên, khoá push | Không có |
 | S66 | Nhung, thợ gọi thẳng hàm sao lưu (SQL) | Lỗi quyền |
 | S67 | Sửa, xoá bản chụp báo cáo | Lỗi DB |

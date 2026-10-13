@@ -172,3 +172,13 @@ Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-4-cong-luong.md
 | **K20** | Ngày chưa duyệt công khi khoá lương (Q-F) | Trong tháng, ngày chưa duyệt **tạm coi như đi làm** (lương tạm tính không bị trừ, test 23). **Khoá bảng lương chỉ được khi mọi ngày đã duyệt** (đi làm / nghỉ có phép / nghỉ không phép). | Bảng lương và hộp xác nhận khoá hiện số ngày chưa duyệt; DB chặn khoá khi còn ngày chưa duyệt. |
 | **K21** | Hạn mức tạm ứng (Q-G) | **Tổng các lần ứng trong một tháng ≤ lương cứng** của người đó (A05). | Đề nghị đang chờ, đã duyệt, đã chi đều tính vào tổng; bị từ chối, đã huỷ thì không. Kiểm ở API và constraint DB. |
 | **K22** | Tạm ứng nhiều hơn lương của tháng (Q-H) | Khi khoá, phần âm **tự chuyển thành khoản trừ vào lương tháng sau**, ghi tháng gốc; phiếu lương tháng này còn lại 0đ. | Khoản trừ loại "chuyển từ tháng trước", không sửa tay được. |
+
+## K23–K25 — Hoàn thiện, trước Đợt 5 (13/10/2026, anh chốt)
+
+Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-5-hoan-thien.md`.
+
+| Mã | Chủ đề | Đã chốt | Áp dụng trong app |
+|---|---|---|---|
+| **K23** | Lợi nhuận ước tính (Q-K) | **Chỉ khoản kinh doanh:** doanh thu thuần (sau giảm giá, hoàn) + doanh thu cọc bỏ hẹn − chi vận hành đã chi − chi nhân sự ngoài bảng lương đã chi − lương phải trả của tháng. Thu khác, góp/rút vốn, tạm ứng, tip giữ hộ, chênh lệch quỹ, điều chỉnh **hiện riêng, không cộng vào**. | Chỉ Linh (`profit.read`) thấy; Nhung, thợ không nhận trường lợi nhuận (test 27). |
+| **K24** | Báo cáo đã chốt không bị đổi ngược (Q-L) | Khi Linh **khoá bảng lương** tháng, app **chụp lại số báo cáo tháng**. Báo cáo tháng đó hiện số đã chốt, kèm dòng riêng **"phát sinh sau khi chốt"** (đơn xác nhận muộn, sửa đơn). | Bản chụp ghi trong cùng giao dịch khoá lương; chỉ thêm, không sửa, không xoá. |
+| **K25** | Ai tải file xuất (Q-M) | **Chỉ Linh** tải file (báo cáo tháng, đơn hàng, sổ tiền, thu chi, khách hàng, bảng lương, bản sao lưu). Nhung xem trên app, không tải. | Quyền `data.export` chỉ gán vai trò chủ; mỗi lần tải ghi audit. |
