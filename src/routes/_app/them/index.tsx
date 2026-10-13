@@ -49,6 +49,9 @@ function MorePage() {
         {can('users.manage') ? (
           <Row to="/them/tai-khoan" label="Tài khoản" hint="Tạo tài khoản, mật khẩu, vai trò, khoá" />
         ) : null}
+        {can('money_accounts.read_balance') ? (
+          <Row to="/them/so-tien" label="Sổ tiền" hint="Số dư Tiền mặt, Tài khoản; tiền vào, tiền ra" />
+        ) : null}
         {can('revenue.read_branch') ? (
           <Row to="/them/bao-cao" label="Báo cáo doanh thu" hint="Theo ngày, tháng, thợ, dịch vụ" />
         ) : null}

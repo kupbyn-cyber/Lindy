@@ -31,6 +31,7 @@ import { Route as AppThemBaoCaoRouteImport } from './routes/_app/them/bao-cao'
 import { Route as AppThemCaiDatLichRouteImport } from './routes/_app/them/cai-dat-lich'
 import { Route as AppThemDanhMucRouteImport } from './routes/_app/them/danh-muc'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
+import { Route as AppThemSoTienRouteImport } from './routes/_app/them/so-tien'
 import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoan'
 import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
 import { Route as ApiAccountsIndexRouteImport } from './routes/api/accounts/index'
@@ -45,6 +46,9 @@ import { Route as ApiCatalogIndexRouteImport } from './routes/api/catalog/index'
 import { Route as ApiCatalogKindRouteImport } from './routes/api/catalog/$kind'
 import { Route as ApiCustomersIndexRouteImport } from './routes/api/customers/index'
 import { Route as ApiCustomersIdRouteImport } from './routes/api/customers/$id'
+import { Route as ApiMoneyIndexRouteImport } from './routes/api/money/index'
+import { Route as ApiMoneyEntriesRouteImport } from './routes/api/money/entries'
+import { Route as ApiMoneyOpenRouteImport } from './routes/api/money/open'
 import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
 import { Route as ApiNotificationsPreferencesRouteImport } from './routes/api/notifications/preferences'
 import { Route as ApiNotificationsUnreadCountRouteImport } from './routes/api/notifications/unread-count'
@@ -173,6 +177,11 @@ const AppThemDoiMatKhauRoute = AppThemDoiMatKhauRouteImport.update({
   path: '/them/doi-mat-khau',
   getParentRoute: () => AppRoute,
 } as any)
+const AppThemSoTienRoute = AppThemSoTienRouteImport.update({
+  id: '/them/so-tien',
+  path: '/them/so-tien',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppThemTaiKhoanRoute = AppThemTaiKhoanRouteImport.update({
   id: '/them/tai-khoan',
   path: '/them/tai-khoan',
@@ -242,6 +251,21 @@ const ApiCustomersIndexRoute = ApiCustomersIndexRouteImport.update({
 const ApiCustomersIdRoute = ApiCustomersIdRouteImport.update({
   id: '/api/customers/$id',
   path: '/api/customers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMoneyIndexRoute = ApiMoneyIndexRouteImport.update({
+  id: '/api/money/',
+  path: '/api/money/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMoneyEntriesRoute = ApiMoneyEntriesRouteImport.update({
+  id: '/api/money/entries',
+  path: '/api/money/entries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMoneyOpenRoute = ApiMoneyOpenRouteImport.update({
+  id: '/api/money/open',
+  path: '/api/money/open',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiNotificationsIndexRoute = ApiNotificationsIndexRouteImport.update({
@@ -356,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -366,6 +391,8 @@ export interface FileRoutesByFullPath {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/money/entries': typeof ApiMoneyEntriesRoute
+  '/api/money/open': typeof ApiMoneyOpenRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
@@ -381,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
+  '/api/money/': typeof ApiMoneyIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
@@ -411,6 +439,7 @@ export interface FileRoutesByTo {
   '/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -421,6 +450,8 @@ export interface FileRoutesByTo {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/money/entries': typeof ApiMoneyEntriesRoute
+  '/api/money/open': typeof ApiMoneyOpenRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
@@ -436,6 +467,7 @@ export interface FileRoutesByTo {
   '/api/appointments': typeof ApiAppointmentsIndexRoute
   '/api/catalog': typeof ApiCatalogIndexRoute
   '/api/customers': typeof ApiCustomersIndexRoute
+  '/api/money': typeof ApiMoneyIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
   '/api/orders': typeof ApiOrdersIndexRoute
   '/api/staff': typeof ApiStaffIndexRoute
@@ -468,6 +500,7 @@ export interface FileRoutesById {
   '/_app/them/cai-dat-lich': typeof AppThemCaiDatLichRoute
   '/_app/them/danh-muc': typeof AppThemDanhMucRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/_app/them/so-tien': typeof AppThemSoTienRoute
   '/_app/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/_app/them/thong-bao': typeof AppThemThongBaoRoute
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
@@ -478,6 +511,8 @@ export interface FileRoutesById {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/money/entries': typeof ApiMoneyEntriesRoute
+  '/api/money/open': typeof ApiMoneyOpenRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
@@ -493,6 +528,7 @@ export interface FileRoutesById {
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
+  '/api/money/': typeof ApiMoneyIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
@@ -525,6 +561,7 @@ export interface FileRouteTypes {
     | '/them/cai-dat-lich'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
+    | '/them/so-tien'
     | '/them/tai-khoan'
     | '/them/thong-bao'
     | '/api/appointments/$id'
@@ -535,6 +572,8 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/money/entries'
+    | '/api/money/open'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/orders/$id'
@@ -550,6 +589,7 @@ export interface FileRouteTypes {
     | '/api/appointments/'
     | '/api/catalog/'
     | '/api/customers/'
+    | '/api/money/'
     | '/api/notifications/'
     | '/api/orders/'
     | '/api/staff/'
@@ -580,6 +620,7 @@ export interface FileRouteTypes {
     | '/them/cai-dat-lich'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
+    | '/them/so-tien'
     | '/them/tai-khoan'
     | '/them/thong-bao'
     | '/api/appointments/$id'
@@ -590,6 +631,8 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/money/entries'
+    | '/api/money/open'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/orders/$id'
@@ -605,6 +648,7 @@ export interface FileRouteTypes {
     | '/api/appointments'
     | '/api/catalog'
     | '/api/customers'
+    | '/api/money'
     | '/api/notifications'
     | '/api/orders'
     | '/api/staff'
@@ -636,6 +680,7 @@ export interface FileRouteTypes {
     | '/_app/them/cai-dat-lich'
     | '/_app/them/danh-muc'
     | '/_app/them/doi-mat-khau'
+    | '/_app/them/so-tien'
     | '/_app/them/tai-khoan'
     | '/_app/them/thong-bao'
     | '/api/appointments/$id'
@@ -646,6 +691,8 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/money/entries'
+    | '/api/money/open'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/orders/$id'
@@ -661,6 +708,7 @@ export interface FileRouteTypes {
     | '/api/appointments/'
     | '/api/catalog/'
     | '/api/customers/'
+    | '/api/money/'
     | '/api/notifications/'
     | '/api/orders/'
     | '/api/staff/'
@@ -691,6 +739,8 @@ export interface RootRouteChildren {
   ApiAuthPasswordRoute: typeof ApiAuthPasswordRoute
   ApiCatalogKindRoute: typeof ApiCatalogKindRoute
   ApiCustomersIdRoute: typeof ApiCustomersIdRouteWithChildren
+  ApiMoneyEntriesRoute: typeof ApiMoneyEntriesRoute
+  ApiMoneyOpenRoute: typeof ApiMoneyOpenRoute
   ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
   ApiNotificationsUnreadCountRoute: typeof ApiNotificationsUnreadCountRoute
   ApiOrdersIdRoute: typeof ApiOrdersIdRouteWithChildren
@@ -702,6 +752,7 @@ export interface RootRouteChildren {
   ApiAppointmentsIndexRoute: typeof ApiAppointmentsIndexRoute
   ApiCatalogIndexRoute: typeof ApiCatalogIndexRoute
   ApiCustomersIndexRoute: typeof ApiCustomersIndexRoute
+  ApiMoneyIndexRoute: typeof ApiMoneyIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   ApiOrdersIndexRoute: typeof ApiOrdersIndexRoute
   ApiStaffIndexRoute: typeof ApiStaffIndexRoute
@@ -867,6 +918,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppThemDoiMatKhauRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/them/so-tien': {
+      id: '/_app/them/so-tien'
+      path: '/them/so-tien'
+      fullPath: '/them/so-tien'
+      preLoaderRoute: typeof AppThemSoTienRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/them/tai-khoan': {
       id: '/_app/them/tai-khoan'
       path: '/them/tai-khoan'
@@ -963,6 +1021,27 @@ declare module '@tanstack/react-router' {
       path: '/api/customers/$id'
       fullPath: '/api/customers/$id'
       preLoaderRoute: typeof ApiCustomersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/money/': {
+      id: '/api/money/'
+      path: '/api/money'
+      fullPath: '/api/money/'
+      preLoaderRoute: typeof ApiMoneyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/money/entries': {
+      id: '/api/money/entries'
+      path: '/api/money/entries'
+      fullPath: '/api/money/entries'
+      preLoaderRoute: typeof ApiMoneyEntriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/money/open': {
+      id: '/api/money/open'
+      path: '/api/money/open'
+      fullPath: '/api/money/open'
+      preLoaderRoute: typeof ApiMoneyOpenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/notifications/': {
@@ -1105,6 +1184,7 @@ interface AppRouteChildren {
   AppThemCaiDatLichRoute: typeof AppThemCaiDatLichRoute
   AppThemDanhMucRoute: typeof AppThemDanhMucRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
+  AppThemSoTienRoute: typeof AppThemSoTienRoute
   AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
   AppThemThongBaoRoute: typeof AppThemThongBaoRoute
   AppDonHangIndexRoute: typeof AppDonHangIndexRoute
@@ -1124,6 +1204,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppThemCaiDatLichRoute: AppThemCaiDatLichRoute,
   AppThemDanhMucRoute: AppThemDanhMucRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
+  AppThemSoTienRoute: AppThemSoTienRoute,
   AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
   AppThemThongBaoRoute: AppThemThongBaoRoute,
   AppDonHangIndexRoute: AppDonHangIndexRoute,
@@ -1197,6 +1278,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthPasswordRoute: ApiAuthPasswordRoute,
   ApiCatalogKindRoute: ApiCatalogKindRoute,
   ApiCustomersIdRoute: ApiCustomersIdRouteWithChildren,
+  ApiMoneyEntriesRoute: ApiMoneyEntriesRoute,
+  ApiMoneyOpenRoute: ApiMoneyOpenRoute,
   ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
   ApiNotificationsUnreadCountRoute: ApiNotificationsUnreadCountRoute,
   ApiOrdersIdRoute: ApiOrdersIdRouteWithChildren,
@@ -1208,6 +1291,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAppointmentsIndexRoute: ApiAppointmentsIndexRoute,
   ApiCatalogIndexRoute: ApiCatalogIndexRoute,
   ApiCustomersIndexRoute: ApiCustomersIndexRoute,
+  ApiMoneyIndexRoute: ApiMoneyIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   ApiOrdersIndexRoute: ApiOrdersIndexRoute,
   ApiStaffIndexRoute: ApiStaffIndexRoute,

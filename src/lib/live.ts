@@ -17,6 +17,7 @@ export function useLiveEvents(branchId: string | null) {
     const refreshAll = () => {
       void qc.invalidateQueries({ queryKey: ['appointments'] })
       void qc.invalidateQueries({ queryKey: ['orders'] })
+      void qc.invalidateQueries({ queryKey: ['money'] })
       void qc.invalidateQueries({ queryKey: ['notifications'] })
     }
 
@@ -33,6 +34,11 @@ export function useLiveEvents(branchId: string | null) {
       es.addEventListener('orders', () => {
         void qc.invalidateQueries({ queryKey: ['orders'] })
         void qc.invalidateQueries({ queryKey: ['appointments'] })
+      })
+      // Tiền đổi (khoản thu, cọc, phiếu chi…): số dư, sổ, Tổng quan
+      es.addEventListener('money', () => {
+        void qc.invalidateQueries({ queryKey: ['money'] })
+        void qc.invalidateQueries({ queryKey: ['orders'] })
       })
       es.addEventListener('notifications', () => void qc.invalidateQueries({ queryKey: ['notifications'] }))
       es.onerror = () => {

@@ -1,0 +1,21 @@
+// Tên hiển thị các loại bút toán của sổ tiền (khớp CHECK money_ledger_entry_type_check, migration 0011).
+export const LEDGER_LABEL: Record<string, string> = {
+  opening: 'Số dư mở sổ',
+  payment: 'Thu đơn',
+  payment_void: 'Huỷ khoản thu đơn',
+  deposit_in: 'Nhận cọc',
+  deposit_in_void: 'Huỷ xác nhận cọc',
+  deposit_refund: 'Hoàn cọc',
+  tip_in: 'Tip giữ hộ',
+  tip_in_void: 'Huỷ tip',
+  tip_payout: 'Trả tip',
+  expense: 'Chi',
+  other_income: 'Thu khác',
+  capital_in: 'Góp vốn',
+  capital_out: 'Rút vốn',
+  transfer_out: 'Chuyển đi',
+  transfer_in: 'Chuyển đến',
+  refund: 'Hoàn tiền đơn',
+  cash_count_diff: 'Chênh lệch kiểm quỹ',
+  adjustment: 'Điều chỉnh',
+}

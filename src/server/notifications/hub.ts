@@ -15,6 +15,7 @@ type Client = {
   sessionId: string
   token: string
   branchIds: Set<string>
+  moneyBranchIds: Set<string>
   openedAt: number
   send: (event: string, data: unknown) => void
   close: () => void
@@ -34,14 +35,25 @@ const state: HubState = g.__lindyHub
 type LiveMessage =
   | { kind: 'appointments'; branchId: string; dates?: string[] }
   | { kind: 'orders'; branchId: string; dates?: string[] }
+  | { kind: 'money'; branchId: string }
   | { kind: 'notifications'; branchId?: string; userIds: string[] }
   | { kind: 'sessions_revoked'; sessionIds: string[]; userIds: string[] }
+
+/** Cơ sở mà phiên được nhận sự kiện: lịch, đơn (xem lịch chung); tiền (xem số dư, Linh, Nhung) [S33]. */
+export function liveScopes(branches: { id: string; perms: string[] }[]) {
+  return {
+    branchIds: branches.filter((b) => b.perms.includes('appointments.read_branch')).map((b) => b.id),
+    moneyBranchIds: branches.filter((b) => b.perms.includes('money_accounts.read_balance')).map((b) => b.id),
+  }
+}
 
 export function dispatch(msg: LiveMessage) {
   for (const c of state.clients.values()) {
     if (msg.kind === 'appointments' || msg.kind === 'orders') {
       // Chỉ báo "có thay đổi" (loại, cơ sở, ngày); máy tải lại qua API, server lọc theo K09.
       if (c.branchIds.has(msg.branchId)) c.send(msg.kind, { branchId: msg.branchId, dates: msg.dates ?? [] })
+    } else if (msg.kind === 'money') {
+      if (c.moneyBranchIds.has(msg.branchId)) c.send('money', { branchId: msg.branchId })
     } else if (msg.kind === 'notifications') {
       if (msg.userIds.includes(c.userId)) c.send('notifications', {})
     } else if (msg.kind === 'sessions_revoked') {
@@ -79,10 +91,11 @@ async function recheckAll() {
     try {
       const s = await loadSession(c.token)
       if (!s || s.sessionId !== c.sessionId) c.close()
-      else
-        c.branchIds = new Set(
-          s.branches.filter((b) => b.perms.includes('appointments.read_branch')).map((b) => b.id),
-        )
+      else {
+        const scopes = liveScopes(s.branches)
+        c.branchIds = new Set(scopes.branchIds)
+        c.moneyBranchIds = new Set(scopes.moneyBranchIds)
+      }
     } catch {
       // lỗi DB tạm thời — giữ kết nối, lần sau kiểm lại
     }
@@ -99,6 +112,7 @@ export async function openStream(input: {
   userId: string
   sessionId: string
   branchIds: string[]
+  moneyBranchIds?: string[]
   signal?: AbortSignal
 }): Promise<ReadableStream<Uint8Array>> {
   await ensureListening()
@@ -137,6 +151,7 @@ export async function openStream(input: {
         sessionId: input.sessionId,
         token: input.token,
         branchIds: new Set(input.branchIds),
+        moneyBranchIds: new Set(input.moneyBranchIds ?? []),
         openedAt: Date.now(),
         send: (event, data) => write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
         close: cleanup,
