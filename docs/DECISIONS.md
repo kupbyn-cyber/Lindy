@@ -162,3 +162,13 @@ Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-3-so-tien-coc.m
 | Mã | Chủ đề | Đã chốt | Áp dụng trong app |
 |---|---|---|---|
 | **K19** | Ảnh chứng từ làm DB phình (P61) | **Giữ như hiện tại, không thêm hạn mức ảnh mỗi ngày.** Dung lượng do Vibe Host Mắt Bão xử lý. | Giữ giới hạn sẵn có: tối đa 3 ảnh mỗi phiếu, mỗi ảnh ≤ 1MB, app thu nhỏ ảnh trước khi gửi. |
+
+## K20–K22 — Công và lương, trước Đợt 4 (13/10/2026, anh chốt)
+
+Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-4-cong-luong.md`.
+
+| Mã | Chủ đề | Đã chốt | Áp dụng trong app |
+|---|---|---|---|
+| **K20** | Ngày chưa duyệt công khi khoá lương (Q-F) | Trong tháng, ngày chưa duyệt **tạm coi như đi làm** (lương tạm tính không bị trừ, test 23). **Khoá bảng lương chỉ được khi mọi ngày đã duyệt** (đi làm / nghỉ có phép / nghỉ không phép). | Bảng lương và hộp xác nhận khoá hiện số ngày chưa duyệt; DB chặn khoá khi còn ngày chưa duyệt. |
+| **K21** | Hạn mức tạm ứng (Q-G) | **Tổng các lần ứng trong một tháng ≤ lương cứng** của người đó (A05). | Đề nghị đang chờ, đã duyệt, đã chi đều tính vào tổng; bị từ chối, đã huỷ thì không. Kiểm ở API và constraint DB. |
+| **K22** | Tạm ứng nhiều hơn lương của tháng (Q-H) | Khi khoá, phần âm **tự chuyển thành khoản trừ vào lương tháng sau**, ghi tháng gốc; phiếu lương tháng này còn lại 0đ. | Khoản trừ loại "chuyển từ tháng trước", không sửa tay được. |
