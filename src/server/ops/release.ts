@@ -231,6 +231,30 @@ export function classifyReleaseError(e: unknown): ReleaseProblem {
   }
 }
 
+function base64urlBytes(v: string) {
+  return /^[A-Za-z0-9_-]+$/.test(v) ? Buffer.from(v, 'base64url').length : -1
+}
+
+/** Tên các biến có giá trị sai dạng (dán thiếu ký tự…), không kèm giá trị. */
+export function badEnvNames(get: (name: string) => string | undefined) {
+  const bad: string[] = []
+  const pub = get('VAPID_PUBLIC_KEY')
+  if (pub && base64urlBytes(pub) !== 65) bad.push('VAPID_PUBLIC_KEY')
+  const priv = get('VAPID_PRIVATE_KEY')
+  if (priv && base64urlBytes(priv) !== 32) bad.push('VAPID_PRIVATE_KEY')
+  const subject = get('VAPID_SUBJECT')
+  if (subject && !/^(mailto:[^@\s]+@[^@\s]+|https:\/\/\S+)$/.test(subject)) bad.push('VAPID_SUBJECT')
+  const origin = get('APP_ORIGIN')
+  if (origin) {
+    try {
+      if (new URL(origin).origin !== origin) bad.push('APP_ORIGIN')
+    } catch {
+      bad.push('APP_ORIGIN')
+    }
+  }
+  return bad
+}
+
 /** Trạng thái để /api/health hiển thị (không có giá trị bí mật). */
 export function releaseStatus() {
   const required = ['LINDY_APP_PASSWORD', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'APP_ORIGIN']
@@ -242,6 +266,7 @@ export function releaseStatus() {
     // false: DB chưa có tài khoản nào → đặt INITIAL_OWNER_NAME, _PHONE, _PASSWORD rồi khởi động lại.
     hasAccounts: state.hasAccounts,
     missingEnv,
+    badEnv: badEnvNames(env),
     // Tên biến đã lấy chuỗi kết nối quản trị (không có giá trị).
     dbUrlFrom: state.admin?.source ?? null,
   }

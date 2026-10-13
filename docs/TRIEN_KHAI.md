@@ -10,7 +10,7 @@ Cập nhật 13/10/2026. Trước đó dùng Vibe Hosting Nhân Hòa (T02); các
 | Địa chỉ app | Tên miền Vibe Host cấp, dạng `https://<tên>.n2.tinhgon.xyz` (SSL tự cấp) |
 | Mã nguồn | GitHub `kupbyn-cyber/Lindy` (riêng tư), nhánh `main`, nguồn **Git URL** + mã truy cập GitHub |
 | Build | `vite build`; chạy `npm start` = `node .output/server/index.mjs`, cổng `PORT` (mặc định **3000**) |
-| Database | PostgreSQL của Vibe Host, chỉ có địa chỉ nội bộ |
+| Database | PostgreSQL của Vibe Host `linhdy-db`, chỉ có địa chỉ nội bộ. **Gắn vào website** ở trang DB → Website sử dụng → chọn Lindy: Vibe Host tự đặt `DATABASE_URL` và sao lưu cả dữ liệu. Không gắn thì lúc dựng nó cố tạo DB mới và hỏng vì gói Starter chỉ có 2 dịch vụ. |
 
 ## Khi app khởi động
 
@@ -53,6 +53,7 @@ Mở `https://<địa chỉ app>/api/health`:
 - `"ready": true` → đã chuẩn bị DB xong.
 - `"dbUrlFrom"` → tên biến app đã lấy chuỗi kết nối quản trị.
 - `"missingEnv": [...]` → tên biến còn thiếu hoặc gõ sai tên.
+- `"badEnv": [...]` → biến có giá trị sai dạng (khoá VAPID dán thiếu ký tự, `APP_ORIGIN` có `/` cuối, `VAPID_SUBJECT` không phải `mailto:`…). Dán lại từ `.local/prod-env.txt`.
 - `"problem": {"code": ...}` → bước bị vướng: `missing_LINDY_APP_PASSWORD`, `bad_admin_url`, `db_host_not_found`, `db_auth_failed`, `cannot_create_role`, `bad_INITIAL_OWNER_PASSWORD`…
 - `"hasAccounts": false` → DB chưa có tài khoản nào: đặt `INITIAL_OWNER_*` rồi triển khai lại.
 

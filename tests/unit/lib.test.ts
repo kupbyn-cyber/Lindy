@@ -6,7 +6,35 @@ import { normalizePhone } from '../../src/lib/phone'
 import { escapeLike, foldVietnamese } from '../../src/lib/text'
 import { addDays, fromLocal, startOfWeek, toLocalDate, toLocalTime, weekdayShort } from '../../src/lib/time'
 import { fromDbError } from '../../src/server/http/errors'
-import { classifyReleaseError, pickAdminUrl } from '../../src/server/ops/release'
+import { badEnvNames, classifyReleaseError, pickAdminUrl } from '../../src/server/ops/release'
+
+describe('Biến môi trường dán sai dạng → /api/health báo tên biến', () => {
+  const pub = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString('base64url') // 87 ký tự
+  const priv = Buffer.alloc(32, 9).toString('base64url') // 43 ký tự
+  const ok = {
+    VAPID_PUBLIC_KEY: pub,
+    VAPID_PRIVATE_KEY: priv,
+    VAPID_SUBJECT: 'mailto:lindy@example.com',
+    APP_ORIGIN: 'https://lindy.n2.tinhgon.xyz',
+  }
+  const from = (vars: Record<string, string>) => (k: string) => vars[k]
+
+  it('đúng dạng → không báo gì', () => {
+    expect(badEnvNames(from(ok))).toEqual([])
+  })
+  it('khoá thiếu ký tự đầu, origin có / cuối, subject không phải mailto', () => {
+    expect(
+      badEnvNames(
+        from({
+          VAPID_PUBLIC_KEY: pub.slice(1),
+          VAPID_PRIVATE_KEY: priv.slice(1),
+          VAPID_SUBJECT: 'lindy@example.com',
+          APP_ORIGIN: 'https://lindy.n2.tinhgon.xyz/',
+        }),
+      ),
+    ).toEqual(['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT', 'APP_ORIGIN'])
+  })
+})
 
 describe('Chọn chuỗi kết nối quản trị DB trên hosting', () => {
   const admin = 'postgres://dbadmin:mk@db:5432/lindy'
