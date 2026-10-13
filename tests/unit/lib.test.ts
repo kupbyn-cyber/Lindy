@@ -5,8 +5,46 @@ import { formatVND, parseVND } from '../../src/lib/money'
 import { normalizePhone } from '../../src/lib/phone'
 import { escapeLike, foldVietnamese } from '../../src/lib/text'
 import { addDays, fromLocal, startOfWeek, toLocalDate, toLocalTime, weekdayShort } from '../../src/lib/time'
+import { runOneAtATime } from '../../src/server/auth/password'
+import { clientIp } from '../../src/server/http/client-ip'
 import { fromDbError } from '../../src/server/http/errors'
 import { badEnvNames, classifyReleaseError, pickAdminUrl } from '../../src/server/ops/release'
+
+describe('IP người dùng sau proxy Vibe Host', () => {
+  const h = (xff?: string) => new Headers(xff ? { 'x-forwarded-for': xff } : {})
+  it('lấy phần tử cuối do proxy thêm, không tin phần trình duyệt tự khai', () => {
+    expect(clientIp(h('1.2.3.4, 203.0.113.7'), true, '10.0.0.2')).toBe('203.0.113.7')
+    expect(clientIp(h('203.0.113.7'), true, '10.0.0.2')).toBe('203.0.113.7')
+  })
+  it('không bật TRUST_PROXY hoặc không có header → địa chỉ kết nối', () => {
+    expect(clientIp(h('1.2.3.4'), false, '10.0.0.2')).toBe('10.0.0.2')
+    expect(clientIp(h(), true, '10.0.0.2')).toBe('10.0.0.2')
+    expect(clientIp(h(), true, undefined)).toBe('unknown')
+  })
+})
+
+describe('Băm mật khẩu chạy lần lượt (RAM 512 MB trên hosting)', () => {
+  it('không bao giờ chạy 2 lượt cùng lúc; lượt lỗi không chặn lượt sau', async () => {
+    let active = 0
+    let maxActive = 0
+    const task = (fail: boolean) => async () => {
+      active++
+      maxActive = Math.max(maxActive, active)
+      await new Promise((r) => setTimeout(r, 5))
+      active--
+      if (fail) throw new Error('x')
+      return 1
+    }
+    const results = await Promise.allSettled([
+      runOneAtATime(task(false)),
+      runOneAtATime(task(true)),
+      runOneAtATime(task(false)),
+      runOneAtATime(task(false)),
+    ])
+    expect(maxActive).toBe(1)
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'rejected', 'fulfilled', 'fulfilled'])
+  })
+})
 
 describe('Biến môi trường dán sai dạng → /api/health báo tên biến', () => {
   const pub = Buffer.concat([Buffer.from([4]), Buffer.alloc(64, 7)]).toString('base64url') // 87 ký tự

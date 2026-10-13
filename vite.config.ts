@@ -17,6 +17,7 @@ export default defineConfig({
       srcDirectory: 'src',
     }),
     viteReact(),
-    nitro(),
+    // Cố định máy chủ Node: dựng bằng Bun (Dockerfile) thì Nitro tự chọn preset "bun", chạy bằng Node sẽ sập.
+    nitro({ preset: 'node-server' }),
   ],
 })

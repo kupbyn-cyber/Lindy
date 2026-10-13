@@ -276,13 +276,21 @@ export function releaseStatus() {
 export function ensureReady(): Promise<void> {
   if (state.done) return Promise.resolve()
   // Bản build production (import.meta.env.PROD) kể cả khi hosting không đặt NODE_ENV.
-  const production = import.meta.env.PROD || env('NODE_ENV') === 'production'
+  return prepareDatabase(import.meta.env.PROD || env('NODE_ENV') === 'production')
+}
+
+/** Phần chung của ensureReady và scripts/release.ts (chạy trước khi bật server trong container). */
+export function prepareDatabase(production: boolean): Promise<void> {
+  if (state.done) return Promise.resolve()
   if (state.admin === undefined) state.admin = takeAdminUrl(production)
   state.promise ??= (async () => {
     const admin = state.admin
     if (!admin) {
       if (production && !env('DATABASE_URL')) {
-        throw new ReleaseError('missing_DATABASE_ADMIN_URL', 'Thiếu biến DATABASE_ADMIN_URL.')
+        throw new ReleaseError(
+          'missing_DATABASE_ADMIN_URL',
+          'Thiếu DATABASE_URL: website chưa gắn cơ sở dữ liệu (hoặc đặt DATABASE_ADMIN_URL).',
+        )
       }
       state.done = true // local: DB dựng bằng script; hoặc DATABASE_URL đã là lindy_app
       return

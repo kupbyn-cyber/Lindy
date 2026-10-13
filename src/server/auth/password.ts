@@ -5,16 +5,30 @@ import { env } from '../env'
 
 const KEYLEN = 32
 
+// Mỗi lượt scrypt N=2^17 cần khoảng 128 MB RAM, website trên hosting có 512 MB. Chạy lần lượt từng lượt
+// (mỗi lượt dưới 1–2 giây) để vài người đăng nhập, đổi mật khẩu cùng lúc không làm tiến trình hết bộ nhớ.
+let queue: Promise<unknown> = Promise.resolve()
+
+/** Chạy task sau khi task trước xong; task lỗi không chặn hàng đợi. */
+export function runOneAtATime<T>(task: () => Promise<T>): Promise<T> {
+  const run = queue.then(task, task)
+  queue = run.catch(() => {})
+  return run
+}
+
 function scrypt(password: string, salt: Buffer, N: number, r: number, p: number): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    scryptCb(
-      password.normalize('NFKC'),
-      salt,
-      KEYLEN,
-      { N, r, p, maxmem: 256 * N * r + 1024 * 1024 },
-      (err, key) => (err ? reject(err) : resolve(key)),
-    )
-  })
+  return runOneAtATime(
+    () =>
+      new Promise<Buffer>((resolve, reject) => {
+        scryptCb(
+          password.normalize('NFKC'),
+          salt,
+          KEYLEN,
+          { N, r, p, maxmem: 256 * N * r + 1024 * 1024 },
+          (err, key) => (err ? reject(err) : resolve(key)),
+        )
+      }),
+  )
 }
 
 function cost() {

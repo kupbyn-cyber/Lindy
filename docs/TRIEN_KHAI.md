@@ -1,67 +1,76 @@
 # Triển khai LINDY OS lên Vibe Host Mắt Bão (T03)
 
-Cập nhật 13/10/2026. Trước đó dùng Vibe Hosting Nhân Hòa (T02); cách app tự chuẩn bị DB giữ nguyên.
+Cập nhật 13/10/2026: dựng bằng `Dockerfile` riêng theo cách của CEN WORK (trước đó để Vibe Host tự dựng bằng Nixpacks, ảnh 1,2 GB vượt hạn mức 1 GB của gói). Bài học: `docs/BAI_HOC_TRIEN_KHAI.md`.
 
 ## Thông tin hosting
 
 | Mục | Giá trị |
 |---|---|
-| Bảng quản lý | https://v2.tinhgon.xyz (mục **Đưa website lên mạng**) |
-| Địa chỉ app | **https://lindy.n2.tinhgon.xyz** (SSL tự cấp). Chạy được từ 13/10/2026; bài học: `docs/BAI_HOC_TRIEN_KHAI.md` |
-| Mã nguồn | GitHub `kupbyn-cyber/Lindy` (riêng tư), nhánh `main`, nguồn **Git URL** + mã truy cập GitHub |
-| Build | Nixpacks, Node theo `engines.node`: `vite build`. Vibe Host nhận diện "vite" nên chạy **`npm run preview`** (= `npm start` = `node .output/server/index.mjs`), cổng `PORT` (mặc định **3000**). Thiếu script `preview` thì app chết ngay (crash-loop). |
-| Database | PostgreSQL của Vibe Host `linhdy-db`, chỉ có địa chỉ nội bộ. **Gắn vào website** ở trang DB → Website sử dụng → chọn Lindy: Vibe Host tự đặt `DATABASE_URL` và sao lưu cả dữ liệu. Không gắn thì lúc dựng nó cố tạo DB mới và hỏng vì gói Starter chỉ có 2 dịch vụ. |
+| Bảng quản lý | https://v2.tinhgon.xyz (mục **Triển khai website**) |
+| Địa chỉ app | **https://lindy.n2.tinhgon.xyz** (SSL tự cấp) |
+| Mã nguồn | GitHub `kupbyn-cyber/Lindy` (riêng tư), nhánh `main`. Chưa bật tự triển khai: push xong phải bấm **Triển khai lại** |
+| Gói | Vibe Host Starter: 2 dịch vụ (mỗi DB là 1), **1 GB lưu trữ tính chung** ảnh website, DB và bản sao lưu; website 0,3 nhân, 512 MB RAM |
+| Database | PostgreSQL 16 của Vibe Host, chỉ có địa chỉ nội bộ. Vibe Host tự tạo và gắn khi tạo website (nếu gói còn chỗ), rồi tự điền `DATABASE_URL` |
 
-## Khi app khởi động
+## Ảnh Docker (`Dockerfile`)
 
-Ở request đầu tiên app tự làm (`src/server/ops/release.ts`) nếu tìm được chuỗi kết nối quản trị DB:
+- **Tầng dựng** `oven/bun:1.4.2` (cùng bản Bun với máy local): `bun install --frozen-lockfile` → `bun run build` → đóng gói `scripts/release.ts` thành `release.mjs`.
+- **Tầng chạy** `node:24-slim`: chỉ có `.output` (Nitro tự chứa thư viện lúc chạy), `db/migrations`, `release.mjs`, `package.json`. Ảnh khoảng 250 MB.
+- `vite.config.ts` cố định `preset: 'node-server'`. Thiếu dòng này thì dựng bằng Bun ra bản chạy cho Bun, chạy bằng Node sẽ sập ngay ("Bun is not defined").
+- Khởi động: `node release.mjs && node .output/server/index.mjs`, cổng 3000.
 
-- `DATABASE_ADMIN_URL` nếu có;
-- không có thì (bản build production) lấy `DATABASE_URL`, `MIGRATE_DATABASE_URL`, `PG_ADMIN_URL` có user khác `lindy_app`. Vibe Host Mắt Bão tự điền các biến này theo `.env.example`.
+## Khi container khởi động
 
-Các bước:
+`release.mjs` chuẩn bị DB **trước** khi bật server (như entrypoint của CEN WORK). Lỗi thì thoát mã 1: container không lên, Vibe Host giữ bản đang chạy, dòng `[release] Lỗi …` hiện trong nhật ký triển khai.
+
+Chuỗi kết nối quản trị: `DATABASE_ADMIN_URL` nếu có; không thì `DATABASE_URL` (hoặc `MIGRATE_DATABASE_URL`, `PG_ADMIN_URL`) có user khác `lindy_app`.
 
 1. Kiểm user quản trị DB có quyền tạo role (báo lỗi rõ nếu không).
 2. Tạo role `app_user`, `app_worker`, `lindy_app` (đăng nhập, mật khẩu = `LINDY_APP_PASSWORD`).
 3. Chạy migration còn thiếu (có khoá chống chạy trùng).
-4. Tạo dữ liệu nền: tổ chức, cơ sở CS 31/49 HTK, quyền, vai trò, giờ mở cửa 09:00–21:00. **Không** tạo tài khoản mẫu.
+4. Dữ liệu nền: tổ chức, cơ sở CS 31/49 HTK, quyền, vai trò, giờ mở cửa 09:00–21:00, danh mục dịch vụ. **Không** tạo tài khoản mẫu.
 5. DB chưa có tài khoản nào → tạo tài khoản Chủ từ `INITIAL_OWNER_*`, bắt đổi mật khẩu lần đầu.
 
-Chuỗi quản trị được rút khỏi `process.env` ngay từ đầu, nên server không bao giờ mở kết nối thường bằng tài khoản quản trị. Xong bước 5, `DATABASE_URL` = cùng máy chủ, user `lindy_app`. Log có tiền tố `[release]`.
+Server lặp lại bước này ở request đầu (không còn gì để làm nên nhanh), rồi chỉ kết nối bằng `lindy_app`; chuỗi quản trị được rút khỏi `process.env` ngay từ đầu.
 
 ## Biến môi trường
 
+Mẫu: `.env.example` (Vibe Host đọc file này khi tạo website).
+
 | Biến | Giá trị | Bí mật |
 |---|---|---|
-| `DATABASE_URL` (hoặc `DATABASE_ADMIN_URL`) | Chuỗi kết nối DB quản trị Vibe Host điền sẵn | Có |
+| `DATABASE_URL` | Vibe Host tự điền khi gắn DB | Có |
 | `LINDY_APP_PASSWORD` | Trong `.local/prod-env.txt` (sinh bằng `bun scripts/gen-prod-env.ts`) | Có |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Trong `.local/prod-env.txt`; khác khoá local | Khoá riêng: có |
-| `APP_ORIGIN` | `https://lindy.n2.tinhgon.xyz` (không có `/` cuối) | |
-| `TRUST_PROXY` | `1` | |
-| `NODE_ENV` | `production` (không đặt app vẫn chạy chế độ production) | |
 | `VAPID_SUBJECT` | `mailto:` + email liên hệ thật của quán | |
-| `INITIAL_OWNER_NAME` | Tên chủ tài khoản đầu tiên, ví dụ `Linh` | |
-| `INITIAL_OWNER_PHONE` | SĐT đăng nhập của Linh (hoặc `INITIAL_OWNER_EMAIL`) | |
-| `INITIAL_OWNER_PASSWORD` | Mật khẩu tạm ≥ 8 ký tự, không phổ biến; Linh đổi khi đăng nhập lần đầu | Có |
+| `APP_ORIGIN` | `https://lindy.n2.tinhgon.xyz` (không có `/` cuối) | |
+| `TRUST_PROXY` | `1` (lấy IP người dùng ở cuối `X-Forwarded-For`, do proxy Vibe Host thêm) | |
+| `INITIAL_OWNER_NAME`, `INITIAL_OWNER_PHONE` | `Linh` và SĐT đăng nhập của Linh | |
+| `INITIAL_OWNER_PASSWORD` | Mật khẩu tạm ≥ 8 ký tự; Linh đổi khi đăng nhập lần đầu | Có |
 
-`LINDY_OWNER_PASSWORD`, `TEST_*` chỉ dùng ở local; trên hosting để gì cũng được. `INITIAL_OWNER_*` chỉ dùng một lần khi DB chưa có tài khoản; tạo xong có thể xoá.
+- `INITIAL_OWNER_*` chỉ dùng khi DB chưa có tài khoản; tạo xong có thể xoá.
+- Vibe Host báo `DEV`, `PROD`, `PASSWORD_HASH_N` "chưa khai báo": bỏ qua, **không đặt** (`PASSWORD_HASH_N` chỉ để test hạ độ khó băm mật khẩu).
+- Đổi biến xong phải **Triển khai lại**.
 
 ## Kiểm tra trạng thái
 
-Mở `https://<địa chỉ app>/api/health`:
+Nhật ký triển khai: dòng `[release]` cho biết bước chuẩn bị DB. Sau khi lên, mở `https://lindy.n2.tinhgon.xyz/api/health`:
 
 - `"ready": true` → đã chuẩn bị DB xong.
-- `"dbUrlFrom"` → tên biến app đã lấy chuỗi kết nối quản trị.
 - `"missingEnv": [...]` → tên biến còn thiếu hoặc gõ sai tên.
-- `"badEnv": [...]` → biến có giá trị sai dạng (khoá VAPID dán thiếu ký tự, `APP_ORIGIN` có `/` cuối, `VAPID_SUBJECT` không phải `mailto:`…). Dán lại từ `.local/prod-env.txt`.
-- `"problem": {"code": ...}` → bước bị vướng: `missing_LINDY_APP_PASSWORD`, `bad_admin_url`, `db_host_not_found`, `db_auth_failed`, `cannot_create_role`, `bad_INITIAL_OWNER_PASSWORD`…
+- `"badEnv": [...]` → biến sai dạng (khoá VAPID dán thiếu ký tự, `APP_ORIGIN` có `/` cuối, `VAPID_SUBJECT` không phải `mailto:`…).
+- `"problem": {"code": ...}` → bước bị vướng: `missing_DATABASE_ADMIN_URL` (chưa gắn DB), `db_unreachable`, `db_auth_failed`, `cannot_create_role`…
 - `"hasAccounts": false` → DB chưa có tài khoản nào: đặt `INITIAL_OWNER_*` rồi triển khai lại.
 
-Đổi biến môi trường xong, triển khai lại để app khởi động với biến mới.
+## Cập nhật bản mới
 
-## Sau khi lên
+1. Sao lưu DB nếu bản mới có migration (mục **Sao lưu**).
+2. Push lên `main` → **Triển khai lại**.
+3. Xem nhật ký có `[release] Xong` và `/api/health` → `ready: true`.
 
-1. Linh đăng nhập ở địa chỉ app, đổi mật khẩu.
+## Sau khi lên lần đầu
+
+1. Linh đăng nhập, đổi mật khẩu.
 2. Linh vào **Thêm → Tài khoản** tạo tài khoản cho Nhung, Chin, Trang. Mật khẩu tạm hiện một lần, đưa trực tiếp cho từng người.
 3. Mỗi người: Safari → Thêm vào Màn hình chính → mở app ghim → đăng nhập → **Thêm → Thông báo** → bật → Gửi thử (test 21–23).
-4. Bật sao lưu tự động cho DB trên hosting.
+4. Bật sao lưu tự động, giữ ít bản (bản sao lưu tính vào 1 GB). Xem trang **Dung lượng** mỗi tháng: ảnh chứng từ lưu trong DB nên DB lớn dần.

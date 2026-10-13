@@ -133,6 +133,12 @@ Nguồn: kế hoạch `docs/plans/2026-10-12-dot-0-dot-1.md` mục 11, sau phả
 - **Hosting chạy thật: Vibe Host của Mắt Bão** (bảng quản lý `https://v2.tinhgon.xyz`), thay Nhân Hòa ở T02. Nguồn code giữ repo `github.com/kupbyn-cyber/Lindy`, nhánh `main`, kết nối bằng Git URL + mã truy cập.
 - Tên miền tạm do Vibe Host cấp, dạng `*.n2.tinhgon.xyz`. K07 áp dụng cho tên miền này.
 
+## T04 — Dựng bằng Dockerfile như CEN WORK (13/10/2026, anh duyệt)
+
+- Lindy có `Dockerfile` 2 tầng (dựng bằng Bun, chạy bằng `node:24-slim`); chuẩn bị DB trước khi bật server, lỗi thì Vibe Host giữ bản đang chạy. Lý do: ảnh Nixpacks 1,2 GB vượt hạn mức 1 GB của gói, không triển khai lại được.
+- Xoá website cũ, tạo lại từ đầu với **DB mới** (chưa có dữ liệu thật); `linhdy-db` xoá sau khi bản mới chạy ổn.
+- Chi tiết: `docs/TRIEN_KHAI.md`, `docs/BAI_HOC_TRIEN_KHAI.md`.
+
 ## K09–K11 — Đơn hàng, trước Đợt 2 (13/10/2026, đã chốt)
 
 Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-2-don-hang.md`.

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { login } from '~/server/auth/login'
 import { sessionCookie } from '~/server/auth/session'
 import { env } from '~/server/env'
+import { clientIp } from '~/server/http/client-ip'
 import { handle, readBody } from '~/server/http/route'
 
 const Body = z.strictObject({
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/api/auth/login')({
       POST: ({ request }) =>
         handle(request, async () => {
           const body = await readBody(request, Body)
-          const ip = getRequestIP({ xForwardedFor: env('TRUST_PROXY') === '1' }) ?? 'unknown'
+          const ip = clientIp(request.headers, env('TRUST_PROXY') === '1', getRequestIP())
           const res = await login({ ...body, ip, userAgent: request.headers.get('user-agent') })
           return Response.json(
             { ok: true, mustChangePassword: res.mustChangePassword },
