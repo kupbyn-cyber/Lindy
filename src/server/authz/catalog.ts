@@ -46,6 +46,7 @@ export const PERMISSIONS = {
   'catalog.manage': 'Quản lý danh mục dịch vụ',
   'users.manage': 'Quản lý tài khoản: tạo, đặt lại mật khẩu, đổi vai trò, khoá',
   'data.export': 'Tải file xuất (báo cáo, đơn, sổ tiền, thu chi, khách hàng) và bản sao lưu (K25)',
+  'legacy.import': 'Nhập dữ liệu cũ từ Google Sheets (Đợt 5B)',
 } as const
 
 export type Permission = keyof typeof PERMISSIONS

@@ -5,6 +5,7 @@ import { escapeLike, foldVietnamese } from '~/lib/text'
 import type { Auth } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
 import { conflict, forbidden, invalid, notFound } from '../http/errors'
+import { legacyOfCustomer } from '../legacy/service'
 
 export const MAX_SEARCH = 20
 
@@ -190,6 +191,8 @@ export async function getCustomer(auth: Auth, id: string) {
           }
         : null,
       changes: changes.map((c) => ({ ...c, occurredAt: new Date(c.occurredAt).toISOString() })),
+      /** Đợt 5B: lịch sử nhập từ Google Sheets (RLS: Linh, Nhung) — không rõ dịch vụ / chưa biết đã thu tiền */
+      legacy: await legacyOfCustomer(tx, id),
     }
   })
 }

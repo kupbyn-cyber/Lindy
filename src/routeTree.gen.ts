@@ -66,6 +66,8 @@ import { Route as ApiCustomersIdRouteImport } from './routes/api/customers/$id'
 import { Route as ApiExpensesIndexRouteImport } from './routes/api/expenses/index'
 import { Route as ApiExportKindRouteImport } from './routes/api/export/$kind'
 import { Route as ApiLeaveIndexRouteImport } from './routes/api/leave/index'
+import { Route as ApiLegacyIndexRouteImport } from './routes/api/legacy/index'
+import { Route as ApiLegacyAnalyzeRouteImport } from './routes/api/legacy/analyze'
 import { Route as ApiMoneyIndexRouteImport } from './routes/api/money/index'
 import { Route as ApiMoneyActionRouteImport } from './routes/api/money/$action'
 import { Route as ApiMoneyDayCloseRouteImport } from './routes/api/money/day-close'
@@ -95,6 +97,7 @@ import { Route as ApiCustomersIdCompensationsRouteImport } from './routes/api/cu
 import { Route as ApiDepositsIdActionRouteImport } from './routes/api/deposits/$id.$action'
 import { Route as ApiExpensesIdActionRouteImport } from './routes/api/expenses/$id.$action'
 import { Route as ApiLeaveIdActionRouteImport } from './routes/api/leave/$id.$action'
+import { Route as ApiLegacyIdActionRouteImport } from './routes/api/legacy/$id.$action'
 import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notifications/$id.read'
 import { Route as ApiOrdersIdActionRouteImport } from './routes/api/orders/$id.$action'
 import { Route as ApiPaymentsIdActionRouteImport } from './routes/api/payments/$id.$action'
@@ -389,6 +392,16 @@ const ApiLeaveIndexRoute = ApiLeaveIndexRouteImport.update({
   path: '/api/leave/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLegacyIndexRoute = ApiLegacyIndexRouteImport.update({
+  id: '/api/legacy/',
+  path: '/api/legacy/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLegacyAnalyzeRoute = ApiLegacyAnalyzeRouteImport.update({
+  id: '/api/legacy/analyze',
+  path: '/api/legacy/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMoneyIndexRoute = ApiMoneyIndexRouteImport.update({
   id: '/api/money/',
   path: '/api/money/',
@@ -537,6 +550,11 @@ const ApiLeaveIdActionRoute = ApiLeaveIdActionRouteImport.update({
   path: '/api/leave/$id/$action',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLegacyIdActionRoute = ApiLegacyIdActionRouteImport.update({
+  id: '/api/legacy/$id/$action',
+  path: '/api/legacy/$id/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotificationsIdReadRoute = ApiNotificationsIdReadRouteImport.update({
   id: '/api/notifications/$id/read',
   path: '/api/notifications/$id/read',
@@ -622,6 +640,7 @@ export interface FileRoutesByFullPath {
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
   '/api/export/$kind': typeof ApiExportKindRoute
+  '/api/legacy/analyze': typeof ApiLegacyAnalyzeRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
   '/api/money/day-close': typeof ApiMoneyDayCloseRoute
   '/api/money/entries': typeof ApiMoneyEntriesRoute
@@ -649,6 +668,7 @@ export interface FileRoutesByFullPath {
   '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/expenses/': typeof ApiExpensesIndexRoute
   '/api/leave/': typeof ApiLeaveIndexRoute
+  '/api/legacy/': typeof ApiLegacyIndexRoute
   '/api/money/': typeof ApiMoneyIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
@@ -665,6 +685,7 @@ export interface FileRoutesByFullPath {
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/expenses/$id/$action': typeof ApiExpensesIdActionRoute
   '/api/leave/$id/$action': typeof ApiLeaveIdActionRoute
+  '/api/legacy/$id/$action': typeof ApiLegacyIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
@@ -717,6 +738,7 @@ export interface FileRoutesByTo {
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
   '/api/export/$kind': typeof ApiExportKindRoute
+  '/api/legacy/analyze': typeof ApiLegacyAnalyzeRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
   '/api/money/day-close': typeof ApiMoneyDayCloseRoute
   '/api/money/entries': typeof ApiMoneyEntriesRoute
@@ -744,6 +766,7 @@ export interface FileRoutesByTo {
   '/api/customers': typeof ApiCustomersIndexRoute
   '/api/expenses': typeof ApiExpensesIndexRoute
   '/api/leave': typeof ApiLeaveIndexRoute
+  '/api/legacy': typeof ApiLegacyIndexRoute
   '/api/money': typeof ApiMoneyIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
   '/api/orders': typeof ApiOrdersIndexRoute
@@ -760,6 +783,7 @@ export interface FileRoutesByTo {
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/expenses/$id/$action': typeof ApiExpensesIdActionRoute
   '/api/leave/$id/$action': typeof ApiLeaveIdActionRoute
+  '/api/legacy/$id/$action': typeof ApiLegacyIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
@@ -814,6 +838,7 @@ export interface FileRoutesById {
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
   '/api/export/$kind': typeof ApiExportKindRoute
+  '/api/legacy/analyze': typeof ApiLegacyAnalyzeRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
   '/api/money/day-close': typeof ApiMoneyDayCloseRoute
   '/api/money/entries': typeof ApiMoneyEntriesRoute
@@ -841,6 +866,7 @@ export interface FileRoutesById {
   '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/expenses/': typeof ApiExpensesIndexRoute
   '/api/leave/': typeof ApiLeaveIndexRoute
+  '/api/legacy/': typeof ApiLegacyIndexRoute
   '/api/money/': typeof ApiMoneyIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
@@ -857,6 +883,7 @@ export interface FileRoutesById {
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
   '/api/expenses/$id/$action': typeof ApiExpensesIdActionRoute
   '/api/leave/$id/$action': typeof ApiLeaveIdActionRoute
+  '/api/legacy/$id/$action': typeof ApiLegacyIdActionRoute
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
@@ -911,6 +938,7 @@ export interface FileRouteTypes {
     | '/api/catalog/$kind'
     | '/api/customers/$id'
     | '/api/export/$kind'
+    | '/api/legacy/analyze'
     | '/api/money/$action'
     | '/api/money/day-close'
     | '/api/money/entries'
@@ -938,6 +966,7 @@ export interface FileRouteTypes {
     | '/api/customers/'
     | '/api/expenses/'
     | '/api/leave/'
+    | '/api/legacy/'
     | '/api/money/'
     | '/api/notifications/'
     | '/api/orders/'
@@ -954,6 +983,7 @@ export interface FileRouteTypes {
     | '/api/deposits/$id/$action'
     | '/api/expenses/$id/$action'
     | '/api/leave/$id/$action'
+    | '/api/legacy/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
@@ -1006,6 +1036,7 @@ export interface FileRouteTypes {
     | '/api/catalog/$kind'
     | '/api/customers/$id'
     | '/api/export/$kind'
+    | '/api/legacy/analyze'
     | '/api/money/$action'
     | '/api/money/day-close'
     | '/api/money/entries'
@@ -1033,6 +1064,7 @@ export interface FileRouteTypes {
     | '/api/customers'
     | '/api/expenses'
     | '/api/leave'
+    | '/api/legacy'
     | '/api/money'
     | '/api/notifications'
     | '/api/orders'
@@ -1049,6 +1081,7 @@ export interface FileRouteTypes {
     | '/api/deposits/$id/$action'
     | '/api/expenses/$id/$action'
     | '/api/leave/$id/$action'
+    | '/api/legacy/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
@@ -1102,6 +1135,7 @@ export interface FileRouteTypes {
     | '/api/catalog/$kind'
     | '/api/customers/$id'
     | '/api/export/$kind'
+    | '/api/legacy/analyze'
     | '/api/money/$action'
     | '/api/money/day-close'
     | '/api/money/entries'
@@ -1129,6 +1163,7 @@ export interface FileRouteTypes {
     | '/api/customers/'
     | '/api/expenses/'
     | '/api/leave/'
+    | '/api/legacy/'
     | '/api/money/'
     | '/api/notifications/'
     | '/api/orders/'
@@ -1145,6 +1180,7 @@ export interface FileRouteTypes {
     | '/api/deposits/$id/$action'
     | '/api/expenses/$id/$action'
     | '/api/leave/$id/$action'
+    | '/api/legacy/$id/$action'
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
@@ -1178,6 +1214,7 @@ export interface RootRouteChildren {
   ApiCatalogKindRoute: typeof ApiCatalogKindRoute
   ApiCustomersIdRoute: typeof ApiCustomersIdRouteWithChildren
   ApiExportKindRoute: typeof ApiExportKindRoute
+  ApiLegacyAnalyzeRoute: typeof ApiLegacyAnalyzeRoute
   ApiMoneyActionRoute: typeof ApiMoneyActionRoute
   ApiMoneyDayCloseRoute: typeof ApiMoneyDayCloseRoute
   ApiMoneyEntriesRoute: typeof ApiMoneyEntriesRoute
@@ -1201,6 +1238,7 @@ export interface RootRouteChildren {
   ApiCustomersIndexRoute: typeof ApiCustomersIndexRoute
   ApiExpensesIndexRoute: typeof ApiExpensesIndexRoute
   ApiLeaveIndexRoute: typeof ApiLeaveIndexRoute
+  ApiLegacyIndexRoute: typeof ApiLegacyIndexRoute
   ApiMoneyIndexRoute: typeof ApiMoneyIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   ApiOrdersIndexRoute: typeof ApiOrdersIndexRoute
@@ -1214,6 +1252,7 @@ export interface RootRouteChildren {
   ApiDepositsIdActionRoute: typeof ApiDepositsIdActionRoute
   ApiExpensesIdActionRoute: typeof ApiExpensesIdActionRoute
   ApiLeaveIdActionRoute: typeof ApiLeaveIdActionRoute
+  ApiLegacyIdActionRoute: typeof ApiLegacyIdActionRoute
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
   ApiPaymentsIdActionRoute: typeof ApiPaymentsIdActionRoute
   ApiPayrollAdjustmentsIdActionRoute: typeof ApiPayrollAdjustmentsIdActionRoute
@@ -1623,6 +1662,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLeaveIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/legacy/': {
+      id: '/api/legacy/'
+      path: '/api/legacy'
+      fullPath: '/api/legacy/'
+      preLoaderRoute: typeof ApiLegacyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/legacy/analyze': {
+      id: '/api/legacy/analyze'
+      path: '/api/legacy/analyze'
+      fullPath: '/api/legacy/analyze'
+      preLoaderRoute: typeof ApiLegacyAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/money/': {
       id: '/api/money/'
       path: '/api/money'
@@ -1826,6 +1879,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLeaveIdActionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/legacy/$id/$action': {
+      id: '/api/legacy/$id/$action'
+      path: '/api/legacy/$id/$action'
+      fullPath: '/api/legacy/$id/$action'
+      preLoaderRoute: typeof ApiLegacyIdActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notifications/$id/read': {
       id: '/api/notifications/$id/read'
       path: '/api/notifications/$id/read'
@@ -2023,6 +2083,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCatalogKindRoute: ApiCatalogKindRoute,
   ApiCustomersIdRoute: ApiCustomersIdRouteWithChildren,
   ApiExportKindRoute: ApiExportKindRoute,
+  ApiLegacyAnalyzeRoute: ApiLegacyAnalyzeRoute,
   ApiMoneyActionRoute: ApiMoneyActionRoute,
   ApiMoneyDayCloseRoute: ApiMoneyDayCloseRoute,
   ApiMoneyEntriesRoute: ApiMoneyEntriesRoute,
@@ -2046,6 +2107,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCustomersIndexRoute: ApiCustomersIndexRoute,
   ApiExpensesIndexRoute: ApiExpensesIndexRoute,
   ApiLeaveIndexRoute: ApiLeaveIndexRoute,
+  ApiLegacyIndexRoute: ApiLegacyIndexRoute,
   ApiMoneyIndexRoute: ApiMoneyIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   ApiOrdersIndexRoute: ApiOrdersIndexRoute,
@@ -2059,6 +2121,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDepositsIdActionRoute: ApiDepositsIdActionRoute,
   ApiExpensesIdActionRoute: ApiExpensesIdActionRoute,
   ApiLeaveIdActionRoute: ApiLeaveIdActionRoute,
+  ApiLegacyIdActionRoute: ApiLegacyIdActionRoute,
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
   ApiPaymentsIdActionRoute: ApiPaymentsIdActionRoute,
   ApiPayrollAdjustmentsIdActionRoute: ApiPayrollAdjustmentsIdActionRoute,

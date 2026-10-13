@@ -53,12 +53,19 @@ export async function handle(request: Request, fn: () => Promise<Response>): Pro
   }
 }
 
-/** Đọc body JSON có giới hạn kích thước và kiểm bằng zod (schema nên dùng .strict()). */
-export async function readBody<T extends z.ZodType>(request: Request, schema: T): Promise<z.infer<T>> {
+/**
+ * Đọc body JSON có giới hạn kích thước và kiểm bằng zod (schema nên dùng .strict()). Mặc định 64KB; API nhận file (nhập
+ * dữ liệu cũ) đặt giới hạn riêng.
+ */
+export async function readBody<T extends z.ZodType>(
+  request: Request,
+  schema: T,
+  max = MAX_BODY,
+): Promise<z.infer<T>> {
   const len = Number(request.headers.get('content-length') ?? 0)
-  if (len > MAX_BODY) throw invalid('Dữ liệu gửi lên quá lớn.')
+  if (len > max) throw invalid('Dữ liệu gửi lên quá lớn.')
   const text = await request.text()
-  if (text.length > MAX_BODY) throw invalid('Dữ liệu gửi lên quá lớn.')
+  if (text.length > max) throw invalid('Dữ liệu gửi lên quá lớn.')
   let data: unknown
   try {
     data = text ? JSON.parse(text) : {}

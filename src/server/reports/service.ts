@@ -8,6 +8,7 @@ import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
 import { forbidden, invalid } from '../http/errors'
+import { legacyMonth } from '../legacy/service'
 import { balancesOf } from '../money/service'
 import { reviewPending } from '../orders/service'
 import { myPayNow, payrollAttention, payrollSummary } from '../payroll/service'
@@ -505,6 +506,8 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
       payroll: await payrollSummary(tx, auth, branch.id, month),
       /** Đợt 5A (K24): số đã chốt khi khoá lương và phần phát sinh sau đó */
       closed,
+      /** Đợt 5B: doanh thu nhập từ Google Sheets (không rõ dịch vụ / chưa biết đã thu tiền), tách khỏi số của app */
+      legacy: await legacyMonth(tx, branch.id, from, to),
       /** Đợt 5A (K23): lợi nhuận ước tính, chỉ Linh; tháng đã chốt tính trên số đã chốt */
       profit: hasPerm(auth, branch.id, 'profit.read')
         ? await monthProfit(
