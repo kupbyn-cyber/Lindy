@@ -12,6 +12,7 @@ import { balancesOf } from '../money/service'
 import { reviewPending } from '../orders/service'
 import { myPayNow, payrollAttention, payrollSummary } from '../payroll/service'
 import { reviewCount } from '../review/service'
+import { monthProfit } from './profit'
 
 const n = (v: unknown) => Number(v ?? 0)
 
@@ -151,6 +152,16 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
       revenue: t,
       money,
       deposits,
+      /** Đợt 5A (PRD §1, K23): lãi/lỗ tạm tính tháng này đến hôm nay — chỉ Linh, khi xem Tháng */
+      profit:
+        input.period === 'month' && t && hasPerm(auth, branch.id, 'profit.read')
+          ? (
+              await monthProfit(tx, branch.id, today.slice(0, 7), {
+                net: t.net,
+                forfeited: deposits?.forfeited ?? 0,
+              })
+            ).profit
+          : null,
       byStaff: staff,
       mine: all ? null : (staff[0]?.amount ?? 0),
       attention: {
@@ -460,11 +471,19 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
       select count(*) as c from orders where branch_id = ${branch.id} and status = 'confirmed' and customer_id is null
         and service_date between ${from}::date and ${to}::date`
 
+    const revenue = await totals(tx, branch.id, from, to)
+    const staff = await byStaff(tx, branch.id, from, to, null)
+    const deposits = await depositStats(tx, branch.id, tz, from, to)
+    const closed = await closedSnapshot(tx, branch.id, from, {
+      revenue,
+      staff,
+      forfeited: deposits.forfeited,
+    })
     return {
       month,
       from,
       to,
-      revenue: await totals(tx, branch.id, from, to),
+      revenue,
       byDay: days.map((d) => ({ date: d.date, orders: n(d.orders), net: n(d.net) })),
       byService: services.map((s) => ({
         name: s.name,
@@ -472,10 +491,10 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
         quantity: n(s.quantity),
         net: n(s.net),
       })),
-      byStaff: await byStaff(tx, branch.id, from, to, null),
+      byStaff: staff,
       receipts: await receipts(tx, branch.id, tz, from, to),
       appointments: await appointmentStats(tx, branch.id, tz, from, to),
-      deposits: await depositStats(tx, branch.id, tz, from, to),
+      deposits,
       cashflow: await cashflow(tx, branch.id, from, to),
       customers: {
         new: n(cust?.newCustomers),
@@ -484,6 +503,82 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
       },
       /** Đợt 4B: lương phải trả, đã trả, tạm ứng, KPI quản lý (Linh, Nhung) */
       payroll: await payrollSummary(tx, auth, branch.id, month),
+      /** Đợt 5A (K24): số đã chốt khi khoá lương và phần phát sinh sau đó */
+      closed,
+      /** Đợt 5A (K23): lợi nhuận ước tính, chỉ Linh; tháng đã chốt tính trên số đã chốt */
+      profit: hasPerm(auth, branch.id, 'profit.read')
+        ? await monthProfit(
+            tx,
+            branch.id,
+            month,
+            closed
+              ? { net: closed.figures.net, forfeited: closed.figures.forfeited }
+              : { net: revenue.net, forfeited: deposits.forfeited },
+          )
+        : null,
     }
   })
+}
+
+type SnapshotFigures = {
+  orders: number
+  gross: number
+  discount: number
+  refunded: number
+  net: number
+  forfeited: number
+  byStaff: { userId: string; amount: number }[]
+}
+
+/**
+ * Bản chụp báo cáo tháng lúc khoá lương (K24). "Phát sinh sau khi chốt" = số hiện tại − số đã chốt (đơn xác nhận muộn,
+ * sửa đơn sau khi khoá).
+ */
+async function closedSnapshot(
+  tx: Tx,
+  branchId: string,
+  first: string,
+  now: { revenue: Totals; staff: Awaited<ReturnType<typeof byStaff>>; forfeited: number },
+) {
+  const [s] = await tx<{ figures: SnapshotFigures; createdAt: Date; byName: string | null }[]>`
+    select s.figures, s.created_at, u.display_name as by_name
+    from month_report_snapshots s left join users u on u.id = s.created_by
+    where s.branch_id = ${branchId} and s.month = ${first}::date`
+  if (!s) return null
+  const f = s.figures
+  const names = new Map(now.staff.map((x) => [x.userId, x.name]))
+  const missing = f.byStaff.filter((x) => !names.has(x.userId)).map((x) => x.userId)
+  if (missing.length) {
+    for (const u of await tx<{ id: string; displayName: string }[]>`
+      select id, display_name from users where id = any(${missing}::uuid[])`)
+      names.set(u.id, u.displayName)
+  }
+  const staffAfter = new Map<string, number>()
+  for (const x of now.staff) staffAfter.set(x.userId, x.amount)
+  for (const x of f.byStaff) staffAfter.set(x.userId, (staffAfter.get(x.userId) ?? 0) - x.amount)
+  return {
+    at: new Date(s.createdAt).toISOString(),
+    byName: s.byName,
+    figures: {
+      orders: n(f.orders),
+      gross: n(f.gross),
+      discount: n(f.discount),
+      refunded: n(f.refunded),
+      net: n(f.net),
+      forfeited: n(f.forfeited),
+      byStaff: f.byStaff.map((x) => ({
+        userId: x.userId,
+        name: names.get(x.userId) ?? '—',
+        amount: n(x.amount),
+      })),
+    },
+    after: {
+      orders: now.revenue.orders - n(f.orders),
+      net: now.revenue.net - n(f.net),
+      forfeited: now.forfeited - n(f.forfeited),
+      byStaff: [...staffAfter.entries()]
+        .filter(([, v]) => v !== 0)
+        .map(([userId, amount]) => ({ userId, name: names.get(userId) ?? '—', amount })),
+    },
+  }
 }

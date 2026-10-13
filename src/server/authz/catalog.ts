@@ -45,6 +45,7 @@ export const PERMISSIONS = {
   'review_queue.read': 'Xem danh sách Cần xem lại',
   'catalog.manage': 'Quản lý danh mục dịch vụ',
   'users.manage': 'Quản lý tài khoản: tạo, đặt lại mật khẩu, đổi vai trò, khoá',
+  'data.export': 'Tải file xuất (báo cáo, đơn, sổ tiền, thu chi, khách hàng) và bản sao lưu (K25)',
 } as const
 
 export type Permission = keyof typeof PERMISSIONS

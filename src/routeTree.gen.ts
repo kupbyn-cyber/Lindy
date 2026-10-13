@@ -14,6 +14,7 @@ import { Route as DangNhapRouteImport } from './routes/dang-nhap'
 import { Route as DoiMatKhauRouteImport } from './routes/doi-mat-khau'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppThongBaoRouteImport } from './routes/_app/thong-bao'
+import { Route as ApiBackupRouteImport } from './routes/api/backup'
 import { Route as ApiBookingSettingsRouteImport } from './routes/api/booking-settings'
 import { Route as ApiDepositSeasonsRouteImport } from './routes/api/deposit-seasons'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
@@ -62,6 +63,7 @@ import { Route as ApiClosedDaysIndexRouteImport } from './routes/api/closed-days
 import { Route as ApiCustomersIndexRouteImport } from './routes/api/customers/index'
 import { Route as ApiCustomersIdRouteImport } from './routes/api/customers/$id'
 import { Route as ApiExpensesIndexRouteImport } from './routes/api/expenses/index'
+import { Route as ApiExportKindRouteImport } from './routes/api/export/$kind'
 import { Route as ApiLeaveIndexRouteImport } from './routes/api/leave/index'
 import { Route as ApiMoneyIndexRouteImport } from './routes/api/money/index'
 import { Route as ApiMoneyActionRouteImport } from './routes/api/money/$action'
@@ -124,6 +126,11 @@ const AppThongBaoRoute = AppThongBaoRouteImport.update({
   id: '/thong-bao',
   path: '/thong-bao',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiBackupRoute = ApiBackupRouteImport.update({
+  id: '/api/backup',
+  path: '/api/backup',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBookingSettingsRoute = ApiBookingSettingsRouteImport.update({
   id: '/api/booking-settings',
@@ -366,6 +373,11 @@ const ApiExpensesIndexRoute = ApiExpensesIndexRouteImport.update({
   path: '/api/expenses/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExportKindRoute = ApiExportKindRouteImport.update({
+  id: '/api/export/$kind',
+  path: '/api/export/$kind',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLeaveIndexRoute = ApiLeaveIndexRouteImport.update({
   id: '/api/leave/',
   path: '/api/leave/',
@@ -566,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
   '/thong-bao': typeof AppThongBaoRoute
+  '/api/backup': typeof ApiBackupRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
   '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
@@ -601,6 +614,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/export/$kind': typeof ApiExportKindRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
   '/api/money/day-close': typeof ApiMoneyDayCloseRoute
   '/api/money/entries': typeof ApiMoneyEntriesRoute
@@ -657,6 +671,7 @@ export interface FileRoutesByTo {
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
   '/thong-bao': typeof AppThongBaoRoute
+  '/api/backup': typeof ApiBackupRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
   '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
@@ -693,6 +708,7 @@ export interface FileRoutesByTo {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/export/$kind': typeof ApiExportKindRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
   '/api/money/day-close': typeof ApiMoneyDayCloseRoute
   '/api/money/entries': typeof ApiMoneyEntriesRoute
@@ -751,6 +767,7 @@ export interface FileRoutesById {
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
   '/_app/thong-bao': typeof AppThongBaoRoute
+  '/api/backup': typeof ApiBackupRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
   '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
@@ -787,6 +804,7 @@ export interface FileRoutesById {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/export/$kind': typeof ApiExportKindRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
   '/api/money/day-close': typeof ApiMoneyDayCloseRoute
   '/api/money/entries': typeof ApiMoneyEntriesRoute
@@ -846,6 +864,7 @@ export interface FileRouteTypes {
     | '/dang-nhap'
     | '/doi-mat-khau'
     | '/thong-bao'
+    | '/api/backup'
     | '/api/booking-settings'
     | '/api/deposit-seasons'
     | '/api/events'
@@ -881,6 +900,7 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/export/$kind'
     | '/api/money/$action'
     | '/api/money/day-close'
     | '/api/money/entries'
@@ -937,6 +957,7 @@ export interface FileRouteTypes {
     | '/dang-nhap'
     | '/doi-mat-khau'
     | '/thong-bao'
+    | '/api/backup'
     | '/api/booking-settings'
     | '/api/deposit-seasons'
     | '/api/events'
@@ -973,6 +994,7 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/export/$kind'
     | '/api/money/$action'
     | '/api/money/day-close'
     | '/api/money/entries'
@@ -1030,6 +1052,7 @@ export interface FileRouteTypes {
     | '/dang-nhap'
     | '/doi-mat-khau'
     | '/_app/thong-bao'
+    | '/api/backup'
     | '/api/booking-settings'
     | '/api/deposit-seasons'
     | '/api/events'
@@ -1066,6 +1089,7 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/export/$kind'
     | '/api/money/$action'
     | '/api/money/day-close'
     | '/api/money/entries'
@@ -1123,6 +1147,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   DangNhapRoute: typeof DangNhapRoute
   DoiMatKhauRoute: typeof DoiMatKhauRoute
+  ApiBackupRoute: typeof ApiBackupRoute
   ApiBookingSettingsRoute: typeof ApiBookingSettingsRoute
   ApiDepositSeasonsRoute: typeof ApiDepositSeasonsRoute
   ApiEventsRoute: typeof ApiEventsRoute
@@ -1140,6 +1165,7 @@ export interface RootRouteChildren {
   ApiAuthPasswordRoute: typeof ApiAuthPasswordRoute
   ApiCatalogKindRoute: typeof ApiCatalogKindRoute
   ApiCustomersIdRoute: typeof ApiCustomersIdRouteWithChildren
+  ApiExportKindRoute: typeof ApiExportKindRoute
   ApiMoneyActionRoute: typeof ApiMoneyActionRoute
   ApiMoneyDayCloseRoute: typeof ApiMoneyDayCloseRoute
   ApiMoneyEntriesRoute: typeof ApiMoneyEntriesRoute
@@ -1220,6 +1246,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/thong-bao'
       preLoaderRoute: typeof AppThongBaoRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/backup': {
+      id: '/api/backup'
+      path: '/api/backup'
+      fullPath: '/api/backup'
+      preLoaderRoute: typeof ApiBackupRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/booking-settings': {
       id: '/api/booking-settings'
@@ -1555,6 +1588,13 @@ declare module '@tanstack/react-router' {
       path: '/api/expenses'
       fullPath: '/api/expenses/'
       preLoaderRoute: typeof ApiExpensesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/export/$kind': {
+      id: '/api/export/$kind'
+      path: '/api/export/$kind'
+      fullPath: '/api/export/$kind'
+      preLoaderRoute: typeof ApiExportKindRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/leave/': {
@@ -1943,6 +1983,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   DangNhapRoute: DangNhapRoute,
   DoiMatKhauRoute: DoiMatKhauRoute,
+  ApiBackupRoute: ApiBackupRoute,
   ApiBookingSettingsRoute: ApiBookingSettingsRoute,
   ApiDepositSeasonsRoute: ApiDepositSeasonsRoute,
   ApiEventsRoute: ApiEventsRoute,
@@ -1960,6 +2001,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthPasswordRoute: ApiAuthPasswordRoute,
   ApiCatalogKindRoute: ApiCatalogKindRoute,
   ApiCustomersIdRoute: ApiCustomersIdRouteWithChildren,
+  ApiExportKindRoute: ApiExportKindRoute,
   ApiMoneyActionRoute: ApiMoneyActionRoute,
   ApiMoneyDayCloseRoute: ApiMoneyDayCloseRoute,
   ApiMoneyEntriesRoute: ApiMoneyEntriesRoute,

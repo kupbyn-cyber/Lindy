@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 5 — Hoàn thiện
 
-**Ngày:** 13/10/2026 · **Trạng thái:** CHỜ DUYỆT. Chưa viết code. Q-K, Q-L, Q-M đã chốt 13/10/2026 theo phương án (a) → K23, K24, K25. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. Đang làm 5A. Q-K, Q-L, Q-M đã chốt 13/10/2026 theo phương án (a) → K23, K24, K25. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (D14, Q40, Q42, K20–K22); PRD v1.2 §1 (điểm đích), §4 (`profit.read`, `payroll.export_all_branch`), §7.1 (lợi nhuận tạm tính), §11, §15, §16, §17, §18 (test 19, 27, 29), §19.6; PRD v1.1 §15, §16 (chi tiết nhập dữ liệu cũ); kế hoạch Đợt 2–4 (phần dời sang Đợt 5).
 
 Ký hiệu `[Pn]`: điểm phản biện ở mục 11 (nối tiếp P76). `Sn`: test bảo mật ở mục 10.2 (nối tiếp S62).

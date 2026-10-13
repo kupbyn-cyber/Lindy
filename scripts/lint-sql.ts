@@ -10,6 +10,8 @@ const allowed = new Set([
   'scripts/migrate.ts',
   'scripts/db-bootstrap.ts',
   'scripts/check-upgrade.ts',
+  // Khôi phục thử vào DB tạm local: tên bảng lấy từ catalog DB, kiểm dạng định danh; dữ liệu truyền bằng tham số
+  'scripts/lib/restore.ts',
   'scripts/lint-sql.ts',
   'src/server/ops/migrations.ts',
   'src/server/ops/release.ts',
