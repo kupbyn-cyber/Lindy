@@ -1,9 +1,9 @@
-// UI06 — Sổ tiền (Đợt 3, bước 3.3; PRD §7.1–7.2). Linh, Nhung (money_accounts.read_balance).
+// UI06 — Sổ tiền (Đợt 3, bước 3.3, 3.14, 3.17; PRD §7.1–7.3). Linh, Nhung (money_accounts.read_balance).
 // Số dư từng tài khoản, mở sổ (Linh, một lần), bút toán theo ngày với đầu kỳ / vào / ra / cuối kỳ.
-// Thu chi, chuyển nội bộ, điều chỉnh có ở Đợt 3B.
+// Nhung, Linh: chuyển nội bộ, đối soát khoản ngân hàng với sao kê. Linh: thu khác, góp/rút vốn, điều chỉnh.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import {
   Button,
   ConfirmDialog,
@@ -11,6 +11,8 @@ import {
   MoneyInput,
   Note,
   SegmentedControl,
+  Sheet,
+  TextArea,
   TextField,
   useToast,
 } from '~/components/ui'
@@ -62,6 +64,7 @@ function Page() {
       {book.data ? (
         <>
           {book.data.book ? <Balances b={book.data} /> : <NotOpened b={book.data} />}
+          {book.data.book ? <MoneyActions b={book.data} /> : null}
           <EntryList b={book.data} />
         </>
       ) : null}
@@ -210,14 +213,18 @@ function rangeOf(r: Range, today: string) {
 
 function EntryList(props: { b: Book }) {
   const today = props.b.today ?? toLocalDate(new Date())
+  const can = useCan()
   const [range, setRange] = useState<Range>('today')
   const [account, setAccount] = useState<string>('all')
+  const [unrec, setUnrec] = useState(false)
   const { from, to } = rangeOf(range, today)
   const q = useQuery({
-    queryKey: ['money', 'entries', from, to, account],
+    queryKey: ['money', 'entries', from, to, account, unrec],
     queryFn: () =>
       api<Entries>(
-        `/api/money/entries?from=${from}&to=${to}${account === 'all' ? '' : `&accountId=${account}`}`,
+        `/api/money/entries?from=${from}&to=${to}${account === 'all' ? '' : `&accountId=${account}`}${
+          unrec ? '&unreconciled=1' : ''
+        }`,
       ),
   })
   useEffect(() => {
@@ -254,6 +261,17 @@ function EntryList(props: { b: Book }) {
           value={account}
           onChange={setAccount}
         />
+        {can('cashbook.manage') ? (
+          <Button variant={unrec ? 'primary' : 'secondary'} onClick={() => setUnrec((x) => !x)}>
+            {unrec ? 'Đang xem: chuyển khoản chưa đối soát' : 'Chuyển khoản chưa đối soát'}
+          </Button>
+        ) : null}
+        {unrec ? (
+          <p className="caption m-0 text-ink-muted">
+            Khoản của tài khoản ngân hàng đến hết {formatIsoDate(to)} chưa đánh dấu khớp sao kê. Đã đối soát
+            thì khoản gốc không huỷ được.
+          </p>
+        ) : null}
       </div>
       {q.isLoading ? <p className="body px-4 text-ink-muted">Đang tải…</p> : null}
       {q.isError ? (
@@ -261,7 +279,7 @@ function EntryList(props: { b: Book }) {
           <Note tone="danger">{errorText(q.error)}</Note>
         </div>
       ) : null}
-      {q.data?.book
+      {q.data?.book && !unrec
         ? q.data.accounts.map((a) => (
             <div key={a.accountId} className="mx-4 lo-card flex flex-col gap-1">
               <span className="body-strong">{a.name}</span>
@@ -283,7 +301,12 @@ function EntryList(props: { b: Book }) {
           <h3 className="label m-0 px-4 pb-1 text-ink-muted">{formatIsoDate(date)}</h3>
           <div className="border-t border-line">
             {items.map((i) => (
-              <EntryRow key={i.id} i={i} showAccount={account === 'all'} />
+              <EntryRow
+                key={i.id}
+                i={i}
+                showAccount={account === 'all'}
+                canReconcile={!!q.data?.can.reconcile}
+              />
             ))}
           </div>
         </div>
@@ -297,9 +320,12 @@ function EntryList(props: { b: Book }) {
   )
 }
 
-function EntryRow(props: { i: Entries['items'][number]; showAccount: boolean }) {
+function EntryRow(props: { i: Entries['items'][number]; showAccount: boolean; canReconcile: boolean }) {
   const { i } = props
-  const title = `${LEDGER_LABEL[i.type] ?? i.type}${i.order ? ` #${String(i.order.code).padStart(4, '0')}` : ''}`
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  const label = LEDGER_LABEL[i.type] ?? i.type
   const meta = [
     toLocalTime(i.occurredAt),
     props.showAccount ? i.accountName : null,
@@ -309,10 +335,37 @@ function EntryRow(props: { i: Entries['items'][number]; showAccount: boolean }) 
   ]
     .filter(Boolean)
     .join(' · ')
-  const body = (
-    <>
+  const bankItem = i.accountType === 'bank' && i.type !== 'opening'
+
+  async function reconcile() {
+    setBusy(true)
+    try {
+      await api('/api/money/reconcile', { body: { entryIds: [i.id] } })
+      await qc.invalidateQueries({ queryKey: ['money'] })
+      toast('Đã đánh dấu khớp sao kê.')
+    } catch (e) {
+      toast(errorText(e), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="lo-row">
       <span className="lo-row-main">
-        <span className="body lo-row-title">{title}</span>
+        <span className="body lo-row-title">
+          {i.order ? (
+            <Link to="/don-hang/$id" params={{ id: i.order.id }} className="text-accent">
+              {label} #{String(i.order.code).padStart(4, '0')}
+            </Link>
+          ) : i.appointment ? (
+            <Link to="/lich/$id" params={{ id: i.appointment.id }} className="text-accent">
+              {label} · {i.appointment.name}
+            </Link>
+          ) : (
+            label
+          )}
+        </span>
         <span className="lo-row-meta caption">{meta}</span>
       </span>
       <span className="lo-row-side">
@@ -321,14 +374,221 @@ function EntryRow(props: { i: Entries['items'][number]; showAccount: boolean }) 
           sign
           tone={i.beforeOpening ? 'muted' : i.amount < 0 ? 'negative' : 'positive'}
         />
+        {bankItem && i.reconciled ? <span className="caption text-success">Đã đối soát</span> : null}
+        {bankItem && !i.reconciled && props.canReconcile ? (
+          <Button variant="quiet" loading={busy} onClick={() => void reconcile()}>
+            Khớp sao kê
+          </Button>
+        ) : null}
       </span>
-    </>
+    </div>
   )
-  return i.order ? (
-    <Link to="/don-hang/$id" params={{ id: i.order.id }} className="lo-row lo-row-action">
-      {body}
-    </Link>
-  ) : (
-    <div className="lo-row">{body}</div>
+}
+
+// ---------------------------------------------------------------- Chuyển nội bộ, phiếu Linh lập (3.14)
+
+const VOUCHER_KIND = [
+  { value: 'other_income', label: 'Thu khác' },
+  { value: 'capital_in', label: 'Góp vốn' },
+  { value: 'capital_out', label: 'Rút vốn' },
+  { value: 'adjustment', label: 'Điều chỉnh' },
+] as const
+type VoucherKind = (typeof VOUCHER_KIND)[number]['value']
+
+function MoneyActions(props: { b: Book }) {
+  const can = useCan()
+  const [sheet, setSheet] = useState<'transfer' | 'voucher' | null>(null)
+  const manage = can('cashbook.manage')
+  const owner = can('cashbook.owner')
+  if (!manage && !owner) return null
+  return (
+    <div className="flex flex-wrap gap-2 px-4">
+      {manage ? <Button onClick={() => setSheet('transfer')}>Chuyển nội bộ</Button> : null}
+      {owner ? <Button onClick={() => setSheet('voucher')}>Thu khác, vốn, điều chỉnh</Button> : null}
+      {manage ? (
+        <Link to="/them/chot-ngay" className="lo-btn lo-btn-secondary button-label">
+          Chốt quỹ
+        </Link>
+      ) : null}
+      {sheet === 'transfer' ? <TransferSheet b={props.b} onClose={() => setSheet(null)} /> : null}
+      {sheet === 'voucher' ? <VoucherSheet b={props.b} onClose={() => setSheet(null)} /> : null}
+    </div>
+  )
+}
+
+function useMoneySave(onClose: () => void) {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const key = useRef('')
+  async function save(path: string, body: Record<string, unknown>, done: string) {
+    setBusy(true)
+    setError(null)
+    if (!key.current) key.current = crypto.randomUUID()
+    try {
+      await api(path, { body: { ...body, idempotencyKey: key.current } })
+      key.current = ''
+      await qc.invalidateQueries({ queryKey: ['money'] })
+      toast(done)
+      onClose()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return { busy, error, save }
+}
+
+function TransferSheet(props: { b: Book; onClose: () => void }) {
+  const cash = props.b.accounts.find((a) => a.type === 'cash')
+  const bank = props.b.accounts.find((a) => a.type === 'bank')
+  const [dir, setDir] = useState<'cash_to_bank' | 'bank_to_cash'>('cash_to_bank')
+  const [amount, setAmount] = useState<number | null>(null)
+  const [note, setNote] = useState('')
+  const s = useMoneySave(props.onClose)
+  const from = dir === 'cash_to_bank' ? cash : bank
+  const to = dir === 'cash_to_bank' ? bank : cash
+  return (
+    <Sheet
+      open
+      title="Chuyển nội bộ"
+      onClose={props.onClose}
+      footer={
+        <Button
+          block
+          variant="primary"
+          loading={s.busy}
+          disabled={!amount || !from || !to}
+          onClick={() =>
+            void s.save(
+              '/api/money/transfer',
+              {
+                fromAccountId: from!.id,
+                toAccountId: to!.id,
+                amount: amount ?? 0,
+                note: note.trim() || null,
+              },
+              'Đã ghi chuyển nội bộ.',
+            )
+          }
+        >
+          Ghi chuyển tiền
+        </Button>
+      }
+    >
+      <SegmentedControl
+        ariaLabel="Chiều chuyển"
+        options={[
+          { value: 'cash_to_bank', label: 'Tiền mặt → Tài khoản' },
+          { value: 'bank_to_cash', label: 'Tài khoản → Tiền mặt' },
+        ]}
+        value={dir}
+        onChange={(v) => setDir(v as typeof dir)}
+      />
+      <MoneyInput label="Số tiền" value={amount} onValueChange={setAmount} />
+      <TextField
+        label="Ghi chú (không bắt buộc)"
+        value={note}
+        maxLength={300}
+        placeholder="Nộp tiền mặt vào tài khoản…"
+        onChange={(e) => setNote(e.target.value)}
+      />
+      <p className="caption m-0 text-ink-muted">
+        {from?.name} giảm, {to?.name} tăng cùng số tiền; tổng không đổi, không phải thu chi.
+      </p>
+      {s.error ? <Note tone="danger">{s.error}</Note> : null}
+    </Sheet>
+  )
+}
+
+function VoucherSheet(props: { b: Book; onClose: () => void }) {
+  const [kind, setKind] = useState<VoucherKind>('other_income')
+  const [incomeType, setIncomeType] = useState<'loan' | 'supplier_refund' | 'other'>('other')
+  const [accountId, setAccountId] = useState(props.b.accounts[0]?.id ?? '')
+  const [sign, setSign] = useState<'plus' | 'minus'>('plus')
+  const [amount, setAmount] = useState<number | null>(null)
+  const [reason, setReason] = useState('')
+  const s = useMoneySave(props.onClose)
+  const signed = kind === 'adjustment' && sign === 'minus' ? -(amount ?? 0) : (amount ?? 0)
+  return (
+    <Sheet
+      open
+      title="Thu khác, vốn, điều chỉnh"
+      onClose={props.onClose}
+      footer={
+        <Button
+          block
+          variant="primary"
+          loading={s.busy}
+          disabled={!amount || !reason.trim()}
+          onClick={() =>
+            void s.save(
+              '/api/money/voucher',
+              {
+                kind,
+                incomeType: kind === 'other_income' ? incomeType : null,
+                accountId,
+                amount: signed,
+                reason,
+              },
+              'Đã ghi phiếu.',
+            )
+          }
+        >
+          Ghi phiếu
+        </Button>
+      }
+    >
+      <SegmentedControl
+        ariaLabel="Loại phiếu"
+        options={[...VOUCHER_KIND]}
+        value={kind}
+        onChange={(v) => setKind(v as VoucherKind)}
+      />
+      {kind === 'other_income' ? (
+        <SegmentedControl
+          ariaLabel="Loại thu khác"
+          options={[
+            { value: 'other', label: 'Thu khác' },
+            { value: 'loan', label: 'Vay' },
+            { value: 'supplier_refund', label: 'NCC hoàn tiền' },
+          ]}
+          value={incomeType}
+          onChange={(v) => setIncomeType(v as typeof incomeType)}
+        />
+      ) : null}
+      {kind === 'adjustment' ? (
+        <SegmentedControl
+          ariaLabel="Tăng hay giảm"
+          options={[
+            { value: 'plus', label: 'Tăng số dư' },
+            { value: 'minus', label: 'Giảm số dư' },
+          ]}
+          value={sign}
+          onChange={(v) => setSign(v as 'plus' | 'minus')}
+        />
+      ) : null}
+      <SegmentedControl
+        ariaLabel="Tài khoản"
+        options={props.b.accounts.map((a) => ({ value: a.id, label: a.name }))}
+        value={accountId}
+        onChange={setAccountId}
+      />
+      <MoneyInput label="Số tiền" value={amount} onValueChange={setAmount} />
+      <TextArea
+        label="Lý do (bắt buộc)"
+        value={reason}
+        maxLength={500}
+        onChange={(e) => setReason(e.target.value)}
+      />
+      <p className="caption m-0 text-ink-muted">
+        {kind === 'capital_out' || (kind === 'adjustment' && sign === 'minus') ? 'Tiền ra khỏi' : 'Tiền vào'}{' '}
+        {props.b.accounts.find((a) => a.id === accountId)?.name}. Không tính vào doanh thu. Phiếu không sửa
+        được; sai thì lập phiếu điều chỉnh.
+      </p>
+      {s.error ? <Note tone="danger">{s.error}</Note> : null}
+    </Sheet>
   )
 }

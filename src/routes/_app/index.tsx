@@ -149,6 +149,33 @@ function Overview() {
         </section>
       ) : null}
 
+      {a &&
+      (a.expensesToApprove || a.expensesToPay || a.expensesReview || a.closesReview || a.closeOverdue) ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="overline m-0 text-ink-muted">Cần xử lý · thu chi</h2>
+          <div className="-mx-4 border-t border-line">
+            {a.closeOverdue ? (
+              <PageLink to="/them/chot-ngay" text={`Chưa chốt quỹ ngày ${formatIsoDate(a.closeOverdue)}`} />
+            ) : null}
+            {a.expensesToApprove ? (
+              <PageLink to="/them/thu-chi" text={`${a.expensesToApprove} đề nghị chi chờ duyệt`} />
+            ) : null}
+            {a.expensesToPay ? (
+              <PageLink to="/them/thu-chi" text={`${a.expensesToPay} phiếu đã duyệt chờ chi tiền`} />
+            ) : null}
+            {a.expensesReview ? (
+              <PageLink
+                to="/them/thu-chi"
+                text={`${a.expensesReview} phiếu chi Nhung tự duyệt cần xem lại`}
+              />
+            ) : null}
+            {a.closesReview ? (
+              <PageLink to="/them/chot-ngay" text={`${a.closesReview} lần chốt quỹ lệch tiền cần xem lại`} />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       {r && d.byStaff.length > 0 ? (
         <section className="flex flex-col gap-1">
           <h2 className="overline m-0 text-ink-muted">
@@ -176,6 +203,15 @@ function DepLine(props: { label: string; value: number }) {
       <span className="body text-ink-muted">{props.label}</span>
       <Money value={props.value} />
     </div>
+  )
+}
+
+function PageLink(props: { to: '/them/thu-chi' | '/them/chot-ngay'; text: string }) {
+  return (
+    <Link to={props.to} className="lo-row lo-row-action">
+      <span className="body">{props.text}</span>
+      <span className="label text-accent">Xem</span>
+    </Link>
   )
 }
 

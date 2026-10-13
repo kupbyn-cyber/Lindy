@@ -100,6 +100,25 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
       from orders o
       where o.branch_id = ${branch.id}
         and (o.status in ('in_progress', 'awaiting_confirmation') or ${reviewPending(tx)})`
+    // Thu chi (Đợt 3B): phiếu chờ duyệt mức mình duyệt được, phiếu đã duyệt chờ chi; Linh xem lại phiếu Nhung tự
+    // duyệt, lệch quỹ; ngày chưa chốt quỹ (trước hôm nay) cho người chốt
+    const approveAny = hasPerm(auth, branch.id, 'expense.approve_above_limit')
+    const approveWithin = hasPerm(auth, branch.id, 'expense.approve_within_limit')
+    const manage = hasPerm(auth, branch.id, 'cashbook.manage')
+    const [x] = await tx<Record<string, unknown>[]>`
+      select
+        (select count(*) from expense_requests where branch_id = ${branch.id} and status = 'requested'
+           and (${approveAny} or (${approveWithin} and required_level = 'manager'))) as expenses_to_approve,
+        (select count(*) from expense_requests where branch_id = ${branch.id} and status = 'approved') as expenses_to_pay,
+        (select count(*) from expense_requests where branch_id = ${branch.id} and needs_owner_review
+           and reviewed_at is null) as expenses_review,
+        (select count(*) from cash_day_closes where branch_id = ${branch.id} and needs_owner_review
+           and reviewed_at is null) as closes_review,
+        (select case when mb.branch_id is null then null
+                     else greatest(mb.opening_date, coalesce(max(c.business_date) + 1, mb.opening_date))::text end
+         from money_books mb left join cash_day_closes c on c.branch_id = mb.branch_id
+         where mb.branch_id = ${branch.id} group by mb.branch_id, mb.opening_date) as first_unclosed`
+    const firstUnclosed = (x?.firstUnclosed as string | null) ?? null
     return {
       period: input.period,
       from,
@@ -114,6 +133,12 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
         myInProgress: n(c?.myInProgress),
         ownerApproval: isOwner ? n(c?.ownerApproval) : 0,
         review: isOwner ? n(c?.review) : 0,
+        expensesToApprove: approveAny || approveWithin ? n(x?.expensesToApprove) : 0,
+        expensesToPay: manage ? n(x?.expensesToPay) : 0,
+        expensesReview: isOwner ? n(x?.expensesReview) : 0,
+        closesReview: isOwner ? n(x?.closesReview) : 0,
+        /** Ngày chưa chốt quỹ sớm nhất, nếu trước hôm nay (quên chốt) */
+        closeOverdue: manage && firstUnclosed && firstUnclosed < today ? firstUnclosed : null,
       },
     }
   })

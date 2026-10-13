@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 3 — Sổ tiền và cọc Tết
 
-**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 3A ĐÃ LÀM (kết quả mục 15); 3B chưa làm, chuẩn bị ở mục 16. Q-C, Q-D, Q-E đã chốt 13/10/2026 theo phương án (a) → K16, K17, K18. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 13/10/2026 · **Trạng thái:** ĐÃ DUYỆT 13/10/2026. 3A ĐÃ LÀM (kết quả mục 15); 3B-1 ĐÃ LÀM (mục 17); 3B-2 chưa làm (chuẩn bị ở mục 16). Q-C, Q-D, Q-E đã chốt 13/10/2026 theo phương án (a) → K16, K17, K18. `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** `CLAUDE.md`; `docs/DECISIONS.md` (A02, A03, B01, C01–C04, K05, K09–K15); PRD v1.2 §4, §6.3, §6.6, §7, §11, §12, §13 (B, C, D), §14 (UI06, UI07, UI16), §17, §18; PRD v1.1 §7.3 (chứng từ, trạng thái phiếu chi), Q14–Q24, Q34; module lịch v1.2 §4, §5.1, §6, §9, §11, §12, §13 (test 29–36); kế hoạch Đợt 2 mục 6 (phần dời sang Đợt 3).
 
 Ký hiệu `[Pn]`: điểm phản biện số n ở mục 11 (nối tiếp P26–P45 của Đợt 2). `Sn`: test bảo mật ở mục 10.2.
@@ -194,19 +194,19 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
 
 ### 3B — Thu chi và chốt ngày
 
-- [ ] **3.12 Đề nghị chi và duyệt chi.** Migration `0013_cashbook` phần chi. Mọi người tạo đề nghị; duyệt hoặc từ chối theo bậc; "Đã chi" chọn tài khoản → bút toán; huỷ đề nghị khi chưa duyệt; Nhung tự duyệt phiếu của mình → Cần xem lại.
+- [x] **3.12 Đề nghị chi và duyệt chi.** Migration `0013_cashbook` phần chi. Mọi người tạo đề nghị; duyệt hoặc từ chối theo bậc; "Đã chi" chọn tài khoản → bút toán; huỷ đề nghị khi chưa duyệt; Nhung tự duyệt phiếu của mình → Cần xem lại.
   *Kiểm tra:* test 8, 22, 37, §13C; S39–S41.
-- [ ] **3.13 Màn Thu chi (UI16, phần chi).** Danh sách theo trạng thái; form đề nghị (nhóm, số tiền, ghi chú); nút Duyệt, Từ chối, Đã chi.
+- [x] **3.13 Màn Thu chi (UI16, phần chi).** Danh sách theo trạng thái; form đề nghị (nhóm, số tiền, ghi chú); nút Duyệt, Từ chối, Đã chi.
   *Kiểm tra:* 375px; thợ chỉ thấy phiếu của mình.
-- [ ] **3.14 Chuyển nội bộ, thu khác, góp/rút vốn, điều chỉnh.** Nhung, Linh chuyển nội bộ; Linh lập phiếu còn lại.
+- [x] **3.14 Chuyển nội bộ, thu khác, góp/rút vốn, điều chỉnh.** Nhung, Linh chuyển nội bộ; Linh lập phiếu còn lại.
   *Kiểm tra:* test 6 (chuyển 2.000.000đ tiền mặt sang ngân hàng, tổng không đổi), 7 (góp vốn 20.000.000đ tăng quỹ, không tăng doanh thu); S42, S43.
 - [ ] **3.15 Tip giữ hộ.** Ghi khoản thu chuyển khoản có ô "Trong đó tip"; app chia theo phần tiền từng thợ, sửa được khi khách chỉ định (tổng phải khớp) → bút toán `tip_in`. Cuối ngày Nhung chọn thợ, trả tiền mặt → bút toán `tip_payout`. Thợ thấy tip của mình.
   *Kiểm tra:* test 44; S44.
 - [ ] **3.16 Hoàn tiền, huỷ đơn đã xác nhận.** Theo Q-E. Phiếu hoàn ≤ số đã thu còn lại; giảm doanh thu ngày làm dịch vụ và phần từng thợ theo tỷ lệ. Huỷ đơn đã xác nhận khi đã hoàn hết tiền thu. Sửa thông báo 422 ở bước 2.19 thành "Dùng Hoàn tiền".
   *Kiểm tra:* test 5 phần kỳ mở; trạng thái thu Hoàn một phần / Hoàn toàn bộ; S45, S46.
-- [ ] **3.17 Đối soát chuyển khoản.** Nhung, Linh đánh dấu khoản thu, cọc, tip chuyển khoản "đã khớp sao kê"; đã đối soát thì không huỷ được.
+- [x] **3.17 Đối soát chuyển khoản.** Nhung, Linh đánh dấu khoản thu, cọc, tip chuyển khoản "đã khớp sao kê"; đã đối soát thì không huỷ được.
   *Kiểm tra:* huỷ khoản đã đối soát → chặn (API, SQL).
-- [ ] **3.18 Chốt quỹ (UI07).** Màn Chốt ngày: tiền mặt đầu ngày, thu, chi, lý thuyết; việc còn treo (đơn chờ xác nhận, đơn thu thiếu, tip chưa trả, cọc chờ xác nhận, chuyển khoản chưa đối soát); nhập số đếm, lý do khi lệch; xử lý lệch theo Q-D. Mở từ giờ đóng cửa; mỗi ngày một lần; không sửa, không xoá.
+- [x] **3.18 Chốt quỹ (UI07).** Màn Chốt ngày: tiền mặt đầu ngày, thu, chi, lý thuyết; việc còn treo (đơn chờ xác nhận, đơn thu thiếu, tip chưa trả, cọc chờ xác nhận, chuyển khoản chưa đối soát); nhập số đếm, lý do khi lệch; xử lý lệch theo Q-D. Mở từ giờ đóng cửa; mỗi ngày một lần; không sửa, không xoá.
   *Kiểm tra:* §13D; test 14 phần khoá ngày; chốt trước 21:00 → 422; chốt lần hai → 409; bút toán ghi sau khi chốt rơi vào ngày kế; S47.
 - [ ] **3.19 Chứng từ ảnh.** Migration `0015_attachments`. Chụp hoặc chọn ảnh trên iPhone, thu nhỏ, gửi lên; gắn vào phiếu chi, phiếu hoàn, phiếu Linh lập; xem theo quyền của phiếu.
   *Kiểm tra:* test 5 phần chứng từ; S48.
@@ -432,3 +432,23 @@ Mỗi phần chốt bằng `bun run check`, build, `scan-bundle`, `check-upgrade
 - **Ngày mở sổ** (Q24, ngày 1 của tháng): nếu mở sổ 01/11/2026 thì sáng 01/11 Linh đếm tiền mặt, xem số dư tài khoản ngân hàng rồi nhập ở Thêm → Sổ tiền. App cần chạy trên hosting trước ngày đó.
 - **Mùa cọc Tết 2027**: Linh nhập ngày dương lịch của 19 và 28 tháng Chạp ở Cài đặt lịch khi gần đến (app không tự đổi lịch âm).
 - **`VAPID_SUBJECT`** trên hosting: sửa thành `mailto:` + email quán để thử thông báo cọc trên iPhone.
+## 17. Kết quả 3B-1 (13/10/2026)
+
+**Đã làm:** bước 3.12, 3.13, 3.14, 3.17, 3.18. Migration `0013_cashbook`.
+
+| Kiểm | Kết quả |
+|---|---|
+| `bun run check` (lint, typecheck, test) | Đạt: 240/240 (20 file). Mới: `tests/acceptance/so-tien.test.ts` (10) |
+| PRD §18 test 6, 7, 8, 14 (khoá ngày), 22, 37; §13C | Đạt (tự động) |
+| S39–S43, S47 | Đạt (tự động) |
+| `bun run build`, `scan-bundle` | Đạt; 50 file trình duyệt không có bí mật |
+| `check-upgrade --from=0012` và `--from=0005` | Đạt (thêm bước thử chi tiền, chuyển nội bộ) |
+| Thử trên trình duyệt 375×812 | Linh lập phiếu chi (duyệt luôn) → Đã chi tiền mặt, số dư giảm đúng; chuyển nội bộ; khớp sao kê; màn Chốt quỹ (Nhung khi chưa mở sổ, Linh sau khi mở sổ) |
+
+**Thiết kế chốt khi làm:**
+- Đối soát theo bút toán của tài khoản ngân hàng (khoản thu, cọc, chuyển nội bộ, phiếu); khoản thu của đơn đồng bộ cột `reconciliation_status`. Không gỡ đối soát.
+- Chốt quỹ gợi ý hôm nay (từ giờ đóng cửa) hoặc hôm qua; các ngày chưa chốt trước đó gộp vào. Số dư mở sổ tính vào đầu kỳ.
+- Phiếu Nhung tự duyệt: hiện nhãn "cần Linh xem lại" cho cả hai, chỉ Linh bấm "Đã xem".
+- Tổng quan có "Cần xử lý · thu chi": phiếu chờ duyệt, chờ chi, quên chốt quỹ, phiếu và lần chốt cần Linh xem lại.
+
+**Chưa kiểm:** thử tay đủ 4 tài khoản trên điện thoại thật (Trang đề nghị chi, Nhung duyệt và chi, Linh duyệt phiếu trên mức).

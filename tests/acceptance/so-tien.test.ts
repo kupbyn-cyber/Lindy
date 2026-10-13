@@ -367,7 +367,8 @@ describe('3.18 — chốt quỹ cuối ngày (test 14, S47, K17)', () => {
     const pre = await dayClosePreview(auth('nhung'), { branchId: cs3, date: yesterday })
     expect(pre.closable).toBe(true)
     // Mọi khoản thu chi ở test trên ghi hôm nay → tiền mặt lý thuyết hôm qua = số mở sổ
-    expect(pre.figures).toMatchObject({ expected: 10_000_000, cashIn: 10_000_000, cashOut: 0 })
+    // Số dư mở sổ nằm ở đầu kỳ, không tính là tiền vào
+    expect(pre.figures).toMatchObject({ expected: 10_000_000, opening: 10_000_000, cashIn: 0, cashOut: 0 })
     expect(
       (await err(closeDay(auth('nhung'), { branchId: cs3, date: yesterday, counted: 9_990_000 }))).status,
     ).toBe(422)

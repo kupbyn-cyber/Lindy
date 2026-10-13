@@ -49,8 +49,14 @@ function MorePage() {
         {can('users.manage') ? (
           <Row to="/them/tai-khoan" label="Tài khoản" hint="Tạo tài khoản, mật khẩu, vai trò, khoá" />
         ) : null}
+        {can('expense.request') ? (
+          <Row to="/them/thu-chi" label="Thu chi" hint="Đề nghị chi, duyệt chi, đã chi" />
+        ) : null}
         {can('money_accounts.read_balance') ? (
           <Row to="/them/so-tien" label="Sổ tiền" hint="Số dư Tiền mặt, Tài khoản; tiền vào, tiền ra" />
+        ) : null}
+        {can('cashbook.manage') ? (
+          <Row to="/them/chot-ngay" label="Chốt quỹ" hint="Đếm tiền mặt cuối ngày, việc còn treo" />
         ) : null}
         {can('revenue.read_branch') ? (
           <Row to="/them/bao-cao" label="Báo cáo doanh thu" hint="Theo ngày, tháng, thợ, dịch vụ" />

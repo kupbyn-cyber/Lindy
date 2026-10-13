@@ -233,6 +233,28 @@ try {
     const bankExpected = 2000000 + 200000 + (oldOrder ? 150000 : 0)
     if (bal.cash !== 1070000 || bal.bank !== bankExpected) throw new Error('Số dư sau mở sổ sai.')
 
+    // Thu chi (0013): Linh lập phiếu chi 50.000đ (duyệt luôn) → Đã chi tiền mặt; chuyển 20.000đ tiền mặt sang ngân hàng
+    const { createExpense, actOnExpense } = await import('../src/server/expenses/service')
+    const { createTransfer } = await import('../src/server/money/service')
+    const ex = await createExpense(auth, {
+      createRequestId: crypto.randomUUID(),
+      categoryCode: 'supplies',
+      amount: 50000,
+      note: 'Thử nâng cấp',
+    })
+    await actOnExpense(auth, ex.id, 'pay', { version: ex.version, method: 'cash' })
+    const cash = book.accounts.find((x) => x.type === 'cash')!.id
+    const bankId = book.accounts.find((x) => x.type === 'bank')!.id
+    const after = await createTransfer(auth, {
+      idempotencyKey: crypto.randomUUID(),
+      fromAccountId: cash,
+      toAccountId: bankId,
+      amount: 20000,
+    })
+    const bal2 = Object.fromEntries(after.accounts.map((x) => [x.type, x.balance]))
+    log(`Thu chi: chi 50.000đ, chuyển 20.000đ → Tiền mặt ${bal2.cash}đ, Tài khoản ${bal2.bank}đ`)
+    if (bal2.cash !== 1000000 || bal2.bank !== bankExpected + 20000) throw new Error('Thu chi sai số dư.')
+
     const [n] = await db<Record<string, number>[]>`
       select (select count(*)::int from schema_migrations) as migrations,
              (select count(*)::int from services) as services, (select count(*)::int from combos) as combos,

@@ -60,7 +60,14 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 6. Lịch có cọc → Khách báo huỷ → Huỷ lịch (Linh, Nhung, Chin) → app gợi ý **Hoàn cọc** (báo trước ≥ 12 tiếng) hoặc **Giữ cọc**. Làm khác gợi ý phải ghi lý do và vào Cần xem lại của Linh.
 7. **Tổng quan** (Linh, Nhung): Tiền trong quỹ, Cọc Tết; **Báo cáo**: doanh thu cọc khách bỏ hẹn tách riêng.
 
-Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=0010` (hoặc `--from=0005` nếu hosting còn chạy bản Đợt 1).
+## Thử thu chi và chốt quỹ (Đợt 3B-1)
+
+1. `trang@lindy.test` → **Thêm → Thu chi → + Đề nghị chi** (nhóm, số tiền, nội dung). Thợ chỉ thấy phiếu của mình.
+2. `nhung@lindy.test` → Thu chi → **Chờ duyệt** → mở phiếu → **Duyệt** → **Chờ chi** → **Đã chi** (tiền mặt / chuyển khoản). Phiếu trên 1.000.000đ hoặc tiền nhà, lương thưởng, máy móc, sửa chữa: chỉ Linh duyệt.
+3. Linh, Nhung → **Sổ tiền**: **Chuyển nội bộ**; Linh có thêm **Thu khác, vốn, điều chỉnh**. Khoản của tài khoản ngân hàng có nút **Khớp sao kê** (đã khớp thì khoản gốc không huỷ được).
+4. Nhung → **Thêm → Chốt quỹ**: chọn ngày (hôm nay từ 21:00, hoặc hôm qua), xem tiền mặt lý thuyết và việc còn treo, nhập tiền đếm được → **Chốt quỹ**. Lệch thì ghi lý do; app ghi khoản chênh lệch và Linh xem lại. Khoản ghi sau khi chốt tính vào ngày hôm sau.
+
+Trước khi triển khai bản có migration mới: `bun scripts/check-upgrade.ts --from=SỐ` (SỐ = migration cuối hosting đang chạy: `0005` nếu còn bản Đợt 1, `0012` nếu đã có Đợt 2 + 3A).
 
 ## Quản trị tài khoản (CLI, chưa có màn hình)
 

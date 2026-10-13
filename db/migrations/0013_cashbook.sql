@@ -561,10 +561,13 @@ language sql stable security definer set search_path = pg_catalog, public as $$
     from money_books mb
     where mb.branch_id = p_branch and app.has_perm(p_branch, 'money_accounts.read_balance')   -- thợ gọi thẳng: 0 dòng
   )
+  -- Số dư mở sổ tính vào đầu kỳ, không phải tiền vào
   select b.acc, b.start_date,
-         coalesce(sum(e.amount) filter (where e.business_date < b.start_date), 0)::bigint,
-         coalesce(sum(e.amount) filter (where e.business_date >= b.start_date and e.amount > 0), 0)::bigint,
-         coalesce(sum(-e.amount) filter (where e.business_date >= b.start_date and e.amount < 0), 0)::bigint,
+         coalesce(sum(e.amount) filter (where e.business_date < b.start_date or e.entry_type = 'opening'), 0)::bigint,
+         coalesce(sum(e.amount) filter (where e.business_date >= b.start_date and e.entry_type <> 'opening'
+                                        and e.amount > 0), 0)::bigint,
+         coalesce(sum(-e.amount) filter (where e.business_date >= b.start_date and e.entry_type <> 'opening'
+                                         and e.amount < 0), 0)::bigint,
          coalesce(sum(e.amount), 0)::bigint
   from b left join money_ledger_entries e
     on e.money_account_id = b.acc and e.business_date >= b.opening_date and e.business_date <= p_date

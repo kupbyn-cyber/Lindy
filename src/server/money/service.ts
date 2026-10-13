@@ -341,9 +341,14 @@ export async function dayClosePreview(auth: Auth, input: { branchId?: string; da
     const [last] = await tx<{ d: string | null }[]>`
       select max(business_date)::text as d from cash_day_closes where branch_id = ${branch.id}`
     const lastClosed = last?.d ?? null
-    // Ngày nên chốt: ngày sau lần chốt trước (chốt bù), hoặc hôm nay
+    // Ngày nên chốt: hôm nay (từ giờ đóng cửa); trước giờ đó thì hôm qua nếu chưa chốt. Chốt một ngày là gộp luôn
+    // các ngày chưa chốt trước nó (số lý thuyết tính lũy kế).
     const firstOpen = lastClosed ? addDays(lastClosed, 1) : (book?.openingDate ?? today)
-    const suggested = firstOpen < today ? firstOpen : today
+    const yesterday = addDays(today, -1)
+    const suggested =
+      b!.nowTime >= b!.closeTime || yesterday < firstOpen || (lastClosed && lastClosed >= yesterday)
+        ? today
+        : yesterday
     const date = input.date && isIsoDate(input.date) ? input.date : suggested
     const history = await tx<CloseRow[]>`
       select c.id, c.business_date::text as business_date, c.period_start::text as period_start, c.opening,
