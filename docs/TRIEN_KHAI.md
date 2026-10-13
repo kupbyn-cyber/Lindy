@@ -7,7 +7,7 @@ Cập nhật 13/10/2026. Trước đó dùng Vibe Hosting Nhân Hòa (T02); các
 | Mục | Giá trị |
 |---|---|
 | Bảng quản lý | https://v2.tinhgon.xyz (mục **Đưa website lên mạng**) |
-| Địa chỉ app | Tên miền Vibe Host cấp, dạng `https://<tên>.n2.tinhgon.xyz` (SSL tự cấp) |
+| Địa chỉ app | **https://lindy.n2.tinhgon.xyz** (SSL tự cấp). Chạy được từ 13/10/2026; bài học: `docs/BAI_HOC_TRIEN_KHAI.md` |
 | Mã nguồn | GitHub `kupbyn-cyber/Lindy` (riêng tư), nhánh `main`, nguồn **Git URL** + mã truy cập GitHub |
 | Build | Nixpacks, Node theo `engines.node`: `vite build`. Vibe Host nhận diện "vite" nên chạy **`npm run preview`** (= `npm start` = `node .output/server/index.mjs`), cổng `PORT` (mặc định **3000**). Thiếu script `preview` thì app chết ngay (crash-loop). |
 | Database | PostgreSQL của Vibe Host `linhdy-db`, chỉ có địa chỉ nội bộ. **Gắn vào website** ở trang DB → Website sử dụng → chọn Lindy: Vibe Host tự đặt `DATABASE_URL` và sao lưu cả dữ liệu. Không gắn thì lúc dựng nó cố tạo DB mới và hỏng vì gói Starter chỉ có 2 dịch vụ. |
@@ -36,7 +36,7 @@ Chuỗi quản trị được rút khỏi `process.env` ngay từ đầu, nên s
 | `DATABASE_URL` (hoặc `DATABASE_ADMIN_URL`) | Chuỗi kết nối DB quản trị Vibe Host điền sẵn | Có |
 | `LINDY_APP_PASSWORD` | Trong `.local/prod-env.txt` (sinh bằng `bun scripts/gen-prod-env.ts`) | Có |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Trong `.local/prod-env.txt`; khác khoá local | Khoá riêng: có |
-| `APP_ORIGIN` | Địa chỉ app, ví dụ `https://<tên>.n2.tinhgon.xyz` (không có `/` cuối) | |
+| `APP_ORIGIN` | `https://lindy.n2.tinhgon.xyz` (không có `/` cuối) | |
 | `TRUST_PROXY` | `1` | |
 | `NODE_ENV` | `production` (không đặt app vẫn chạy chế độ production) | |
 | `VAPID_SUBJECT` | `mailto:` + email liên hệ thật của quán | |
