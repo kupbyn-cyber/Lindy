@@ -175,7 +175,7 @@ Mỗi bước kiểm tra xong mới sang bước sau; xong bước nào đánh d
   - Chia thợ: một thợ nhận cả dòng; nhiều thợ nhập tay, tổng phải bằng thuần của dòng (C10).
   - Cơ sở hoa hồng = phần được chia + phần giảm quán chịu; hạn bảo hành.
   *Kiểm tra:* test đơn vị cho PRD 1, 4, 32, 46, 47, 48, 49, 50, 52; cơ sở hoa hồng của test 33 (500.000đ) và 34 (+50.000đ). Sinh ngẫu nhiên 1.000 đơn: tổng khớp từng đồng.
-- [ ] **2.5 Khách.** Migration `0007_customers` như 7.2. Service + API: tìm theo tên/SĐT không dấu (tối đa 20 kết quả), tạo khách, nhắc "SĐT này đã có: …" (Q06).
+- [x] **2.5 Khách.** Migration `0007_customers` như 7.2. Service + API: tìm theo tên/SĐT không dấu (tối đa 20 kết quả), tạo khách, nhắc "SĐT này đã có: …" (Q06).
   *Kiểm tra:* test 43; tìm `%` không khớp mọi khách; người ở CS2 thấy được hồ sơ khách (hồ sơ chung).
 - [ ] **2.6 Bảng đơn hàng.** Migration `0008_orders` như 7.3: bảng, 2 tài khoản tiền, bộ đếm mã đơn, `orders_guard`, constraint trigger, RLS theo K09, sửa `appointments_guard`, `pg_notify` loại `orders`.
   *Kiểm tra (SQL dưới `app_user`):* đổi cột bị cấm → lỗi; thợ sửa đơn Chờ xác nhận → lỗi; Σ chia ≠ thuần → commit lỗi; thu vượt → commit lỗi; không DELETE được; Trang không đọc được đơn ngoài K09.

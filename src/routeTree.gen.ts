@@ -35,6 +35,8 @@ import { Route as ApiAppointmentsCheckRouteImport } from './routes/api/appointme
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthPasswordRouteImport } from './routes/api/auth/password'
+import { Route as ApiCustomersIndexRouteImport } from './routes/api/customers/index'
+import { Route as ApiCustomersIdRouteImport } from './routes/api/customers/$id'
 import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
 import { Route as ApiNotificationsPreferencesRouteImport } from './routes/api/notifications/preferences'
 import { Route as ApiNotificationsUnreadCountRouteImport } from './routes/api/notifications/unread-count'
@@ -176,6 +178,16 @@ const ApiAuthPasswordRoute = ApiAuthPasswordRouteImport.update({
   path: '/api/auth/password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCustomersIndexRoute = ApiCustomersIndexRouteImport.update({
+  id: '/api/customers/',
+  path: '/api/customers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCustomersIdRoute = ApiCustomersIdRouteImport.update({
+  id: '/api/customers/$id',
+  path: '/api/customers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotificationsIndexRoute = ApiNotificationsIndexRouteImport.update({
   id: '/api/notifications/',
   path: '/api/notifications/',
@@ -251,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/customers/$id': typeof ApiCustomersIdRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/push/config': typeof ApiPushConfigRoute
@@ -260,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
+  '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
@@ -288,6 +302,7 @@ export interface FileRoutesByTo {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/customers/$id': typeof ApiCustomersIdRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/push/config': typeof ApiPushConfigRoute
@@ -297,6 +312,7 @@ export interface FileRoutesByTo {
   '/them': typeof AppThemIndexRoute
   '/api/accounts': typeof ApiAccountsIndexRoute
   '/api/appointments': typeof ApiAppointmentsIndexRoute
+  '/api/customers': typeof ApiCustomersIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
@@ -327,6 +343,7 @@ export interface FileRoutesById {
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/api/auth/password': typeof ApiAuthPasswordRoute
+  '/api/customers/$id': typeof ApiCustomersIdRoute
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/push/config': typeof ApiPushConfigRoute
@@ -336,6 +353,7 @@ export interface FileRoutesById {
   '/_app/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
+  '/api/customers/': typeof ApiCustomersIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
@@ -366,6 +384,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
+    | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/push/config'
@@ -375,6 +394,7 @@ export interface FileRouteTypes {
     | '/them/'
     | '/api/accounts/'
     | '/api/appointments/'
+    | '/api/customers/'
     | '/api/notifications/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
@@ -403,6 +423,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
+    | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/push/config'
@@ -412,6 +433,7 @@ export interface FileRouteTypes {
     | '/them'
     | '/api/accounts'
     | '/api/appointments'
+    | '/api/customers'
     | '/api/notifications'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
@@ -441,6 +463,7 @@ export interface FileRouteTypes {
     | '/api/auth/login'
     | '/api/auth/logout'
     | '/api/auth/password'
+    | '/api/customers/$id'
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/push/config'
@@ -450,6 +473,7 @@ export interface FileRouteTypes {
     | '/_app/them/'
     | '/api/accounts/'
     | '/api/appointments/'
+    | '/api/customers/'
     | '/api/notifications/'
     | '/api/accounts/$id/$action'
     | '/api/appointments/$id/$action'
@@ -471,6 +495,7 @@ export interface RootRouteChildren {
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthPasswordRoute: typeof ApiAuthPasswordRoute
+  ApiCustomersIdRoute: typeof ApiCustomersIdRoute
   ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
   ApiNotificationsUnreadCountRoute: typeof ApiNotificationsUnreadCountRoute
   ApiPushConfigRoute: typeof ApiPushConfigRoute
@@ -478,6 +503,7 @@ export interface RootRouteChildren {
   ApiPushTestRoute: typeof ApiPushTestRoute
   ApiAccountsIndexRoute: typeof ApiAccountsIndexRoute
   ApiAppointmentsIndexRoute: typeof ApiAppointmentsIndexRoute
+  ApiCustomersIndexRoute: typeof ApiCustomersIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
@@ -667,6 +693,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/customers/': {
+      id: '/api/customers/'
+      path: '/api/customers'
+      fullPath: '/api/customers/'
+      preLoaderRoute: typeof ApiCustomersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/customers/$id': {
+      id: '/api/customers/$id'
+      path: '/api/customers/$id'
+      fullPath: '/api/customers/$id'
+      preLoaderRoute: typeof ApiCustomersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notifications/': {
       id: '/api/notifications/'
       path: '/api/notifications'
@@ -806,6 +846,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthPasswordRoute: ApiAuthPasswordRoute,
+  ApiCustomersIdRoute: ApiCustomersIdRoute,
   ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
   ApiNotificationsUnreadCountRoute: ApiNotificationsUnreadCountRoute,
   ApiPushConfigRoute: ApiPushConfigRoute,
@@ -813,6 +854,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPushTestRoute: ApiPushTestRoute,
   ApiAccountsIndexRoute: ApiAccountsIndexRoute,
   ApiAppointmentsIndexRoute: ApiAppointmentsIndexRoute,
+  ApiCustomersIndexRoute: ApiCustomersIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
