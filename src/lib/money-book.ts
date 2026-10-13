@@ -18,4 +18,6 @@ export const LEDGER_LABEL: Record<string, string> = {
   refund: 'Hoàn tiền đơn',
   cash_count_diff: 'Chênh lệch kiểm quỹ',
   adjustment: 'Điều chỉnh',
+  advance: 'Tạm ứng',
+  payroll: 'Trả lương',
 }

@@ -42,6 +42,7 @@ import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoa
 import { Route as AppThemThongBaoRouteImport } from './routes/_app/them/thong-bao'
 import { Route as AppThemThuChiRouteImport } from './routes/_app/them/thu-chi'
 import { Route as ApiAccountsIndexRouteImport } from './routes/api/accounts/index'
+import { Route as ApiAdvancesIndexRouteImport } from './routes/api/advances/index'
 import { Route as ApiAppointmentsIndexRouteImport } from './routes/api/appointments/index'
 import { Route as ApiAppointmentsIdRouteImport } from './routes/api/appointments/$id'
 import { Route as ApiAppointmentsAttentionRouteImport } from './routes/api/appointments/attention'
@@ -70,6 +71,8 @@ import { Route as ApiNotificationsPreferencesRouteImport } from './routes/api/no
 import { Route as ApiNotificationsUnreadCountRouteImport } from './routes/api/notifications/unread-count'
 import { Route as ApiOrdersIndexRouteImport } from './routes/api/orders/index'
 import { Route as ApiOrdersIdRouteImport } from './routes/api/orders/$id'
+import { Route as ApiPayrollIndexRouteImport } from './routes/api/payroll/index'
+import { Route as ApiPayrollActionRouteImport } from './routes/api/payroll/$action'
 import { Route as ApiPeopleIndexRouteImport } from './routes/api/people/index'
 import { Route as ApiPeopleActionRouteImport } from './routes/api/people/$action'
 import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
@@ -79,6 +82,7 @@ import { Route as ApiReportsKindRouteImport } from './routes/api/reports/$kind'
 import { Route as ApiStaffIndexRouteImport } from './routes/api/staff/index'
 import { Route as ApiTipsIndexRouteImport } from './routes/api/tips/index'
 import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
+import { Route as ApiAdvancesIdActionRouteImport } from './routes/api/advances/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
 import { Route as ApiAttachmentsIdActionRouteImport } from './routes/api/attachments/$id.$action'
 import { Route as ApiClosedDaysIdActionRouteImport } from './routes/api/closed-days/$id.$action'
@@ -89,6 +93,7 @@ import { Route as ApiLeaveIdActionRouteImport } from './routes/api/leave/$id.$ac
 import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notifications/$id.read'
 import { Route as ApiOrdersIdActionRouteImport } from './routes/api/orders/$id.$action'
 import { Route as ApiPaymentsIdActionRouteImport } from './routes/api/payments/$id.$action'
+import { Route as ApiPayrollAdjustmentsIdActionRouteImport } from './routes/api/payroll-adjustments/$id.$action'
 import { Route as ApiPushSubscriptionsIdRouteImport } from './routes/api/push/subscriptions.$id'
 import { Route as ApiRefundsIdActionRouteImport } from './routes/api/refunds/$id.$action'
 import { Route as ApiTicketsIdActionRouteImport } from './routes/api/tickets/$id.$action'
@@ -258,6 +263,11 @@ const ApiAccountsIndexRoute = ApiAccountsIndexRouteImport.update({
   path: '/api/accounts/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdvancesIndexRoute = ApiAdvancesIndexRouteImport.update({
+  id: '/api/advances/',
+  path: '/api/advances/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAppointmentsIndexRoute = ApiAppointmentsIndexRouteImport.update({
   id: '/api/appointments/',
   path: '/api/appointments/',
@@ -401,6 +411,16 @@ const ApiOrdersIdRoute = ApiOrdersIdRouteImport.update({
   path: '/api/orders/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPayrollIndexRoute = ApiPayrollIndexRouteImport.update({
+  id: '/api/payroll/',
+  path: '/api/payroll/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPayrollActionRoute = ApiPayrollActionRouteImport.update({
+  id: '/api/payroll/$action',
+  path: '/api/payroll/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPeopleIndexRoute = ApiPeopleIndexRouteImport.update({
   id: '/api/people/',
   path: '/api/people/',
@@ -444,6 +464,11 @@ const ApiTipsIndexRoute = ApiTipsIndexRouteImport.update({
 const ApiAccountsIdActionRoute = ApiAccountsIdActionRouteImport.update({
   id: '/api/accounts/$id/$action',
   path: '/api/accounts/$id/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdvancesIdActionRoute = ApiAdvancesIdActionRouteImport.update({
+  id: '/api/advances/$id/$action',
+  path: '/api/advances/$id/$action',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAppointmentsIdActionRoute = ApiAppointmentsIdActionRouteImport.update({
@@ -497,6 +522,12 @@ const ApiPaymentsIdActionRoute = ApiPaymentsIdActionRouteImport.update({
   path: '/api/payments/$id/$action',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPayrollAdjustmentsIdActionRoute =
+  ApiPayrollAdjustmentsIdActionRouteImport.update({
+    id: '/api/payroll-adjustments/$id/$action',
+    path: '/api/payroll-adjustments/$id/$action',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPushSubscriptionsIdRoute = ApiPushSubscriptionsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -563,6 +594,7 @@ export interface FileRoutesByFullPath {
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
+  '/api/payroll/$action': typeof ApiPayrollActionRoute
   '/api/people/$action': typeof ApiPeopleActionRoute
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
@@ -573,6 +605,7 @@ export interface FileRoutesByFullPath {
   '/lich/': typeof AppLichIndexRoute
   '/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
+  '/api/advances/': typeof ApiAdvancesIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/attachments/': typeof ApiAttachmentsIndexRoute
   '/api/attendance/': typeof ApiAttendanceIndexRoute
@@ -584,10 +617,12 @@ export interface FileRoutesByFullPath {
   '/api/money/': typeof ApiMoneyIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
+  '/api/payroll/': typeof ApiPayrollIndexRoute
   '/api/people/': typeof ApiPeopleIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
   '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
+  '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
   '/api/closed-days/$id/$action': typeof ApiClosedDaysIdActionRoute
@@ -598,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
+  '/api/payroll-adjustments/$id/$action': typeof ApiPayrollAdjustmentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
   '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
@@ -648,6 +684,7 @@ export interface FileRoutesByTo {
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
+  '/api/payroll/$action': typeof ApiPayrollActionRoute
   '/api/people/$action': typeof ApiPeopleActionRoute
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
@@ -658,6 +695,7 @@ export interface FileRoutesByTo {
   '/lich': typeof AppLichIndexRoute
   '/them': typeof AppThemIndexRoute
   '/api/accounts': typeof ApiAccountsIndexRoute
+  '/api/advances': typeof ApiAdvancesIndexRoute
   '/api/appointments': typeof ApiAppointmentsIndexRoute
   '/api/attachments': typeof ApiAttachmentsIndexRoute
   '/api/attendance': typeof ApiAttendanceIndexRoute
@@ -669,10 +707,12 @@ export interface FileRoutesByTo {
   '/api/money': typeof ApiMoneyIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
   '/api/orders': typeof ApiOrdersIndexRoute
+  '/api/payroll': typeof ApiPayrollIndexRoute
   '/api/people': typeof ApiPeopleIndexRoute
   '/api/staff': typeof ApiStaffIndexRoute
   '/api/tips': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
+  '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
   '/api/closed-days/$id/$action': typeof ApiClosedDaysIdActionRoute
@@ -683,6 +723,7 @@ export interface FileRoutesByTo {
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
+  '/api/payroll-adjustments/$id/$action': typeof ApiPayrollAdjustmentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
   '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
@@ -735,6 +776,7 @@ export interface FileRoutesById {
   '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
   '/api/notifications/unread-count': typeof ApiNotificationsUnreadCountRoute
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
+  '/api/payroll/$action': typeof ApiPayrollActionRoute
   '/api/people/$action': typeof ApiPeopleActionRoute
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
@@ -745,6 +787,7 @@ export interface FileRoutesById {
   '/_app/lich/': typeof AppLichIndexRoute
   '/_app/them/': typeof AppThemIndexRoute
   '/api/accounts/': typeof ApiAccountsIndexRoute
+  '/api/advances/': typeof ApiAdvancesIndexRoute
   '/api/appointments/': typeof ApiAppointmentsIndexRoute
   '/api/attachments/': typeof ApiAttachmentsIndexRoute
   '/api/attendance/': typeof ApiAttendanceIndexRoute
@@ -756,10 +799,12 @@ export interface FileRoutesById {
   '/api/money/': typeof ApiMoneyIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/orders/': typeof ApiOrdersIndexRoute
+  '/api/payroll/': typeof ApiPayrollIndexRoute
   '/api/people/': typeof ApiPeopleIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
   '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
+  '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
   '/api/closed-days/$id/$action': typeof ApiClosedDaysIdActionRoute
@@ -770,6 +815,7 @@ export interface FileRoutesById {
   '/api/notifications/$id/read': typeof ApiNotificationsIdReadRoute
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
+  '/api/payroll-adjustments/$id/$action': typeof ApiPayrollAdjustmentsIdActionRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
   '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
@@ -822,6 +868,7 @@ export interface FileRouteTypes {
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/orders/$id'
+    | '/api/payroll/$action'
     | '/api/people/$action'
     | '/api/push/config'
     | '/api/push/subscriptions'
@@ -832,6 +879,7 @@ export interface FileRouteTypes {
     | '/lich/'
     | '/them/'
     | '/api/accounts/'
+    | '/api/advances/'
     | '/api/appointments/'
     | '/api/attachments/'
     | '/api/attendance/'
@@ -843,10 +891,12 @@ export interface FileRouteTypes {
     | '/api/money/'
     | '/api/notifications/'
     | '/api/orders/'
+    | '/api/payroll/'
     | '/api/people/'
     | '/api/staff/'
     | '/api/tips/'
     | '/api/accounts/$id/$action'
+    | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/attachments/$id/$action'
     | '/api/closed-days/$id/$action'
@@ -857,6 +907,7 @@ export interface FileRouteTypes {
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
+    | '/api/payroll-adjustments/$id/$action'
     | '/api/push/subscriptions/$id'
     | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
@@ -907,6 +958,7 @@ export interface FileRouteTypes {
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/orders/$id'
+    | '/api/payroll/$action'
     | '/api/people/$action'
     | '/api/push/config'
     | '/api/push/subscriptions'
@@ -917,6 +969,7 @@ export interface FileRouteTypes {
     | '/lich'
     | '/them'
     | '/api/accounts'
+    | '/api/advances'
     | '/api/appointments'
     | '/api/attachments'
     | '/api/attendance'
@@ -928,10 +981,12 @@ export interface FileRouteTypes {
     | '/api/money'
     | '/api/notifications'
     | '/api/orders'
+    | '/api/payroll'
     | '/api/people'
     | '/api/staff'
     | '/api/tips'
     | '/api/accounts/$id/$action'
+    | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/attachments/$id/$action'
     | '/api/closed-days/$id/$action'
@@ -942,6 +997,7 @@ export interface FileRouteTypes {
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
+    | '/api/payroll-adjustments/$id/$action'
     | '/api/push/subscriptions/$id'
     | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
@@ -993,6 +1049,7 @@ export interface FileRouteTypes {
     | '/api/notifications/preferences'
     | '/api/notifications/unread-count'
     | '/api/orders/$id'
+    | '/api/payroll/$action'
     | '/api/people/$action'
     | '/api/push/config'
     | '/api/push/subscriptions'
@@ -1003,6 +1060,7 @@ export interface FileRouteTypes {
     | '/_app/lich/'
     | '/_app/them/'
     | '/api/accounts/'
+    | '/api/advances/'
     | '/api/appointments/'
     | '/api/attachments/'
     | '/api/attendance/'
@@ -1014,10 +1072,12 @@ export interface FileRouteTypes {
     | '/api/money/'
     | '/api/notifications/'
     | '/api/orders/'
+    | '/api/payroll/'
     | '/api/people/'
     | '/api/staff/'
     | '/api/tips/'
     | '/api/accounts/$id/$action'
+    | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/attachments/$id/$action'
     | '/api/closed-days/$id/$action'
@@ -1028,6 +1088,7 @@ export interface FileRouteTypes {
     | '/api/notifications/$id/read'
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
+    | '/api/payroll-adjustments/$id/$action'
     | '/api/push/subscriptions/$id'
     | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
@@ -1062,12 +1123,14 @@ export interface RootRouteChildren {
   ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
   ApiNotificationsUnreadCountRoute: typeof ApiNotificationsUnreadCountRoute
   ApiOrdersIdRoute: typeof ApiOrdersIdRouteWithChildren
+  ApiPayrollActionRoute: typeof ApiPayrollActionRoute
   ApiPeopleActionRoute: typeof ApiPeopleActionRoute
   ApiPushConfigRoute: typeof ApiPushConfigRoute
   ApiPushSubscriptionsRoute: typeof ApiPushSubscriptionsRouteWithChildren
   ApiPushTestRoute: typeof ApiPushTestRoute
   ApiReportsKindRoute: typeof ApiReportsKindRoute
   ApiAccountsIndexRoute: typeof ApiAccountsIndexRoute
+  ApiAdvancesIndexRoute: typeof ApiAdvancesIndexRoute
   ApiAppointmentsIndexRoute: typeof ApiAppointmentsIndexRoute
   ApiAttachmentsIndexRoute: typeof ApiAttachmentsIndexRoute
   ApiAttendanceIndexRoute: typeof ApiAttendanceIndexRoute
@@ -1079,16 +1142,19 @@ export interface RootRouteChildren {
   ApiMoneyIndexRoute: typeof ApiMoneyIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   ApiOrdersIndexRoute: typeof ApiOrdersIndexRoute
+  ApiPayrollIndexRoute: typeof ApiPayrollIndexRoute
   ApiPeopleIndexRoute: typeof ApiPeopleIndexRoute
   ApiStaffIndexRoute: typeof ApiStaffIndexRoute
   ApiTipsIndexRoute: typeof ApiTipsIndexRoute
   ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
+  ApiAdvancesIdActionRoute: typeof ApiAdvancesIdActionRoute
   ApiClosedDaysIdActionRoute: typeof ApiClosedDaysIdActionRoute
   ApiDepositsIdActionRoute: typeof ApiDepositsIdActionRoute
   ApiExpensesIdActionRoute: typeof ApiExpensesIdActionRoute
   ApiLeaveIdActionRoute: typeof ApiLeaveIdActionRoute
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
   ApiPaymentsIdActionRoute: typeof ApiPaymentsIdActionRoute
+  ApiPayrollAdjustmentsIdActionRoute: typeof ApiPayrollAdjustmentsIdActionRoute
   ApiRefundsIdActionRoute: typeof ApiRefundsIdActionRoute
   ApiTicketsIdActionRoute: typeof ApiTicketsIdActionRoute
   ApiTipsIdActionRoute: typeof ApiTipsIdActionRoute
@@ -1327,6 +1393,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAccountsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/advances/': {
+      id: '/api/advances/'
+      path: '/api/advances'
+      fullPath: '/api/advances/'
+      preLoaderRoute: typeof ApiAdvancesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/appointments/': {
       id: '/api/appointments/'
       path: '/api/appointments'
@@ -1523,6 +1596,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOrdersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/payroll/': {
+      id: '/api/payroll/'
+      path: '/api/payroll'
+      fullPath: '/api/payroll/'
+      preLoaderRoute: typeof ApiPayrollIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/payroll/$action': {
+      id: '/api/payroll/$action'
+      path: '/api/payroll/$action'
+      fullPath: '/api/payroll/$action'
+      preLoaderRoute: typeof ApiPayrollActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/people/': {
       id: '/api/people/'
       path: '/api/people'
@@ -1584,6 +1671,13 @@ declare module '@tanstack/react-router' {
       path: '/api/accounts/$id/$action'
       fullPath: '/api/accounts/$id/$action'
       preLoaderRoute: typeof ApiAccountsIdActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/advances/$id/$action': {
+      id: '/api/advances/$id/$action'
+      path: '/api/advances/$id/$action'
+      fullPath: '/api/advances/$id/$action'
+      preLoaderRoute: typeof ApiAdvancesIdActionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/appointments/$id/$action': {
@@ -1654,6 +1748,13 @@ declare module '@tanstack/react-router' {
       path: '/api/payments/$id/$action'
       fullPath: '/api/payments/$id/$action'
       preLoaderRoute: typeof ApiPaymentsIdActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/payroll-adjustments/$id/$action': {
+      id: '/api/payroll-adjustments/$id/$action'
+      path: '/api/payroll-adjustments/$id/$action'
+      fullPath: '/api/payroll-adjustments/$id/$action'
+      preLoaderRoute: typeof ApiPayrollAdjustmentsIdActionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/push/subscriptions/$id': {
@@ -1824,12 +1925,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
   ApiNotificationsUnreadCountRoute: ApiNotificationsUnreadCountRoute,
   ApiOrdersIdRoute: ApiOrdersIdRouteWithChildren,
+  ApiPayrollActionRoute: ApiPayrollActionRoute,
   ApiPeopleActionRoute: ApiPeopleActionRoute,
   ApiPushConfigRoute: ApiPushConfigRoute,
   ApiPushSubscriptionsRoute: ApiPushSubscriptionsRouteWithChildren,
   ApiPushTestRoute: ApiPushTestRoute,
   ApiReportsKindRoute: ApiReportsKindRoute,
   ApiAccountsIndexRoute: ApiAccountsIndexRoute,
+  ApiAdvancesIndexRoute: ApiAdvancesIndexRoute,
   ApiAppointmentsIndexRoute: ApiAppointmentsIndexRoute,
   ApiAttachmentsIndexRoute: ApiAttachmentsIndexRoute,
   ApiAttendanceIndexRoute: ApiAttendanceIndexRoute,
@@ -1841,16 +1944,19 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMoneyIndexRoute: ApiMoneyIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   ApiOrdersIndexRoute: ApiOrdersIndexRoute,
+  ApiPayrollIndexRoute: ApiPayrollIndexRoute,
   ApiPeopleIndexRoute: ApiPeopleIndexRoute,
   ApiStaffIndexRoute: ApiStaffIndexRoute,
   ApiTipsIndexRoute: ApiTipsIndexRoute,
   ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
+  ApiAdvancesIdActionRoute: ApiAdvancesIdActionRoute,
   ApiClosedDaysIdActionRoute: ApiClosedDaysIdActionRoute,
   ApiDepositsIdActionRoute: ApiDepositsIdActionRoute,
   ApiExpensesIdActionRoute: ApiExpensesIdActionRoute,
   ApiLeaveIdActionRoute: ApiLeaveIdActionRoute,
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
   ApiPaymentsIdActionRoute: ApiPaymentsIdActionRoute,
+  ApiPayrollAdjustmentsIdActionRoute: ApiPayrollAdjustmentsIdActionRoute,
   ApiRefundsIdActionRoute: ApiRefundsIdActionRoute,
   ApiTicketsIdActionRoute: ApiTicketsIdActionRoute,
   ApiTipsIdActionRoute: ApiTipsIdActionRoute,

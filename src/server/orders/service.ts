@@ -311,6 +311,8 @@ export type RefundView = {
   reason: string
   refundedByName: string | null
   refundedAt: string
+  /** Ngày ghi giảm doanh thu: ngày làm dịch vụ; tháng đó đã khoá lương thì ngày hoàn (Q34) */
+  revenueDate: string
   needsOwnerReview: boolean
   /** Phần trừ vào doanh thu từng thợ */
   allocations: { name: string; amount: number }[]
@@ -487,12 +489,13 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       reason: string
       refundedByName: string | null
       refundedAt: Date
+      revenueDate: string
       needsOwnerReview: boolean
       reviewedAt: Date | null
     }[]
   >`
     select r.id, r.amount, r.method, m.name as account_name, r.reason, u.display_name as refunded_by_name,
-           r.refunded_at, r.needs_owner_review, r.reviewed_at
+           r.refunded_at, r.revenue_date::text, r.needs_owner_review, r.reviewed_at
     from order_refunds r join money_accounts m on m.id = r.money_account_id left join users u on u.id = r.refunded_by
     where r.order_id = ${o.id} order by r.refunded_at`
   const refundAllocs = refundRows.length
@@ -672,6 +675,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       reason: r.reason,
       refundedByName: r.refundedByName,
       refundedAt: new Date(r.refundedAt).toISOString(),
+      revenueDate: r.revenueDate,
       needsOwnerReview: r.needsOwnerReview && !r.reviewedAt,
       allocations: refundAllocs
         .filter((a) => a.refundId === r.id)

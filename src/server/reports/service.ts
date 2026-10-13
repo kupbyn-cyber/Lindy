@@ -10,6 +10,7 @@ import { type Tx, withUser } from '../db/client'
 import { forbidden, invalid } from '../http/errors'
 import { balancesOf } from '../money/service'
 import { reviewPending } from '../orders/service'
+import { myPayNow, payrollAttention, payrollSummary } from '../payroll/service'
 import { reviewCount } from '../review/service'
 
 const n = (v: unknown) => Number(v ?? 0)
@@ -169,7 +170,11 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
         tipsPending: (await tipsHolding(tx, branch.id)).amount,
         /** Đợt 4A: ngày công chưa duyệt (trước hôm nay), đơn nghỉ chờ duyệt — Nhung, Linh */
         ...(await attendanceAttention(tx, auth, branch.id)),
+        /** Đợt 4B: tạm ứng chờ duyệt / chờ chi, bảng lương chờ khoá, lương chưa trả */
+        ...(await payrollAttention(tx, auth, branch.id)),
       },
+      /** Lương tạm tính tháng này của chính mình (Q39) */
+      myPay: await myPayNow(tx, auth, branch.id),
     }
   })
 }
@@ -226,6 +231,8 @@ const FLOW: Record<string, { key: string; label: string }> = {
   refund: { key: 'refund', label: 'Hoàn tiền đơn' },
   expense_operating: { key: 'expense_operating', label: 'Chi vận hành' },
   expense_staff: { key: 'expense_staff', label: 'Chi nhân sự (lương, thưởng)' },
+  payroll: { key: 'expense_staff', label: 'Chi nhân sự (lương, thưởng)' },
+  advance: { key: 'advance', label: 'Tạm ứng (nhân viên nợ quán, không phải chi phí)' },
   tip_payout: { key: 'tip_payout', label: 'Trả tip cho thợ' },
   capital_out: { key: 'capital_out', label: 'Rút vốn' },
   cash_count_diff: { key: 'adjust', label: 'Chênh lệch quỹ, điều chỉnh' },
@@ -475,6 +482,8 @@ export async function monthReport(auth: Auth, input: { branchId?: string; month?
         returning: n(cust?.returningCustomers),
         walkIn: n(walkIn?.c),
       },
+      /** Đợt 4B: lương phải trả, đã trả, tạm ứng, KPI quản lý (Linh, Nhung) */
+      payroll: await payrollSummary(tx, auth, branch.id, month),
     }
   })
 }
