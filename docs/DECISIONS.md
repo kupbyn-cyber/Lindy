@@ -212,3 +212,7 @@ Nguồn: `docs/surveys/04-phieu-chinh-sua.md`. Kế hoạch: `docs/plans/2026-10
 | **S15** | Nhân viên thường sửa lịch (Q-N) | Sửa được lịch **do mình tạo**, khi lịch **chưa tạo đơn và chưa đến giờ hẹn**. Lịch khác nhờ Linh, Nhung, Chin. | Thay luật "chỉ sửa lịch mình tạo khi còn Mới đặt". |
 | **S16** | Tạo đơn chỉ từ lịch (Q-O) | **Bỏ nút tròn "+ Tạo đơn" ở mọi màn.** Mọi đơn tạo từ lịch; khách vãng lai cũng tạo lịch rồi bấm Tạo đơn, để kiểm soát. | Thay G18 (vị trí nút "+ Tạo đơn"). Bỏ màn tạo đơn rời; API chặn tạo đơn không gắn lịch. |
 | **S17** | Hồ sơ nhân viên khi xoá dữ liệu thử (Q-P) | Hồ sơ, mức lương nhân viên **xoá cùng dữ liệu thử**; sau đó Linh nhập hồ sơ thật ở Thêm → Nhân viên. | Bổ sung S12. |
+| **S18** | Ảnh thành phẩm (15/10/2026) | Sau khi bấm **Làm xong** (và ở chi tiết đơn) có nút **Chụp ảnh**: mở camera iPhone hoặc chọn ảnh có sẵn, app ghép khung, bấm **Lưu / Chia sẻ** để lưu vào Ảnh hoặc gửi Instagram, Zalo. Mỗi đơn chụp được nhiều ảnh. | Tính năng mới. |
+| **S19** | Hai kiểu khung | **Đăng Instagram**: LINDY, @lindy.nailashstudio, tên dịch vụ, thợ, ngày; **không** tên khách, SĐT, giá, mã đơn. **Nội bộ** (kiểu Timemark): giờ, ngày, mã đơn, khách thứ mấy, tên khách che bớt (2 chữ đầu + `***`), thợ, dịch vụ. | Mẫu: artifact "Khung ảnh LINDY". |
+| **S20** | Khổ ảnh | **4:5** (1080 × 1350). | |
+| **S21** | Không lưu ảnh vào app | Ảnh chỉ lưu trên điện thoại. App chỉ giữ dữ liệu đơn (dịch vụ, ngày) trong lịch sử khách như hiện có. | Không đổi dữ liệu, không tốn dung lượng hosting. |
