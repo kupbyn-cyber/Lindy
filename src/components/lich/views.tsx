@@ -1,7 +1,8 @@
-// Khung xem lịch (bước 1.10–1.11): thanh ngày kéo ngang, Ngày (trục giờ, cột song song), Tuần, Danh sách.
-// Ô lịch không hiện SĐT (B08). Không cuộn ngang trang; chỉ thanh ngày cuộn ngang bên trong.
+// Khung xem lịch (bước 1.10–1.11, sửa ở Đợt 6B): thanh ngày kéo ngang, Ngày (trục giờ, cột song song), Tuần,
+// Danh sách. Ô lịch theo thứ tự số khách – tên – SĐT – giờ, kèm dấu chưa cọc (S10). Trục giờ phóng to/thu nhỏ bằng
+// hai ngón tay, nhớ cỡ trên máy; vuốt trái/phải sang ngày (tuần) bên cạnh. Không cuộn ngang trang.
 import { Link } from '@tanstack/react-router'
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { cx, StatusChip } from '~/components/ui'
 import { DEPOSIT_STATE_CHIP, type ListItem, layoutDay, STATUS_LABEL, STATUS_TONE } from '~/lib/appointments'
 import { addDays, formatIsoDate, hhmmToMinutes, minutesToHHMM, weekdayLong, weekdayShort } from '~/lib/time'
@@ -19,7 +20,7 @@ export function DateStrip(props: { value: string; today: string; onChange: (d: s
   return (
     <div
       ref={ref}
-      className="flex gap-1 overflow-x-auto px-4 pb-2 [scrollbar-width:none]"
+      className="flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none]"
       role="tablist"
       aria-label="Chọn ngày"
     >
@@ -35,7 +36,7 @@ export function DateStrip(props: { value: string; today: string; onChange: (d: s
             aria-current={on ? 'date' : undefined}
             onClick={() => props.onChange(d)}
             className={cx(
-              'flex min-h-[52px] min-w-[44px] flex-col items-center justify-center rounded-[var(--radius-md)] border-0',
+              'flex min-h-[46px] min-w-[42px] flex-col items-center justify-center rounded-[var(--radius-md)] border-0',
               on ? 'bg-accent text-on-accent' : 'bg-transparent text-ink',
             )}
           >
@@ -50,28 +51,221 @@ export function DateStrip(props: { value: string; today: string; onChange: (d: s
   )
 }
 
+// ---------------------------------------------------------------- Cử chỉ: vuốt ngang, hai ngón
+
+/**
+ * Vuốt trái/phải (S10): chỉ nhận khi vuốt ngang rõ ràng (≥ 60px, lệch dọc < 30°) và không bắt đầu sát mép trái
+ * 24px (Safari dùng mép trái để quay lại). Trong lúc vuốt, nội dung trượt theo ngón tay rồi trả về chỗ cũ.
+ */
+export function useSwipe(
+  ref: RefObject<HTMLElement | null>,
+  onSwipe: (dir: 1 | -1) => void,
+  /** Đổi khi phần tử được dựng lại (key đổi) để gắn lại sự kiện */
+  remountKey: string,
+) {
+  const cb = useRef(onSwipe)
+  cb.current = onSwipe
+  // biome-ignore lint/correctness/useExhaustiveDependencies: remountKey báo phần tử mới sau khi đổi ngày
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let x0 = 0
+    let y0 = 0
+    let mode: 'idle' | 'pending' | 'horizontal' | 'vertical' = 'idle'
+    const move = (dx: number) => {
+      el.style.transform = dx ? `translateX(${Math.max(-80, Math.min(80, dx * 0.4))}px)` : ''
+    }
+    const start = (e: TouchEvent) => {
+      if (e.touches.length !== 1 || e.touches[0]!.clientX < 24) {
+        mode = 'idle'
+        return
+      }
+      x0 = e.touches[0]!.clientX
+      y0 = e.touches[0]!.clientY
+      mode = 'pending'
+      el.style.transition = ''
+    }
+    const moveH = (e: TouchEvent) => {
+      if (mode === 'idle' || mode === 'vertical') return
+      if (e.touches.length !== 1) {
+        mode = 'idle'
+        move(0)
+        return
+      }
+      const dx = e.touches[0]!.clientX - x0
+      const dy = e.touches[0]!.clientY - y0
+      if (mode === 'pending') {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+        mode = Math.abs(dy) < Math.abs(dx) * 0.58 ? 'horizontal' : 'vertical'
+        if (mode === 'vertical') return
+      }
+      e.preventDefault()
+      move(dx)
+    }
+    const end = (e: TouchEvent) => {
+      if (mode !== 'horizontal') {
+        mode = 'idle'
+        return
+      }
+      const dx = (e.changedTouches[0]?.clientX ?? x0) - x0
+      mode = 'idle'
+      el.style.transition = 'transform 140ms ease-out'
+      move(0)
+      if (Math.abs(dx) >= 60) cb.current(dx < 0 ? 1 : -1)
+    }
+    el.addEventListener('touchstart', start, { passive: true })
+    el.addEventListener('touchmove', moveH, { passive: false })
+    el.addEventListener('touchend', end)
+    el.addEventListener('touchcancel', end)
+    return () => {
+      el.removeEventListener('touchstart', start)
+      el.removeEventListener('touchmove', moveH)
+      el.removeEventListener('touchend', end)
+      el.removeEventListener('touchcancel', end)
+    }
+  }, [ref, remountKey])
+}
+
+const ZOOM_KEY = 'lindy.lich.pxPerHour'
+const ZOOM_MIN = 28
+const ZOOM_MAX = 120
+const ZOOM_DEFAULT = 48
+
+function readZoom() {
+  try {
+    const v = Number(localStorage.getItem(ZOOM_KEY))
+    return v >= ZOOM_MIN && v <= ZOOM_MAX ? v : ZOOM_DEFAULT
+  } catch {
+    return ZOOM_DEFAULT
+  }
+}
+
+/**
+ * Phóng to/thu nhỏ trục giờ bằng hai ngón tay (S10), giữ mốc giờ dưới hai ngón đứng yên. Chặn phóng to cả trang
+ * trong vùng lịch. Trên máy tính: Ctrl + lăn chuột (trackpad chụm hai ngón cũng gửi sự kiện này).
+ */
+function usePinchZoom(scroller: RefObject<HTMLDivElement | null>) {
+  // Server dựng cỡ mặc định; cỡ đã nhớ đọc sau khi gắn vào trang (tránh lệch khi hydrate)
+  const [pxPerHour, setPx] = useState(ZOOM_DEFAULT)
+  const [loaded, setLoaded] = useState(false)
+  const pxRef = useRef(ZOOM_DEFAULT)
+  // Vị trí cuộn cần đặt sau khi trục giờ vẽ lại ở cỡ mới (trước đó trang chưa đủ cao để cuộn tới)
+  const pendingScroll = useRef<number | null>(null)
+  useEffect(() => {
+    const v = readZoom()
+    pxRef.current = v
+    setPx(v)
+    setLoaded(true)
+  }, [])
+  // biome-ignore lint/correctness/useExhaustiveDependencies: đặt lại vị trí cuộn mỗi khi đổi cỡ
+  useLayoutEffect(() => {
+    const el = scroller.current
+    if (el && pendingScroll.current != null) {
+      el.scrollTop = pendingScroll.current
+      pendingScroll.current = null
+    }
+  }, [pxPerHour])
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    const save = (v: number) => {
+      try {
+        localStorage.setItem(ZOOM_KEY, String(Math.round(v)))
+      } catch {}
+    }
+    // Đổi cỡ, giữ phút đang nằm ở toạ độ clientY đứng yên trên màn hình
+    const apply = (next: number, clientY: number) => {
+      const v = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, next))
+      const rect = el.getBoundingClientRect()
+      const offset = clientY - rect.top
+      const top = pendingScroll.current ?? el.scrollTop
+      const minute = ((top + offset) / pxRef.current) * 60
+      pxRef.current = v
+      pendingScroll.current = Math.max(0, (minute / 60) * v - offset)
+      setPx(v)
+    }
+    let d0 = 0
+    let px0 = 0
+    const dist = (t: TouchList) => Math.hypot(t[0]!.clientX - t[1]!.clientX, t[0]!.clientY - t[1]!.clientY)
+    const start = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        d0 = dist(e.touches)
+        px0 = pxRef.current
+      }
+    }
+    const move = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !d0) return
+      e.preventDefault()
+      apply(px0 * (dist(e.touches) / d0), (e.touches[0]!.clientY + e.touches[1]!.clientY) / 2)
+    }
+    const end = (e: TouchEvent) => {
+      if (d0 && e.touches.length < 2) {
+        d0 = 0
+        save(pxRef.current)
+      }
+    }
+    const gesture = (e: Event) => e.preventDefault() // Safari: không phóng to cả trang
+    const wheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      apply(pxRef.current * Math.exp(-e.deltaY / 200), e.clientY)
+      save(pxRef.current)
+    }
+    el.addEventListener('touchstart', start, { passive: true })
+    el.addEventListener('touchmove', move, { passive: false })
+    el.addEventListener('touchend', end)
+    el.addEventListener('touchcancel', end)
+    el.addEventListener('gesturestart', gesture)
+    el.addEventListener('gesturechange', gesture)
+    el.addEventListener('wheel', wheel, { passive: false })
+    return () => {
+      el.removeEventListener('touchstart', start)
+      el.removeEventListener('touchmove', move)
+      el.removeEventListener('touchend', end)
+      el.removeEventListener('touchcancel', end)
+      el.removeEventListener('gesturestart', gesture)
+      el.removeEventListener('gesturechange', gesture)
+      el.removeEventListener('wheel', wheel)
+    }
+  }, [scroller])
+  return { pxPerHour, loaded }
+}
+
 // ---------------------------------------------------------------- Ô lịch
 
 function blockClass(it: ListItem) {
   return cx(
     'absolute overflow-hidden rounded-[6px] border px-1.5 py-0.5 text-left',
-    it.status === 'pending' && 'border-accent bg-accent-soft text-ink',
-    it.status === 'confirmed' && 'border-line-strong bg-surface-raised text-ink',
+    (it.status === 'pending' || it.status === 'confirmed') && 'border-line-strong bg-surface-raised text-ink',
     (it.status === 'arrived' || it.status === 'in_progress') && 'border-success bg-success-soft text-ink',
     it.status === 'completed' && 'border-line bg-surface-sunken text-ink-muted',
     (it.status === 'cancelled' || it.status === 'no_show') &&
       'border-line bg-surface-sunken text-ink-muted line-through',
+    // Chưa cọc, yêu cầu huỷ: viền trái màu cảnh báo để thấy cả khi ô quá thấp
+    (it.customerCancelReported || it.depositState === 'missing' || it.depositState === 'pending') &&
+      'border-l-4 border-l-warning',
   )
 }
 
-function Badges(props: { it: ListItem; compact?: boolean }) {
+/** Số khách – tên – SĐT – giờ (S10) */
+function cellParts(it: ListItem) {
+  return [
+    it.guestCount > 1 ? `${it.guestCount} khách` : null,
+    it.name,
+    it.phone,
+    `${it.startTime}–${it.endTime}`,
+  ].filter(Boolean) as string[]
+}
+
+function Badges(props: { it: ListItem }) {
   const { it } = props
   const dep = it.depositState ? DEPOSIT_STATE_CHIP[it.depositState] : undefined
   return (
     <>
-      {it.customerCancelReported ? <StatusChip tone="warning">Khách báo huỷ</StatusChip> : null}
+      {it.customerCancelReported ? <StatusChip tone="warning">Yêu cầu huỷ</StatusChip> : null}
       {dep ? <StatusChip tone={dep.tone}>{dep.label}</StatusChip> : null}
-      {!props.compact || it.status !== 'confirmed' ? (
+      {/* Lịch nào cũng đã chốt (S02): chỉ hiện trạng thái khác */}
+      {it.status !== 'confirmed' && it.status !== 'pending' ? (
         <StatusChip tone={STATUS_TONE[it.status]}>{STATUS_LABEL[it.status]}</StatusChip>
       ) : null}
     </>
@@ -80,8 +274,7 @@ function Badges(props: { it: ListItem; compact?: boolean }) {
 
 // ---------------------------------------------------------------- Ngày: trục giờ dọc
 
-const PX_PER_MIN = 64 / 60
-const GUTTER = 44
+const GUTTER = 40
 const HOURS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'))
 
 export function DayTimeline(props: {
@@ -90,36 +283,43 @@ export function DayTimeline(props: {
   openTime: string
   closeTime: string
   onCreateAt: (time: string) => void
+  onSwipe: (dir: 1 | -1) => void
 }) {
   const scroller = useRef<HTMLDivElement>(null)
-  // Mở sẵn ở 08:00 mỗi khi đổi ngày
+  const swipeLayer = useRef<HTMLDivElement>(null)
+  const { pxPerHour, loaded } = usePinchZoom(scroller)
+  const pxPerMin = pxPerHour / 60
+  useSwipe(swipeLayer, props.onSwipe, props.date)
+
+  // Mở sẵn ở 08:00 mỗi khi đổi ngày (và khi vừa đọc cỡ đã nhớ)
   // biome-ignore lint/correctness/useExhaustiveDependencies: chạy lại khi đổi ngày là chủ ý
   useEffect(() => {
-    if (scroller.current) scroller.current.scrollTop = 8 * 60 * PX_PER_MIN - 8
-  }, [props.date])
+    if (scroller.current) scroller.current.scrollTop = 8 * pxPerHour - 8
+  }, [props.date, loaded])
 
-  const placed = layoutDay(props.items, PX_PER_MIN)
-  const openTop = hhmmToMinutes(props.openTime) * PX_PER_MIN
-  const closeTop = hhmmToMinutes(props.closeTime) * PX_PER_MIN
-  const total = 24 * 60 * PX_PER_MIN
+  const placed = layoutDay(props.items, pxPerMin)
+  const openTop = hhmmToMinutes(props.openTime) * pxPerMin
+  const closeTop = hhmmToMinutes(props.closeTime) * pxPerMin
+  const total = 24 * pxPerHour
+  const halfHours = pxPerHour >= 72
 
   function onEmptyClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget) return
     const rect = e.currentTarget.getBoundingClientRect()
-    const min = Math.max(0, Math.min(23 * 60 + 45, Math.floor((e.clientY - rect.top) / PX_PER_MIN / 15) * 15))
+    const min = Math.max(0, Math.min(23 * 60 + 45, Math.floor((e.clientY - rect.top) / pxPerMin / 15) * 15))
     props.onCreateAt(minutesToHHMM(min))
   }
 
   return (
     <div
       ref={scroller}
-      className="relative overflow-y-auto border-t border-line"
+      className="relative touch-pan-y overflow-y-auto overflow-x-hidden border-t border-line"
       style={{
-        height: 'calc(100dvh - 250px - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
+        height: 'calc(100dvh - 220px - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
         minHeight: 360,
       }}
     >
-      <div className="relative" style={{ height: total }}>
+      <div ref={swipeLayer} key={props.date} className="lo-day-enter relative" style={{ height: total }}>
         {/* Ngoài giờ mở cửa tô nền khác */}
         <div
           className="absolute right-0 bg-surface-sunken"
@@ -133,11 +333,20 @@ export function DayTimeline(props: {
           <div
             key={hh}
             className="absolute right-0 left-0 border-t border-line"
-            style={{ top: h * 60 * PX_PER_MIN }}
+            style={{ top: h * pxPerHour }}
           >
             <span className="caption absolute -top-2 left-1 bg-surface px-0.5 text-ink-muted">{hh}:00</span>
           </div>
         ))}
+        {halfHours
+          ? HOURS.map((hh, h) => (
+              <div
+                key={`${hh}h`}
+                className="absolute right-0 border-t border-dashed border-line"
+                style={{ left: GUTTER, top: h * pxPerHour + pxPerHour / 2 }}
+              />
+            ))
+          : null}
         {/* Vùng chạm để tạo lịch. Bàn phím dùng nút + ở đầu trang. */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: vùng chạm trên trục giờ, có nút + thay thế */}
         <div
@@ -147,42 +356,52 @@ export function DayTimeline(props: {
           onKeyDown={() => {}}
           role="presentation"
         >
-          {placed.map((p) => (
-            <Link
-              key={p.id}
-              to="/lich/$id"
-              params={{ id: p.id }}
-              className={blockClass(p)}
-              style={{
-                top: p.top,
-                height: p.height,
-                left: `calc(${(p.col / p.cols) * 100}% + 2px)`,
-                width: `calc(${100 / p.cols}% - 4px)`,
-              }}
-            >
-              <span className="caption block truncate font-semibold">
-                {p.startTime} {p.name}
-              </span>
-              {p.height > 34 ? (
-                <span className="caption block truncate text-ink-muted">
-                  {[p.serviceSummary, p.guestCount > 1 ? `${p.guestCount} khách` : null]
-                    .filter(Boolean)
-                    .join(' · ') || STATUS_LABEL[p.status]}
-                </span>
-              ) : null}
-              {p.height > 54 ? (
-                <span className="mt-0.5 flex flex-wrap gap-1">
-                  <Badges it={p} compact />
-                </span>
-              ) : p.customerCancelReported ? (
-                <span className="caption block truncate text-warning">Khách báo huỷ</span>
-              ) : p.depositState === 'missing' || p.depositState === 'pending' ? (
-                <span className="caption block truncate text-warning">
-                  {DEPOSIT_STATE_CHIP[p.depositState]?.label}
-                </span>
-              ) : null}
-            </Link>
-          ))}
+          {placed.map((p) => {
+            const parts = cellParts(p)
+            const dep = p.depositState ? DEPOSIT_STATE_CHIP[p.depositState] : undefined
+            return (
+              <Link
+                key={p.id}
+                to="/lich/$id"
+                params={{ id: p.id }}
+                className={blockClass(p)}
+                aria-label={`${parts.join(', ')}${p.customerCancelReported ? ', yêu cầu huỷ' : ''}${dep ? `, ${dep.label}` : ''}`}
+                style={{
+                  top: p.top,
+                  height: p.height,
+                  left: `calc(${(p.col / p.cols) * 100}% + 2px)`,
+                  width: `calc(${100 / p.cols}% - 4px)`,
+                }}
+              >
+                {/* Ô cao: mỗi phần một dòng; ô thấp: một dòng, cắt bớt từ phải */}
+                {p.height >= 58 ? (
+                  <>
+                    <span className="caption block truncate font-semibold">
+                      {parts.slice(0, p.guestCount > 1 ? 2 : 1).join(' · ')}
+                    </span>
+                    {parts.slice(p.guestCount > 1 ? 2 : 1).map((s) => (
+                      <span key={s} className="caption block truncate text-ink-muted">
+                        {s}
+                      </span>
+                    ))}
+                    {p.customerCancelReported ? (
+                      <span className="caption block truncate text-warning">Yêu cầu huỷ</span>
+                    ) : dep ? (
+                      <span className="caption block truncate text-warning">{dep.label}</span>
+                    ) : null}
+                  </>
+                ) : (
+                  <span className="caption block truncate">
+                    <span className="font-semibold">
+                      {parts.slice(0, p.guestCount > 1 ? 2 : 1).join(' · ')}
+                    </span>
+                    {' · '}
+                    {parts.slice(p.guestCount > 1 ? 2 : 1).join(' · ')}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -196,10 +415,13 @@ export function WeekGrid(props: {
   today: string
   items: ListItem[]
   onPickDay: (d: string) => void
+  onSwipe: (dir: 1 | -1) => void
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(props.weekStart, i))
+  const ref = useRef<HTMLDivElement>(null)
+  useSwipe(ref, props.onSwipe, props.weekStart)
   return (
-    <div className="grid grid-cols-7 border-t border-line">
+    <div ref={ref} key={props.weekStart} className="lo-day-enter grid grid-cols-7 border-t border-line">
       {days.map((d) => {
         const list = props.items.filter((it) => it.date === d)
         return (
@@ -208,7 +430,7 @@ export function WeekGrid(props: {
               type="button"
               onClick={() => props.onPickDay(d)}
               className={cx(
-                'flex min-h-[48px] w-full flex-col items-center justify-center border-0 border-b border-line bg-transparent',
+                'flex min-h-[44px] w-full flex-col items-center justify-center border-0 border-b border-line bg-transparent',
                 d === props.today ? 'text-accent' : 'text-ink',
               )}
               aria-label={`${weekdayLong(d)} ${formatIsoDate(d)}, ${list.length} lịch`}
@@ -222,10 +444,13 @@ export function WeekGrid(props: {
                   key={it.id}
                   to="/lich/$id"
                   params={{ id: it.id }}
-                  className={cx(blockClass(it), 'relative! block min-h-[36px]')}
+                  className={cx(blockClass(it), 'relative! block min-h-[34px]')}
                 >
-                  <span className="caption block">{it.startTime}</span>
-                  <span className="caption block truncate">{it.name}</span>
+                  <span className="caption block truncate font-semibold">
+                    {it.guestCount > 1 ? `${it.guestCount} · ` : ''}
+                    {it.name}
+                  </span>
+                  <span className="caption block text-ink-muted">{it.startTime}</span>
                 </Link>
               ))}
               {list.length === 0 ? <span className="caption py-2 text-center text-ink-muted">—</span> : null}
@@ -249,12 +474,15 @@ export function AppointmentRows(props: { items: ListItem[]; showDate?: boolean; 
         <Link key={it.id} to="/lich/$id" params={{ id: it.id }} className="lo-row lo-row-action">
           <span className="lo-row-main">
             <span className="lo-row-title body-strong">
-              {it.startTime}–{it.endTime} · {it.name}
+              {it.guestCount > 1 ? `${it.guestCount} khách · ` : ''}
+              {it.name}
             </span>
             <span className="lo-row-meta caption">
               {[
-                props.showDate ? `${weekdayShort(it.date)} ${formatIsoDate(it.date)}` : null,
-                it.guestCount > 1 ? `${it.guestCount} khách` : null,
+                it.phone,
+                props.showDate
+                  ? `${weekdayShort(it.date)} ${formatIsoDate(it.date)} ${it.startTime}–${it.endTime}`
+                  : `${it.startTime}–${it.endTime}`,
                 it.serviceSummary,
                 it.outsideHours ? 'Ngoài giờ' : null,
               ]

@@ -1,4 +1,5 @@
 // UI15 — Màn lịch chính (module §7.1): Ngày / Tuần / Danh sách, lọc trạng thái, tìm tên hoặc SĐT, Cần xử lý.
+// Đợt 6B: vuốt ngang đổi ngày/tuần, trục giờ phóng to bằng hai ngón (S10); nút "+" tạo lịch giữ nguyên (S11).
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Clock, Search as SearchIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -159,7 +160,8 @@ function SchedulePage() {
               <p className={cx('caption m-0 px-4 text-ink-muted')}>
                 {weekdayLong(date)} {formatIsoDate(date)} ·{' '}
                 {list.isLoading ? 'Đang tải…' : `${items.length} lịch`}
-                {canCreate ? ' · Chạm khoảng trống để tạo lịch' : ''}
+                {canCreate ? ' · Chạm khoảng trống để tạo lịch' : ''} · Vuốt ngang đổi ngày, chụm hai ngón để
+                phóng to
               </p>
               <DayTimeline
                 date={date}
@@ -167,6 +169,10 @@ function SchedulePage() {
                 openTime={settings.data?.openTime ?? '09:00'}
                 closeTime={settings.data?.closeTime ?? '21:00'}
                 onCreateAt={(t) => canCreate && setForm({ date, startTime: t })}
+                onSwipe={(dir) => {
+                  const d = addDays(date, dir)
+                  go({ d: d === today ? undefined : d })
+                }}
               />
             </>
           ) : view === 'tuan' ? (
@@ -175,6 +181,7 @@ function SchedulePage() {
               today={today}
               items={items}
               onPickDay={(d) => go({ view: undefined, d })}
+              onSwipe={(dir) => go({ d: addDays(date, 7 * dir) })}
             />
           ) : (
             <GroupedList items={items} from={range.from} to={range.to} />

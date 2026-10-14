@@ -1194,7 +1194,7 @@ export async function createOrderFromAppointment(
     }
 
     if (!['pending', 'confirmed', 'arrived', 'in_progress'].includes(a.status))
-      throw invalid('Lịch đã huỷ, không đến hoặc đã hoàn thành. Dùng "+ Tạo đơn" để tạo đơn mới.')
+      throw invalid('Lịch đã huỷ, không đến hoặc đã hoàn thành. Tạo lịch mới cho khách rồi bấm Tạo đơn.')
 
     // Bấm hai lần không ra hai đơn; lịch nhóm dùng "Tạo thêm đơn" (test 28)
     const linked = (

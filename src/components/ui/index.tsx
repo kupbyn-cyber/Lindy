@@ -290,22 +290,6 @@ export function MoneyInput(
   )
 }
 
-// ---------------------------------------------------------------- Fab
-
-/** Nút tròn nổi "+ Tạo đơn" (G18). Mỗi màn hình một Fab; ẩn ở màn tạo/sửa đơn. */
-export function Fab(props: { label?: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      className="lo-fab lo-fab-fixed"
-      aria-label={props.label ?? 'Tạo đơn'}
-      onClick={props.onClick}
-    >
-      <Icon name="plus" size={28} />
-    </button>
-  )
-}
-
 // ---------------------------------------------------------------- Note (dòng thông tin/cảnh báo không chặn)
 
 export function Note(props: {

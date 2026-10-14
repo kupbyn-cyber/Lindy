@@ -98,30 +98,6 @@ body {
   box-sizing: border-box;
 }
 
-/* Fab */
-.lo-fab {
-  width: var(--fab-size);
-  height: var(--fab-size);
-  border: 0;
-  border-radius: var(--radius-full);
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: var(--on-accent);
-  box-shadow: var(--shadow-fab);
-  cursor: pointer;
-  transition: transform 120ms ease;
-}
-.lo-fab-fixed {
-  position: fixed;
-  right: var(--space-4);
-  bottom: calc(var(--nav-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
-  z-index: 20;
-}
-.lo-fab:active {
-  transform: scale(0.96);
-}
-
 /* Button */
 .lo-btn {
   display: inline-flex;
@@ -581,7 +557,6 @@ select.lo-input {
 
 /* Keyboard focus */
 .lo-btn:focus-visible,
-.lo-fab:focus-visible,
 .lo-seg-item:focus-visible,
 .lo-row-action:focus-visible,
 .lo-toggle:focus-visible,
@@ -616,19 +591,30 @@ select.lo-input {
     opacity: 1;
   }
 }
+/* Lịch: đổi ngày/tuần (vuốt hoặc chạm) thì nội dung hiện mờ dần (S10) */
+.lo-day-enter {
+  animation: lo-day-in 160ms ease-out;
+}
+@keyframes lo-day-in {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .lo-fab,
   .lo-btn {
     transition: none;
   }
-  .lo-fab:active,
   .lo-btn:active:not(:disabled) {
     transform: none;
   }
   .lo-toast,
   .lo-sheet,
-  .lo-backdrop {
+  .lo-backdrop,
+  .lo-day-enter {
     animation: none;
   }
 }
@@ -648,7 +634,6 @@ select.lo-input {
   }
   .lo-appbar,
   .lo-nav,
-  .lo-fab,
   .lo-backdrop,
   .lo-btn,
   .lo-icon-btn,

@@ -1,9 +1,9 @@
 // Khung app sau đăng nhập (bước 0.14): AppBar, BottomNav 5 mục, chuông thông báo, cập nhật tức thời.
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router'
 import { Bell } from 'lucide-react'
 import { useEffect } from 'react'
-import { AppBar, cx, Fab, Icon, type IconName } from '~/components/ui'
+import { AppBar, cx, Icon, type IconName } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useLiveEvents } from '~/lib/live'
 import { useBranch } from '~/lib/me'
@@ -30,10 +30,8 @@ const NAV: { to: string; label: string; icon: IconName }[] = [
 
 function AppLayout() {
   const branch = useBranch()
-  const navigate = useNavigate()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  // Fab "+ Tạo đơn" (G18): mọi màn trừ màn tạo/sửa đơn
-  const showFab = !!branch?.perms.includes('order.create_draft') && !/^\/don-hang\/.+/.test(pathname)
+  // Không còn nút tròn "+ Tạo đơn" (S16): mọi đơn tạo từ lịch
   useLiveEvents(branch?.id ?? null)
   useEffect(() => {
     void registerServiceWorker()
@@ -72,7 +70,6 @@ function AppLayout() {
           </p>
         )}
       </main>
-      {showFab ? <Fab label="Tạo đơn" onClick={() => void navigate({ to: '/don-hang/tao' })} /> : null}
       <nav className="lo-nav" aria-label="Điều hướng chính">
         {NAV.map((it) => {
           const on = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)

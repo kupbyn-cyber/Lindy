@@ -24,7 +24,6 @@ import { Route as ApiOverviewRouteImport } from './routes/api/overview'
 import { Route as ApiReviewRouteImport } from './routes/api/review'
 import { Route as AppDonHangIndexRouteImport } from './routes/_app/don-hang/index'
 import { Route as AppDonHangIdRouteImport } from './routes/_app/don-hang/$id'
-import { Route as AppDonHangTaoRouteImport } from './routes/_app/don-hang/tao'
 import { Route as AppKhachIndexRouteImport } from './routes/_app/khach/index'
 import { Route as AppKhachIdRouteImport } from './routes/_app/khach/$id'
 import { Route as AppLichIndexRouteImport } from './routes/_app/lich/index'
@@ -180,11 +179,6 @@ const AppDonHangIndexRoute = AppDonHangIndexRouteImport.update({
 const AppDonHangIdRoute = AppDonHangIdRouteImport.update({
   id: '/don-hang/$id',
   path: '/don-hang/$id',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDonHangTaoRoute = AppDonHangTaoRouteImport.update({
-  id: '/don-hang/tao',
-  path: '/don-hang/tao',
   getParentRoute: () => AppRoute,
 } as any)
 const AppKhachIndexRoute = AppKhachIndexRouteImport.update({
@@ -617,7 +611,6 @@ export interface FileRoutesByFullPath {
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
-  '/don-hang/tao': typeof AppDonHangTaoRoute
   '/khach/$id': typeof AppKhachIdRoute
   '/lich/$id': typeof AppLichIdRoute
   '/lich/cham-cong': typeof AppLichChamCongRoute
@@ -716,7 +709,6 @@ export interface FileRoutesByTo {
   '/api/review': typeof ApiReviewRoute
   '/': typeof AppIndexRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
-  '/don-hang/tao': typeof AppDonHangTaoRoute
   '/khach/$id': typeof AppKhachIdRoute
   '/lich/$id': typeof AppLichIdRoute
   '/lich/cham-cong': typeof AppLichChamCongRoute
@@ -817,7 +809,6 @@ export interface FileRoutesById {
   '/api/review': typeof ApiReviewRoute
   '/_app/': typeof AppIndexRoute
   '/_app/don-hang/$id': typeof AppDonHangIdRoute
-  '/_app/don-hang/tao': typeof AppDonHangTaoRoute
   '/_app/khach/$id': typeof AppKhachIdRoute
   '/_app/lich/$id': typeof AppLichIdRoute
   '/_app/lich/cham-cong': typeof AppLichChamCongRoute
@@ -918,7 +909,6 @@ export interface FileRouteTypes {
     | '/api/overview'
     | '/api/review'
     | '/don-hang/$id'
-    | '/don-hang/tao'
     | '/khach/$id'
     | '/lich/$id'
     | '/lich/cham-cong'
@@ -1017,7 +1007,6 @@ export interface FileRouteTypes {
     | '/api/review'
     | '/'
     | '/don-hang/$id'
-    | '/don-hang/tao'
     | '/khach/$id'
     | '/lich/$id'
     | '/lich/cham-cong'
@@ -1117,7 +1106,6 @@ export interface FileRouteTypes {
     | '/api/review'
     | '/_app/'
     | '/_app/don-hang/$id'
-    | '/_app/don-hang/tao'
     | '/_app/khach/$id'
     | '/_app/lich/$id'
     | '/_app/lich/cham-cong'
@@ -1378,13 +1366,6 @@ declare module '@tanstack/react-router' {
       path: '/don-hang/$id'
       fullPath: '/don-hang/$id'
       preLoaderRoute: typeof AppDonHangIdRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/don-hang/tao': {
-      id: '/_app/don-hang/tao'
-      path: '/don-hang/tao'
-      fullPath: '/don-hang/tao'
-      preLoaderRoute: typeof AppDonHangTaoRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/khach/': {
@@ -1968,7 +1949,6 @@ interface AppRouteChildren {
   AppThongBaoRoute: typeof AppThongBaoRoute
   AppIndexRoute: typeof AppIndexRoute
   AppDonHangIdRoute: typeof AppDonHangIdRoute
-  AppDonHangTaoRoute: typeof AppDonHangTaoRoute
   AppKhachIdRoute: typeof AppKhachIdRoute
   AppLichIdRoute: typeof AppLichIdRoute
   AppLichChamCongRoute: typeof AppLichChamCongRoute
@@ -1997,7 +1977,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppThongBaoRoute: AppThongBaoRoute,
   AppIndexRoute: AppIndexRoute,
   AppDonHangIdRoute: AppDonHangIdRoute,
-  AppDonHangTaoRoute: AppDonHangTaoRoute,
   AppKhachIdRoute: AppKhachIdRoute,
   AppLichIdRoute: AppLichIdRoute,
   AppLichChamCongRoute: AppLichChamCongRoute,

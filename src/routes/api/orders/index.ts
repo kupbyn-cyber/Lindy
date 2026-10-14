@@ -1,11 +1,11 @@
 // GET  /api/orders?from=&to=&filter=&q=&staffId=&method=&review=  — danh sách (K09: thợ chỉ thấy đơn của mình)
-// POST /api/orders                                                — tạo đơn (Đang làm, K11)
+// POST /api/orders — đã đóng (S16): mọi đơn tạo từ lịch qua POST /api/appointments/:id/create-order
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '~/server/auth/context'
-import { invalid } from '~/server/http/errors'
-import { handle, limitWrites, readBody } from '~/server/http/route'
-import { CreateOrderBody, ORDER_FILTERS, type OrderFilter } from '~/server/orders/schema'
-import { createOrder, listOrders } from '~/server/orders/service'
+import { forbidden, invalid } from '~/server/http/errors'
+import { handle } from '~/server/http/route'
+import { ORDER_FILTERS, type OrderFilter } from '~/server/orders/schema'
+import { listOrders } from '~/server/orders/service'
 
 export const Route = createFileRoute('/api/orders/')({
   server: {
@@ -33,11 +33,8 @@ export const Route = createFileRoute('/api/orders/')({
         }),
       POST: ({ request }) =>
         handle(request, async () => {
-          const auth = await requireAuth(request)
-          limitWrites(auth.userId)
-          const body = await readBody(request, CreateOrderBody)
-          const res = await createOrder(auth, body)
-          return Response.json(res, { status: res.replayed ? 200 : 201 })
+          await requireAuth(request)
+          throw forbidden('Đơn chỉ tạo từ lịch. Tạo lịch cho khách (kể cả khách vãng lai) rồi bấm Tạo đơn.')
         }),
     },
   },
