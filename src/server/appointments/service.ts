@@ -94,19 +94,37 @@ export type Detail = ListItem & {
   can: ApptCan
   warnings: Warnings
   /** Đơn tạo từ lịch (kể cả đơn người xem không mở được, K09). */
-  orders: { id: string; codeLabel: string; status: string; visible: boolean }[]
+  orders: {
+    id: string
+    codeLabel: string
+    status: string
+    visible: boolean
+    guestNo: number | null
+    name: string | null
+  }[]
   /** Lịch tạo trong mùa cọc (C01); null = không cần cọc */
   deposit: DepositBlock | null
 }
 
 async function linkedOrders(tx: Tx, id: string) {
-  const rows = await tx<{ id: string; code: number; status: string; visible: boolean }[]>`
-    select id, code, status, visible from app.appointment_orders(${id})`
+  const rows = await tx<
+    {
+      id: string
+      code: number
+      status: string
+      visible: boolean
+      guestNo: number | null
+      customerName: string | null
+    }[]
+  >`select id, code, status, visible, guest_no, customer_name from app.appointment_orders(${id})`
   return rows.map((r) => ({
     id: r.id,
     codeLabel: `#${String(r.code).padStart(4, '0')}`,
     status: r.status,
     visible: r.visible,
+    guestNo: r.guestNo,
+    // Tên khách trên đơn chỉ hiện với đơn người xem mở được (K09)
+    name: r.visible ? r.customerName : null,
   }))
 }
 
@@ -612,6 +630,13 @@ export async function updateAppointment(auth: Auth, id: string, input: UpdateInp
       )
     }
     if (same) return toDetail(tx, auth, row)
+
+    // S08: số đơn luôn bằng số khách — không giảm số khách dưới khách đang có đơn (DB kiểm lại)
+    if (guests < row.guestCount) {
+      const [m] = await tx<{ max: number }[]>`select app.appointment_max_guest(${id}) as max`
+      if (m && m.max > guests)
+        throw invalid(`Lịch đang có đơn của khách thứ ${m.max}. Huỷ đơn đó trước khi giảm số khách.`)
+    }
 
     const [updated] = await tx<Row[]>`
       update appointments set

@@ -17,6 +17,7 @@ import {
   type PaymentStatus,
   paymentStatus,
 } from '~/lib/order-math'
+import { normalizePhone } from '~/lib/phone'
 import { escapeLike, foldVietnamese } from '~/lib/text'
 import { addDays, isIsoDate, toLocalDate, toLocalTime } from '~/lib/time'
 import type { Auth } from '../auth/context'
@@ -75,6 +76,10 @@ export type OrderRow = {
   updatedAt: Date
   version: number
   createRequestHash: string
+  /** Khách thứ mấy của lịch (S06); null với đơn cũ */
+  guestNo: number | null
+  /** Tên hiển thị khi khách đi cùng không có hồ sơ */
+  guestLabel: string | null
 }
 
 const orderCols = (tx: Tx) => tx`
@@ -84,7 +89,7 @@ const orderCols = (tx: Tx) => tx`
   o.discount_approved_level, o.discount_approval_hash, o.done_by, o.done_at, o.confirmed_by, o.confirmed_at,
   o.cancelled_by, o.cancelled_at, o.cancel_reason, o.needs_owner_review, o.reviewed_by, o.reviewed_at,
   o.warranty_until::text as warranty_until, o.adjusted_by, o.adjusted_at, o.adjust_reason, o.created_by, o.created_at,
-  o.updated_by, o.updated_at, o.version, o.create_request_hash`
+  o.updated_by, o.updated_at, o.version, o.create_request_hash, o.guest_no, o.guest_label`
 
 export async function loadRow(tx: Tx, id: string, lock = false) {
   if (!isUuid(id)) throw notFound('Không tìm thấy đơn.')
@@ -358,7 +363,16 @@ export type OrderDetail = {
   status: OrderStatus
   serviceDate: string
   customer: { id: string; name: string; phone: string | null } | null
-  appointment: { id: string; date: string; startTime: string } | null
+  /** Khách đi cùng không có hồ sơ: "Khách đi cùng Mai Anh" (S06) */
+  guestLabel: string | null
+  appointment: {
+    id: string
+    date: string
+    startTime: string
+    /** Đơn của khách thứ mấy / tổng số khách của lịch (S06) */
+    guestNo: number | null
+    guestCount: number
+  } | null
   items: OrderItemView[]
   discounts: {
     scope: 'order' | number
@@ -534,11 +548,17 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
   let appointment: OrderDetail['appointment'] = null
   if (o.appointmentId) {
     const [a] = await tx<
-      { id: string; startAt: Date }[]
-    >`select id, start_at from appointments where id = ${o.appointmentId}`
+      { id: string; startAt: Date; guestCount: number }[]
+    >`select id, start_at, guest_count from appointments where id = ${o.appointmentId}`
     if (a) {
       const tz = await branchTz(tx, o.branchId)
-      appointment = { id: a.id, date: toLocalDate(a.startAt, tz), startTime: toLocalTime(a.startAt, tz) }
+      appointment = {
+        id: a.id,
+        date: toLocalDate(a.startAt, tz),
+        startTime: toLocalTime(a.startAt, tz),
+        guestNo: o.guestNo,
+        guestCount: a.guestCount,
+      }
     }
   }
   const tickets = await tx<
@@ -598,6 +618,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     status: o.status,
     serviceDate: o.serviceDate,
     customer: customer ?? null,
+    guestLabel: o.guestLabel,
     appointment,
     items: content.items.map((it) => ({
       position: it.position,
@@ -1159,10 +1180,24 @@ export async function markReviewed(auth: Auth, id: string) {
 
 // ---------------------------------------------------------------- Tạo đơn từ lịch (2.12; module §5.4, §10)
 
+/** Mã yêu cầu riêng cho đơn của từng khách, suy ra từ mã của lần bấm (bấm lại không tạo thêm). Khách 1 dùng mã gốc. */
+function guestRequestId(base: string, guestNo: number) {
+  if (guestNo === 1) return base
+  const h = createHash('sha256').update(`${base}:${guestNo}`).digest('hex')
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`
+}
+
+export type GuestInput = { guestNo: number; name?: string | null; phone?: string | null }
+
+/**
+ * Tạo đơn từ lịch (S06, S08): tạo luôn đơn cho mọi khách của lịch chưa có đơn, mỗi khách một đơn ngang nhau.
+ * Khách 1 là người đặt (gắn hồ sơ như cũ). Khách khác: có tên → tạo/gắn hồ sơ; để trống → đơn ghi
+ * "Khách đi cùng <tên người đặt>", không tạo hồ sơ. Bấm lại (cùng mã) không ra thêm đơn (test 28).
+ */
 export async function createOrderFromAppointment(
   auth: Auth,
   appointmentId: string,
-  input: { createRequestId: string; additional?: boolean },
+  input: { createRequestId: string; guests?: GuestInput[] },
 ) {
   if (!isUuid(appointmentId)) throw notFound('Không tìm thấy lịch.')
   return withUser(auth.userId, async (tx) => {
@@ -1174,8 +1209,9 @@ export async function createOrderFromAppointment(
         customerId: string | null
         customerDisplayName: string
         phone: string | null
+        guestCount: number
       }[]
-    >`select id, branch_id, status, customer_id, customer_display_name, phone
+    >`select id, branch_id, status, customer_id, customer_display_name, phone, guest_count
       from appointments where id = ${appointmentId} for update`
     if (!a) throw notFound('Không tìm thấy lịch.')
     if (
@@ -1184,42 +1220,42 @@ export async function createOrderFromAppointment(
     )
       throw forbidden('Không có quyền tạo đơn từ lịch.')
 
-    const hash = sha({ appointment: appointmentId, additional: !!input.additional })
-    const [mine] = await tx<OrderRow[]>`
+    const details = async (ids: string[]) => {
+      const out: OrderDetail[] = []
+      for (const id of ids) out.push(await detailOf(tx, auth, await loadRow(tx, id)))
+      return out
+    }
+
+    // Gửi lại cùng mã: trả các đơn đã tạo lần trước
+    const reqIds = [1, 2, 3, 4].map((n) => guestRequestId(input.createRequestId, n))
+    const mine = await tx<OrderRow[]>`
       select ${orderCols(tx)} from orders o
-      where o.created_by = ${auth.userId} and o.create_request_id = ${input.createRequestId}`
-    if (mine) {
-      if (mine.createRequestHash !== hash) throw invalid('Mã yêu cầu đã dùng cho đơn khác. Tải lại trang.')
-      return { order: await detailOf(tx, auth, mine), replayed: true }
+      where o.created_by = ${auth.userId} and o.create_request_id = any(${reqIds}::uuid[])
+      order by o.guest_no nulls first`
+    if (mine.length) {
+      if (mine.some((m) => m.appointmentId !== appointmentId))
+        throw invalid('Mã yêu cầu đã dùng cho đơn khác. Tải lại trang.')
+      const orders = await details(mine.map((m) => m.id))
+      return { orders, order: orders[0]!, replayed: true }
     }
 
     if (!['pending', 'confirmed', 'arrived', 'in_progress'].includes(a.status))
       throw invalid('Lịch đã huỷ, không đến hoặc đã hoàn thành. Tạo lịch mới cho khách rồi bấm Tạo đơn.')
 
-    // Bấm hai lần không ra hai đơn; lịch nhóm dùng "Tạo thêm đơn" (test 28)
     const linked = (
-      await tx<{ id: string; code: number; status: OrderStatus; visible: boolean }[]>`
-        select id, code, status, visible from app.appointment_orders(${appointmentId})`
+      await tx<{ id: string; code: number; status: OrderStatus; visible: boolean; guestNo: number | null }[]>`
+        select id, code, status, visible, guest_no from app.appointment_orders(${appointmentId})`
     ).filter((o) => o.status !== 'cancelled')
-    if (linked.length > 0 && !input.additional) {
+    const taken = new Set(linked.map((o) => o.guestNo))
+    const missing = Array.from({ length: a.guestCount }, (_, i) => i + 1).filter((n) => !taken.has(n))
+    if (missing.length === 0) {
+      // Đủ đơn rồi: mở đơn đầu tiên người bấm xem được (bấm hai lần không ra hai đơn)
       const v = linked.find((o) => o.visible)
-      if (v) return { order: await detailOf(tx, auth, await loadRow(tx, v.id)), replayed: true }
-      throw conflict(
-        `Lịch này đã có đơn ${codeLabel(linked[0]!.code)}. Bấm "Tạo thêm đơn" nếu là khách khác trong nhóm.`,
-      )
-    }
-
-    // Gắn hồ sơ khách: lịch đã có khách → dùng; có SĐT trùng tên → dùng hồ sơ đó; không thì tạo mới.
-    let customerId = a.customerId
-    if (!customerId) {
-      if (a.phone) {
-        const same = await tx<{ id: string; name: string }[]>`
-          select id, name from customers where phone = ${a.phone} order by created_at`
-        customerId =
-          same.find((c) => foldVietnamese(c.name) === foldVietnamese(a.customerDisplayName))?.id ?? null
+      if (v) {
+        const orders = await details([v.id])
+        return { orders, order: orders[0]!, replayed: true }
       }
-      customerId ??= (await insertCustomer(tx, auth, a.customerDisplayName, a.phone)).id
-      await tx`select app.appointment_link_customer(${appointmentId}, ${customerId})`
+      throw conflict(`Lịch đã có đủ đơn cho ${a.guestCount} khách.`)
     }
 
     const today = toLocalDate(new Date(), await branchTz(tx, a.branchId))
@@ -1227,20 +1263,57 @@ export async function createOrderFromAppointment(
       { items: [], discounts: [] },
       { service: () => undefined, combo: () => undefined },
     )
-    const [row] = await tx<{ id: string }[]>`
-      insert into orders (branch_id, customer_id, appointment_id, service_date, pricing_hash, created_by, updated_by,
-                          create_request_id, create_request_hash)
-      values (${a.branchId}, ${customerId}, ${appointmentId}, ${today}, ${pricingHash(empty)}, ${auth.userId},
-              ${auth.userId}, ${input.createRequestId}, ${hash})
-      on conflict (created_by, create_request_id) do nothing
-      returning id`
-    if (!row) throw conflict('Không tạo được đơn. Thử lại.')
+    const created: string[] = []
+    for (const n of missing) {
+      let customerId: string | null = null
+      let label: string | null = null
+      if (n === 1) {
+        // Người đặt: lịch đã có khách → dùng; có SĐT trùng tên → dùng hồ sơ đó; không thì tạo mới.
+        customerId = a.customerId
+        if (!customerId) {
+          if (a.phone) {
+            const same = await tx<{ id: string; name: string }[]>`
+              select id, name from customers where phone = ${a.phone} order by created_at`
+            customerId =
+              same.find((c) => foldVietnamese(c.name) === foldVietnamese(a.customerDisplayName))?.id ?? null
+          }
+          customerId ??= (await insertCustomer(tx, auth, a.customerDisplayName, a.phone)).id
+          await tx`select app.appointment_link_customer(${appointmentId}, ${customerId})`
+        }
+      } else {
+        const g = input.guests?.find((x) => x.guestNo === n)
+        const name = g?.name?.trim() || null
+        const p = normalizePhone(g?.phone)
+        if (!p.ok) throw invalid(`Khách ${n}: ${p.error}`)
+        if (name) {
+          if (p.value) {
+            const same = await tx<{ id: string; name: string }[]>`
+              select id, name from customers where phone = ${p.value} order by created_at`
+            customerId = same.find((c) => foldVietnamese(c.name) === foldVietnamese(name))?.id ?? null
+          }
+          customerId ??= (await insertCustomer(tx, auth, name, p.value)).id
+        } else {
+          label = `Khách đi cùng ${a.customerDisplayName}`.slice(0, 120)
+        }
+      }
+      const [row] = await tx<{ id: string }[]>`
+        insert into orders (branch_id, customer_id, appointment_id, service_date, pricing_hash, created_by, updated_by,
+                            create_request_id, create_request_hash, guest_no, guest_label)
+        values (${a.branchId}, ${customerId}, ${appointmentId}, ${today}, ${pricingHash(empty)}, ${auth.userId},
+                ${auth.userId}, ${guestRequestId(input.createRequestId, n)},
+                ${sha({ appointment: appointmentId, guest: n })}, ${n}, ${label})
+        on conflict (created_by, create_request_id) do nothing
+        returning id`
+      if (!row) throw conflict('Không tạo được đơn. Thử lại.')
+      await audit(tx, auth, { id: row.id, branchId: a.branchId }, 'created_from_appointment', {
+        rev: 1,
+        after: { appointmentId, guestNo: n },
+      })
+      created.push(row.id)
+    }
     await tx`select app.sync_appointment(${appointmentId})`
-    await audit(tx, auth, { id: row.id, branchId: a.branchId }, 'created_from_appointment', {
-      rev: 1,
-      after: { appointmentId, additional: !!input.additional },
-    })
-    return { order: await detailOf(tx, auth, await loadRow(tx, row.id)), replayed: false }
+    const orders = await details(created)
+    return { orders, order: orders[0]!, replayed: false }
   })
 }
 
@@ -1380,7 +1453,7 @@ export async function listOrders(
       return {
         id: r.id,
         codeLabel: codeLabel(r.code),
-        customerName: r.customerName,
+        customerName: r.customerName ?? r.guestLabel,
         phoneMasked: maskPhone(r.customerPhone),
         serviceDate: r.serviceDate,
         createdTime: toLocalTime(r.createdAt, tz),

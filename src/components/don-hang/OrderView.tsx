@@ -303,12 +303,15 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
               ) : null}
             </>
           ) : (
-            'Khách lẻ'
+            (d.guestLabel ?? 'Khách lẻ')
           )}
         </Info>
         <Info label="Ngày làm">{formatIsoDate(d.serviceDate)}</Info>
         {d.appointment ? (
           <Info label="Từ lịch">
+            {d.appointment.guestNo && d.appointment.guestCount > 1
+              ? `Khách ${d.appointment.guestNo}/${d.appointment.guestCount} · `
+              : ''}
             <Link to="/lich/$id" params={{ id: d.appointment.id }} className="text-accent">
               {d.appointment.startTime} {formatIsoDate(d.appointment.date)}
             </Link>

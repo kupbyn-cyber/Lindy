@@ -261,7 +261,9 @@ export function OrderEditor(props: {
         <div className="lo-card flex items-center justify-between gap-3">
           <span className="flex min-w-0 flex-col">
             <span className="caption text-ink-muted">Khách</span>
-            <span className="body-strong truncate">{draft.customer ? draft.customer.name : 'Khách lẻ'}</span>
+            <span className="body-strong truncate">
+              {draft.customer ? draft.customer.name : (props.order?.guestLabel ?? 'Khách lẻ')}
+            </span>
             {draft.customer?.phoneMasked ? (
               <span className="caption text-ink-muted">{draft.customer.phoneMasked}</span>
             ) : null}

@@ -154,9 +154,19 @@ export const VoidTicketBody = z.strictObject({
   reason: z.string().trim().min(1, 'Cần ghi lý do huỷ phiếu.').max(500),
 })
 
+// Tạo đơn từ lịch (S06): tên, SĐT từng khách đi cùng (khách 2–4); để trống thì ghi "Khách đi cùng …"
 export const FromAppointmentBody = z.strictObject({
   createRequestId: z.uuid('Thiếu mã yêu cầu.'),
-  additional: z.boolean().optional(),
+  guests: z
+    .array(
+      z.strictObject({
+        guestNo: z.number().int().min(2).max(4),
+        name: z.string().trim().max(100, 'Tên tối đa 100 ký tự.').nullable().optional(),
+        phone: z.string().max(40, 'SĐT quá dài.').nullable().optional(),
+      }),
+    )
+    .max(3)
+    .optional(),
 })
 
 export const ORDER_FILTERS = [

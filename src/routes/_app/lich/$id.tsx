@@ -12,8 +12,10 @@ import {
   ConfirmDialog,
   Note,
   SegmentedControl,
+  Sheet,
   StatusChip,
   TextArea,
+  TextField,
   useToast,
 } from '~/components/ui'
 import { ApiError, api, errorText } from '~/lib/api'
@@ -101,6 +103,9 @@ function DetailPage() {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+  // Tên, SĐT khách đi cùng khi tạo đơn lịch nhiều khách (S06)
+  const [askGuests, setAskGuests] = useState(false)
+  const [guests, setGuests] = useState<{ guestNo: number; name: string; phone: string }[]>([])
 
   if (q.isLoading) return <p className="body px-4 text-ink-muted">Đang tải…</p>
   if (q.isError || !q.data) {
@@ -170,23 +175,52 @@ function DetailPage() {
     }
   }
 
-  // Tạo đơn từ lịch (module §10): lịch tự sang Khách đã đến → Đang làm; mở đơn để chọn dịch vụ
-  async function createOrder() {
+  // Khách chưa có đơn (S08: số đơn luôn bằng số khách)
+  const taken = new Set(activeOrders.map((o) => o.guestNo))
+  const missing = Array.from({ length: d.guestCount }, (_, i) => i + 1).filter((n) => !taken.has(n))
+  const companionLabel = `Khách đi cùng ${d.name}`
+
+  // Tạo đơn từ lịch (module §10, S06): tạo đủ đơn cho mọi khách chưa có đơn; lịch tự sang Đang làm.
+  // Một đơn → mở đơn để chọn dịch vụ; nhiều đơn → ở lại lịch, mở từng đơn ở danh sách bên dưới.
+  async function createOrders(list: { guestNo: number; name: string; phone: string }[]) {
     setOrderBusy(true)
     setOrderError(null)
     if (!orderRequest.current) orderRequest.current = crypto.randomUUID()
     try {
-      const res = await api<{ order: { id: string } }>(`/api/appointments/${d.id}/create-order`, {
-        body: { createRequestId: orderRequest.current },
+      const res = await api<{ orders: { id: string }[] }>(`/api/appointments/${d.id}/create-order`, {
+        body: {
+          createRequestId: orderRequest.current,
+          guests: list.map((g) => ({
+            guestNo: g.guestNo,
+            name: g.name.trim() || null,
+            phone: g.phone.trim() || null,
+          })),
+        },
       })
       orderRequest.current = ''
+      setAskGuests(false)
       await qc.invalidateQueries({ queryKey: ['appointments'] })
-      await navigate({ to: '/don-hang/$id', params: { id: res.order.id } })
+      if (res.orders.length === 1) {
+        await navigate({ to: '/don-hang/$id', params: { id: res.orders[0]!.id } })
+      } else {
+        toast(`Đã tạo ${res.orders.length} đơn. Mở từng đơn để chọn dịch vụ.`)
+      }
     } catch (e) {
       setOrderError(errorText(e))
     } finally {
       setOrderBusy(false)
     }
+  }
+
+  function onCreateOrder() {
+    setOrderError(null)
+    const others = missing.filter((n) => n > 1)
+    if (others.length === 0) {
+      void createOrders([])
+      return
+    }
+    setGuests(others.map((n) => ({ guestNo: n, name: '', phone: '' })))
+    setAskGuests(true)
   }
 
   return (
@@ -294,28 +328,38 @@ function DetailPage() {
             <div className="flex flex-col gap-1">
               <h2 className="overline m-0 px-4 text-ink-muted">Đơn từ lịch này</h2>
               <div className="border-t border-line">
-                {d.orders.map((o) =>
-                  o.visible ? (
+                {d.orders.map((o) => {
+                  const title = (
+                    <span className="lo-row-main">
+                      <span className="lo-row-title body-strong">
+                        {o.guestNo ? `Khách ${o.guestNo}` : 'Đơn'}
+                        {o.name ? ` · ${o.name}` : ''}
+                      </span>
+                      <span className="lo-row-meta caption">Đơn {o.codeLabel}</span>
+                    </span>
+                  )
+                  const status = (
+                    <span className="label text-ink-muted">
+                      {ORDER_STATUS_LABEL[o.status as OrderStatus]}
+                    </span>
+                  )
+                  return o.visible ? (
                     <Link
                       key={o.id}
                       to="/don-hang/$id"
                       params={{ id: o.id }}
                       className="lo-row lo-row-action"
                     >
-                      <span className="body">Đơn {o.codeLabel}</span>
-                      <span className="label text-ink-muted">
-                        {ORDER_STATUS_LABEL[o.status as OrderStatus]}
-                      </span>
+                      {title}
+                      {status}
                     </Link>
                   ) : (
                     <div key={o.id} className="lo-row">
-                      <span className="body">Đơn {o.codeLabel}</span>
-                      <span className="label text-ink-muted">
-                        {ORDER_STATUS_LABEL[o.status as OrderStatus]}
-                      </span>
+                      {title}
+                      {status}
                     </div>
-                  ),
-                )}
+                  )
+                })}
               </div>
             </div>
           ) : null}
@@ -328,8 +372,8 @@ function DetailPage() {
                   Sửa lịch
                 </Button>
               ) : null}
-              {c.createOrder && activeOrders.length === 0 ? (
-                <Button variant="primary" block loading={orderBusy} onClick={() => void createOrder()}>
+              {c.createOrder && missing.length > 0 ? (
+                <Button variant="primary" block loading={orderBusy && !askGuests} onClick={onCreateOrder}>
                   Tạo đơn
                 </Button>
               ) : null}
@@ -392,6 +436,60 @@ function DetailPage() {
         ) : null}
         {actionError ? <Note tone="danger">{actionError}</Note> : null}
       </ConfirmDialog>
+
+      <Sheet
+        open={askGuests}
+        title={`Tạo ${missing.length} đơn cho ${d.guestCount} khách`}
+        onClose={() => setAskGuests(false)}
+        footer={
+          <Button block variant="primary" loading={orderBusy} onClick={() => void createOrders(guests)}>
+            Tạo {missing.length} đơn
+          </Button>
+        }
+      >
+        <p className="caption m-0 text-ink-muted">
+          Mỗi khách một đơn riêng: thợ, dịch vụ, thanh toán riêng. Để trống tên thì đơn ghi “{companionLabel}
+          ”.
+        </p>
+        {missing.includes(1) ? (
+          <div className="flex flex-col gap-1 rounded-[var(--radius-md)] border border-line p-3">
+            <span className="label text-ink-muted">Khách 1 · người đặt</span>
+            <span className="body-strong">
+              {d.name}
+              {d.phone ? <span className="body text-ink-muted"> · {d.phone}</span> : null}
+            </span>
+          </div>
+        ) : null}
+        {guests.map((g, i) => (
+          <div
+            key={g.guestNo}
+            className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-line p-3"
+          >
+            <span className="label text-ink-muted">Khách {g.guestNo}</span>
+            <TextField
+              label="Tên (không bắt buộc)"
+              placeholder={companionLabel}
+              value={g.name}
+              maxLength={100}
+              onChange={(e) =>
+                setGuests((old) => old.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+              }
+            />
+            <TextField
+              label="SĐT (không bắt buộc)"
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              value={g.phone}
+              maxLength={30}
+              onChange={(e) =>
+                setGuests((old) => old.map((x, j) => (j === i ? { ...x, phone: e.target.value } : x)))
+              }
+            />
+          </div>
+        ))}
+        {orderError ? <Note tone="danger">{orderError}</Note> : null}
+      </Sheet>
 
       <AppointmentForm
         open={editing}

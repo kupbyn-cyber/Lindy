@@ -67,7 +67,7 @@ Số migration đánh theo thứ tự làm (6D làm trước 6B).
 | Migration | Nội dung |
 |---|---|
 | `0021_booking_simplify.sql` | Lịch `pending` đang có → `confirmed` (ghi audit). Trigger không cho tạo/chuyển về `pending`. Không thêm cột: lý do chọn trong hộp Huỷ ghi vào `cancel_reason` ("Khách báo huỷ: …"), "Khách không đến" chuyển trạng thái `no_show` (chỉ khi đã đến giờ hẹn). Luật sửa của nhân viên thường theo S15. Yêu cầu huỷ của nhân viên dùng lại cờ "khách báo huỷ" (B07). |
-| `0022_group_orders.sql` | `orders.guest_no` (1…4), `orders.guest_label` (tên hiển thị khi không có hồ sơ). Ràng buộc: một lịch không có hai đơn chưa huỷ cùng `guest_no`; số đơn chưa huỷ ≤ `guest_count`. Giảm `guest_count` thấp hơn số đơn chưa huỷ thì bị chặn. `app.apply_deposits` trừ mỗi đơn tối đa phần chia đều (`tổng cọc ÷ số khách`, phần lẻ vào Khách 1). |
+| `0022_group_orders.sql` | `orders.guest_no` (1…4), `orders.guest_label` (tên hiển thị khi không có hồ sơ); đơn cũ đánh số theo thứ tự tạo. Ràng buộc: một lịch không có hai đơn chưa huỷ cùng `guest_no`; `guest_no` ≤ `guest_count`. `app.appointment_orders` trả thêm khách thứ mấy và tên khách. Giảm `guest_count` thấp hơn số đơn chưa huỷ thì bị chặn. `app.apply_deposits` trừ mỗi đơn tối đa phần chia đều (`tổng cọc ÷ số khách`, phần lẻ vào Khách 1). |
 | `0020_account_delete.sql` (đã làm) | `users.deleted_at`. Hàm `app.admin_delete_user`: xoá phiên, quyền, đăng ký thông báo; thử xoá hẳn người dùng, gặp ràng buộc khoá ngoại (đã có dữ liệu, kể cả nhật ký đăng nhập) thì xoá SĐT, email, mật khẩu, khoá, thu quyền và đánh dấu đã xoá. Không xoá chính mình. |
 | `0023_demo_data.sql` | Bảng `demo_state` (chưa nạp / đã nạp / đã dùng thật). Hàm `app.demo_golive_wipe()` (quyền chủ DB, chỉ người có `users.manage` gọi): trong một giao dịch tạm tắt trigger chặn xoá, TRUNCATE các bảng nghiệp vụ, đặt lại số đơn về 1, bật lại trigger, ghi audit. |
 
@@ -95,9 +95,9 @@ Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để 
 - [x] **6B.6** Bỏ nút tròn "+ Tạo đơn" ở mọi màn và màn `/don-hang/tao` (S16). API `POST /api/orders` từ chối đơn không gắn lịch; chỗ đang trỏ tới màn tạo đơn rời (ví dụ "Dùng + Tạo đơn" trong thông báo lỗi) đổi sang hướng dẫn tạo lịch. Gói thử (6F) tạo đơn qua lịch. *Kiểm:* xem từng màn; test API tạo đơn không có lịch bị từ chối.
 
 ### 6C — Lịch nhiều khách
-- [ ] **6C.1** Migration 0022; `createOrderFromAppointment` tạo đủ các đơn còn thiếu trong một giao dịch, nhận tên/SĐT từng khách, giữ chống bấm hai lần. Bỏ tham số `additional`. *Kiểm:* test: lịch 2 khách ra đúng 2 đơn; bấm lại không ra thêm; tăng số khách lên 3 rồi bấm Tạo đơn ra đơn thứ 3; giảm số khách khi còn 3 đơn bị chặn.
-- [ ] **6C.2** Bảng "Tạo đơn" hỏi tên từng khách (Khách 1 điền sẵn), tạo xong về chi tiết lịch có danh sách Khách 1…N để mở từng đơn. Lịch 1 khách: bấm là vào thẳng đơn như hiện nay. Đơn hiện "Khách 2/2 · lịch 10:00". *Kiểm:* thao tác trên trình duyệt.
-- [ ] **6C.3** Cọc chia đều. *Kiểm:* test `coc-tet.test.ts`: cọc 200.000đ lịch 2 khách, mỗi đơn trừ 100.000đ dù đơn nào xong trước; cọc 300.000đ lịch 3 khách huỷ 1 đơn thì phần đơn huỷ vẫn nằm trong Cần xử lý cọc.
+- [x] **6C.1** Migration 0022; `createOrderFromAppointment` tạo đủ các đơn còn thiếu trong một giao dịch, nhận tên/SĐT từng khách, giữ chống bấm hai lần. Bỏ tham số `additional`. *Kiểm:* test: lịch 2 khách ra đúng 2 đơn; bấm lại không ra thêm; tăng số khách lên 3 rồi bấm Tạo đơn ra đơn thứ 3; giảm số khách khi còn 3 đơn bị chặn.
+- [x] **6C.2** Bảng "Tạo đơn" hỏi tên từng khách (Khách 1 điền sẵn), tạo xong về chi tiết lịch có danh sách Khách 1…N để mở từng đơn. Lịch 1 khách: bấm là vào thẳng đơn như hiện nay. Đơn hiện "Khách 2/2 · lịch 10:00". *Kiểm:* thao tác trên trình duyệt.
+- [x] **6C.3** Cọc chia đều. *Kiểm:* test `coc-tet.test.ts`: cọc 200.000đ lịch 2 khách, mỗi đơn trừ 100.000đ dù đơn nào xong trước; cọc 300.000đ lịch 3 khách huỷ 1 đơn thì phần đơn huỷ vẫn nằm trong Cần xử lý cọc.
 
 ### 6E — Trang chủ
 - [ ] **6E.1** `overview()` thêm doanh thu từng ngày 30 ngày gần nhất (quán hoặc của chính thợ, theo quyền). *Kiểm:* test: thợ chỉ nhận số của mình, Nhung không nhận lãi.

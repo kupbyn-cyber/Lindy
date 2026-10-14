@@ -24,6 +24,7 @@ import {
 import { AppError, fromDbError } from '../../src/server/http/errors'
 import { voidPayment } from '../../src/server/orders/payments'
 import {
+  cancelOrder,
   confirmOrder,
   createOrderFromAppointment,
   getOrder,
@@ -424,23 +425,30 @@ describe('Module 34, PRD 36 — báo huỷ 11 tiếng trước hoặc không đ�
 })
 
 describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
-  async function orderFrom(apptId: string, amount: number) {
-    const { order } = await createOrderFromAppointment(auth('trang'), apptId, {
-      createRequestId: rid(),
-      additional: true,
-    })
-    const saved = await updateOrder(auth('trang'), order.id, {
-      version: order.version,
-      customerId: order.customer?.id ?? null,
-      serviceDate: order.serviceDate,
-      items: [{ type: 'custom', name: 'Dịch vụ Tết', amount, staff: [{ userId: uid('trang') }] }] as never,
-      discounts: [],
-    })
-    return saved
+  // Tạo đơn từ lịch ra đủ đơn cho mọi khách (S06); ghi tiền cho từng đơn theo thứ tự khách
+  async function ordersFrom(apptId: string, amounts: number[]) {
+    const { orders } = await createOrderFromAppointment(auth('trang'), apptId, { createRequestId: rid() })
+    const saved = []
+    for (const [i, amount] of amounts.entries()) {
+      const order = orders[i]!
+      saved.push(
+        await updateOrder(auth('trang'), order.id, {
+          version: order.version,
+          customerId: order.customer?.id ?? null,
+          serviceDate: order.serviceDate,
+          items: [
+            { type: 'custom', name: 'Dịch vụ Tết', amount, staff: [{ userId: uid('trang') }] },
+          ] as never,
+          discounts: [],
+        }),
+      )
+    }
+    return { saved, orders }
   }
+  const orderFrom = async (apptId: string, amount: number) => (await ordersFrom(apptId, [amount])).saved[0]!
 
   it('cọc 200.000đ, bill 500.000đ → khoản thu cọc tự có, còn phải thu 300.000đ; ngày nhận cọc không có doanh thu', async () => {
-    const a = await newAppt('trang', { guests: 2, date: today })
+    const a = await newAppt('trang', { guests: 1, date: today })
     const rev0 = (await overview(auth('linh'), { period: 'day' })).revenue?.net
     const dep = await heldDeposit(a.id, 200_000)
     expect((await overview(auth('linh'), { period: 'day' })).revenue?.net).toBe(rev0)
@@ -467,16 +475,31 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
     expect((await err(voidDeposit(auth('nhung'), dep, it0.version, 'x'))).status).toBe(422)
   })
 
+  it('S07: lịch 2 khách cọc 200.000đ → mỗi đơn trừ đúng 100.000đ, đơn nào xong trước cũng vậy', async () => {
+    const a = await newAppt('trang', { guests: 2, date: today })
+    await heldDeposit(a.id, 200_000)
+    const { saved } = await ordersFrom(a.id, [500_000, 80_000])
+    const [o1, o2] = saved as [(typeof saved)[0], (typeof saved)[0]]
+    const d1 = await markDone(auth('trang'), o1.id, o1.version)
+    expect(d1.paidAmount).toBe(100_000)
+    expect(d1.dueAmount).toBe(400_000)
+    expect((await getAppointment(auth('nhung'), a.id)).deposit!.heldAmount).toBe(100_000)
+    const d2 = await markDone(auth('trang'), o2.id, o2.version)
+    expect(d2.paidAmount).toBe(80_000) // bill nhỏ hơn phần cọc: trừ đến hết bill
+    expect((await getAppointment(auth('nhung'), a.id)).deposit!.heldAmount).toBe(20_000)
+  })
+
   it('S36: lịch nhóm 2 đơn dùng chung cọc 200.000đ, bấm Làm xong song song → tổng trừ không vượt cọc', async () => {
     const a = await newAppt('trang', { guests: 2, date: today })
     await heldDeposit(a.id, 200_000)
-    const o1 = await orderFrom(a.id, 150_000)
-    const o2 = await orderFrom(a.id, 300_000)
+    const { saved } = await ordersFrom(a.id, [150_000, 300_000])
+    const [o1, o2] = saved as [(typeof saved)[0], (typeof saved)[0]]
     await Promise.all([
       markDone(auth('trang'), o1.id, o1.version),
       markDone(auth('trang'), o2.id, o2.version),
     ])
     const [x, y] = await Promise.all([getOrder(auth('nhung'), o1.id), getOrder(auth('nhung'), o2.id)])
+    expect([x.paidAmount, y.paidAmount]).toEqual([100_000, 100_000])
     expect(x.paidAmount + y.paidAmount).toBe(200_000)
     expect((await getAppointment(auth('nhung'), a.id)).deposit!.heldAmount).toBe(0)
 
@@ -488,15 +511,17 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
     expect(c.paidAmount).toBe(pay.amount)
   })
 
-  it('cọc dư sau khi lịch Hoàn thành → gợi ý hoàn phần còn lại', async () => {
+  it('cọc dư sau khi lịch Hoàn thành (khách 2 không làm) → gợi ý hoàn phần còn lại', async () => {
     const a = await newAppt('trang', { guests: 2, date: today })
     const dep = await heldDeposit(a.id, 200_000)
-    const o = await orderFrom(a.id, 120_000)
+    const { saved, orders } = await ordersFrom(a.id, [120_000])
+    const o = saved[0]!
     const done = await markDone(auth('trang'), o.id, o.version)
     await confirmOrder(auth('nhung'), o.id, done.version)
+    await cancelOrder(auth('nhung'), orders[1]!.id, orders[1]!.version, 'Khách 2 không làm')
     const d = await getAppointment(auth('nhung'), a.id)
     expect(d.status).toBe('completed')
-    expect(d.deposit).toMatchObject({ heldAmount: 80_000, suggestion: 'refund' })
+    expect(d.deposit).toMatchObject({ heldAmount: 100_000, suggestion: 'refund' })
     const r = await resolveDeposit(auth('nhung'), dep, 'refund', {
       version: d.deposit!.items[0]!.version,
       reason: 'Hoàn phần cọc dư',
@@ -504,12 +529,12 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
     })
     expect(r.deposit!.items[0]).toMatchObject({
       status: 'refunded',
-      resolvedAmount: 80_000,
-      applied: 120_000,
+      resolvedAmount: 100_000,
+      applied: 100_000,
     })
     expect((await ledgerOf(dep)).map((l) => [l.entryType, Number(l.amount)])).toEqual([
       ['deposit_in', 200_000],
-      ['deposit_refund', -80_000],
+      ['deposit_refund', -100_000],
     ])
   })
 })
