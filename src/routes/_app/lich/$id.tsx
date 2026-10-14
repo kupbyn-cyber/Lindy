@@ -85,6 +85,23 @@ function Row(props: { label: string; children: ReactNode }) {
   )
 }
 
+/** Một đơn của lịch: Khách 2 · Lan — mã đơn, trạng thái (S06) */
+function GuestOrder(props: { o: Detail['orders'][number] }) {
+  const { o } = props
+  return (
+    <>
+      <span className="lo-row-main">
+        <span className="lo-row-title body-strong">
+          {o.guestNo ? `Khách ${o.guestNo}` : 'Đơn'}
+          {o.name ? ` · ${o.name}` : ''}
+        </span>
+        <span className="lo-row-meta caption">Đơn {o.codeLabel}</span>
+      </span>
+      <span className="label text-ink-muted">{ORDER_STATUS_LABEL[o.status as OrderStatus]}</span>
+    </>
+  )
+}
+
 function DetailPage() {
   const { id } = Route.useParams()
   const q = useAppointment(id)
@@ -328,38 +345,22 @@ function DetailPage() {
             <div className="flex flex-col gap-1">
               <h2 className="overline m-0 px-4 text-ink-muted">Đơn từ lịch này</h2>
               <div className="border-t border-line">
-                {d.orders.map((o) => {
-                  const title = (
-                    <span className="lo-row-main">
-                      <span className="lo-row-title body-strong">
-                        {o.guestNo ? `Khách ${o.guestNo}` : 'Đơn'}
-                        {o.name ? ` · ${o.name}` : ''}
-                      </span>
-                      <span className="lo-row-meta caption">Đơn {o.codeLabel}</span>
-                    </span>
-                  )
-                  const status = (
-                    <span className="label text-ink-muted">
-                      {ORDER_STATUS_LABEL[o.status as OrderStatus]}
-                    </span>
-                  )
-                  return o.visible ? (
+                {d.orders.map((o) =>
+                  o.visible ? (
                     <Link
                       key={o.id}
                       to="/don-hang/$id"
                       params={{ id: o.id }}
                       className="lo-row lo-row-action"
                     >
-                      {title}
-                      {status}
+                      <GuestOrder o={o} />
                     </Link>
                   ) : (
                     <div key={o.id} className="lo-row">
-                      {title}
-                      {status}
+                      <GuestOrder o={o} />
                     </div>
-                  )
-                })}
+                  ),
+                )}
               </div>
             </div>
           ) : null}
