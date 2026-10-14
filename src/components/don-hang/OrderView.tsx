@@ -27,6 +27,7 @@ import {
 } from '~/lib/orders'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import { Attachments } from '../tien/Attachments'
+import { PhotoSheet } from './PhotoSheet'
 import { CAUSE_LABEL, OUTCOME_LABEL, TicketSheet } from './TicketSheet'
 
 type Dialog =
@@ -41,11 +42,18 @@ type Dialog =
   | { kind: 'voidTip'; tipId: string; amount: number }
   | { kind: 'refund' }
 
-export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
+export function OrderView(props: {
+  order: OrderDetail
+  onEdit: () => void
+  /** Vừa bấm Làm xong ở màn sửa: mở luôn Chụp ảnh thành phẩm (S18) */
+  openPhoto?: boolean
+}) {
   const d = props.order
   const c = d.can
   const qc = useQueryClient()
   const toast = useToast()
+  const [photoOpen, setPhotoOpen] = useState(!!props.openPhoto)
+  const canPhoto = d.status === 'awaiting_confirmation' || d.status === 'confirmed'
   const [dialog, setDialog] = useState<Dialog>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -183,6 +191,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       qc.setQueryData(['orders', 'detail', d.id], next)
       await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
       toast(`Đã bấm Làm xong đơn ${d.codeLabel}.`)
+      setPhotoOpen(true)
     } catch (e) {
       toast(errorText(e), 'error')
     } finally {
@@ -645,6 +654,11 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             </Button>
           </>
         ) : null}
+        {canPhoto ? (
+          <Button block icon="camera" onClick={() => setPhotoOpen(true)}>
+            Chụp ảnh thành phẩm
+          </Button>
+        ) : null}
         {c.confirmBlocked ? <Note tone="warning">{c.confirmBlocked}</Note> : null}
         {c.approveDiscount && !c.confirm ? (
           <Button variant="primary" block onClick={() => open({ kind: 'approve' })}>
@@ -728,6 +742,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       {showHistory ? <History id={d.id} /> : null}
 
       <TicketSheet open={ticketOpen} order={d} onClose={() => setTicketOpen(false)} />
+      <PhotoSheet open={photoOpen && canPhoto} order={d} onClose={() => setPhotoOpen(false)} />
 
       <ConfirmDialog
         open={!!dialog}

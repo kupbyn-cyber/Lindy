@@ -18,6 +18,8 @@ function OrderPage() {
   const q = useOrder(id)
   // auto: đơn Đang làm mở màn sửa; view/edit: người dùng chọn
   const [mode, setMode] = useState<'auto' | 'view' | 'edit'>('auto')
+  // Vừa bấm Làm xong ở màn sửa → mở Chụp ảnh thành phẩm (S18)
+  const [justDone, setJustDone] = useState(false)
 
   if (q.isLoading) return <p className="body px-4 text-ink-muted">Đang tải…</p>
   if (q.isError || !q.data) {
@@ -50,11 +52,22 @@ function OrderPage() {
         <OrderEditor
           key={`${d.id}-${mode}`}
           order={d}
-          onSaved={(next) => setMode(next.status === 'in_progress' ? 'auto' : 'view')}
+          onSaved={(next) => {
+            if (d.status === 'in_progress' && next.status === 'awaiting_confirmation') setJustDone(true)
+            setMode(next.status === 'in_progress' ? 'auto' : 'view')
+          }}
           onCancel={() => setMode('view')}
         />
       ) : (
-        <OrderView order={d} onEdit={() => setMode('edit')} />
+        <OrderView
+          key={justDone ? 'done' : 'view'}
+          order={d}
+          openPhoto={justDone}
+          onEdit={() => {
+            setJustDone(false)
+            setMode('edit')
+          }}
+        />
       )}
     </section>
   )

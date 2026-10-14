@@ -1,10 +1,10 @@
 # Kế hoạch — Ảnh thành phẩm có khung (S18–S21)
 
-**Ngày:** 15/10/2026 · **Trạng thái:** CHỜ DUYỆT. Mẫu khung: https://claude.ai/artifact/Ckn7GoA2hmRMWF7w3oE9ST
+**Ngày:** 15/10/2026 · **Trạng thái:** ĐÃ LÀM (chờ thử trên iPhone) (15/10/2026: anh chốt một kiểu khung, có tên khách che bớt trên ảnh — S19 sửa). Mẫu khung: https://claude.ai/artifact/Ckn7GoA2hmRMWF7w3oE9ST
 
 ## 1. Hiểu yêu cầu
 
-Thợ bấm Làm xong → có nút **Chụp ảnh** → chụp (hoặc chọn ảnh có sẵn) → app ghép khung → **Lưu / Chia sẻ** để lưu vào Ảnh hoặc đăng Instagram, Zalo. Hai kiểu khung: Đăng Instagram và Nội bộ (kiểu Timemark). Khổ 4:5. Ảnh không lưu vào app.
+Thợ bấm Làm xong → có nút **Chụp ảnh** → chụp (hoặc chọn ảnh có sẵn) → app ghép khung → **Lưu / Chia sẻ** để lưu vào Ảnh hoặc đăng Instagram, Zalo. Một kiểu khung (S19 sửa): thương hiệu, dịch vụ, tên khách che bớt, thợ, ngày. Khổ 4:5. Ảnh không lưu vào app.
 
 ## 2. Cách làm
 
@@ -13,28 +13,28 @@ Thợ bấm Làm xong → có nút **Chụp ảnh** → chụp (hoặc chọn �
 - Đọc ảnh bằng `createImageBitmap(file, { imageOrientation: 'from-image' })` để đúng chiều ảnh iPhone; lỗi thì dùng `<img>`.
 - Vẽ khung bằng canvas 1080 × 1350, đúng mã của mẫu artifact. Chờ font tải xong trước khi vẽ. Chữ LINDY dùng Cormorant Garamond, mọi chữ khác Be Vietnam Pro (dấu tiếng Việt đầy đủ).
 - Lưu: `navigator.share({ files: [jpg] })` mở bảng chia sẻ iPhone (Lưu hình ảnh, Instagram, Zalo). Máy không hỗ trợ chia sẻ tệp thì mở ảnh ở trang riêng, nhấn giữ để lưu.
-- Thông tin trên khung lấy từ đơn: dịch vụ (tên các dòng, cắt gọn), thợ (tên những người được chia phần), ngày làm dịch vụ; khung nội bộ thêm mã đơn, "Khách 2/2", tên khách che bớt, giờ chụp.
+- Thông tin trên khung lấy từ đơn: dịch vụ (tên các dòng, cắt gọn), tên khách che bớt (khách có hồ sơ), thợ (những người được chia phần), ngày làm dịch vụ.
 
 ## 3. Phạm vi
 
-**Làm:** bảng "Ảnh thành phẩm" mở sau khi bấm Làm xong thành công và từ nút "Chụp ảnh" ở chi tiết đơn (đơn chưa huỷ, người xem được đơn). Chọn kiểu khung, xem trước, chụp lại, Lưu / Chia sẻ.
+**Làm:** bảng "Ảnh thành phẩm" mở sau khi bấm Làm xong thành công và từ nút "Chụp ảnh" ở chi tiết đơn (đơn chưa huỷ, người xem được đơn). Chụp xong tự ghép khung, xem trước, chụp lại, Lưu / Chia sẻ.
 
-**Không làm:** lưu ảnh vào app (S21); camera trực tiếp có khung lúc ngắm; sửa, lọc màu ảnh; tỉ lệ 9:16.
+**Không làm:** khung nội bộ kiểu Timemark (anh bỏ); lưu ảnh vào app (S21); camera trực tiếp có khung lúc ngắm; sửa, lọc màu ảnh; tỉ lệ 9:16.
 
 ## 4. File
 
 | File | Việc |
 |---|---|
-| `src/lib/photo-frame.ts` (mới) | Hàm vẽ hai khung, che tên khách, đọc ảnh đúng chiều, xuất JPEG |
-| `src/components/don-hang/PhotoSheet.tsx` (mới) | Bảng chụp / chọn ảnh, chọn khung, xem trước, Lưu / Chia sẻ |
+| `src/lib/photo-frame.ts` (mới) | Hàm vẽ khung, che tên khách, đọc ảnh đúng chiều, xuất JPEG |
+| `src/components/don-hang/PhotoSheet.tsx` (mới) | Bảng chụp / chọn ảnh, xem trước, Lưu / Chia sẻ |
 | `src/components/don-hang/OrderView.tsx` | Nút "Chụp ảnh"; mở bảng sau khi Làm xong |
 | `tests/unit/photo-frame.test.ts` (mới) | Che tên khách, cắt chữ dài, chọn dòng thông tin theo kiểu khung |
 
 ## 5. Các bước
 
-- [ ] **7.1** `photo-frame.ts` + test đơn vị (che tên, thông tin khung không có tên khách / giá ở kiểu Instagram). *Kiểm:* `bun run test`.
-- [ ] **7.2** `PhotoSheet` + nút trong `OrderView`. *Kiểm:* trình duyệt local cỡ 375px: chọn ảnh, đổi khung, xem trước; ảnh xuất đúng 1080 × 1350.
-- [ ] **7.3** `bun run check`, `bun run build`. Anh thử trên iPhone: chụp, chọn ảnh HEIC trong thư viện, Lưu / Chia sẻ, đăng thử Instagram.
+- [x] **7.1** `photo-frame.ts` + test đơn vị (che tên, thông tin khung không có SĐT, giá, mã đơn). *Kiểm:* `bun run test`.
+- [x] **7.2** `PhotoSheet` + nút trong `OrderView`. *Kiểm:* trình duyệt local cỡ 375px: chọn ảnh, xem trước; ảnh xuất đúng 1080 × 1350.
+- [~] **7.3** `bun run check` (337 test), `bun run build` qua. Anh thử trên iPhone: chụp, chọn ảnh HEIC trong thư viện, Lưu / Chia sẻ, đăng thử Instagram.
 
 ## 6. Rủi ro
 
