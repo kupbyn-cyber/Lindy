@@ -62,11 +62,13 @@ Chặn bước 6F.3.
 
 ## 4. Thay đổi dữ liệu
 
+Số migration đánh theo thứ tự làm (6D làm trước 6B).
+
 | Migration | Nội dung |
 |---|---|
-| `0020_booking_simplify.sql` | Lịch `pending` đang có → `confirmed` (ghi audit). Trigger không cho tạo/chuyển về `pending`. Cột `appointments.cancel_kind` (`customer` / `no_show` / `other`). Luật sửa của nhân viên thường theo Q-N. Yêu cầu huỷ của nhân viên dùng lại cờ "khách báo huỷ" (B07), thêm loại yêu cầu. |
-| `0021_group_orders.sql` | `orders.guest_no` (1…4), `orders.guest_label` (tên hiển thị khi không có hồ sơ). Ràng buộc: một lịch không có hai đơn chưa huỷ cùng `guest_no`; số đơn chưa huỷ ≤ `guest_count`. Giảm `guest_count` thấp hơn số đơn chưa huỷ thì bị chặn. `app.apply_deposits` trừ mỗi đơn tối đa phần chia đều (`tổng cọc ÷ số khách`, phần lẻ vào Khách 1). |
-| `0022_account_delete.sql` | `users.deleted_at`. Hàm `app.admin_delete_user`: xoá phiên, quyền, đăng ký thông báo; thử xoá hẳn người dùng, gặp ràng buộc khoá ngoại (đã có dữ liệu) thì xoá SĐT, email, mật khẩu, khoá và đánh dấu đã xoá. Không xoá chính mình, không xoá Chủ cuối cùng. |
+| `0021_booking_simplify.sql` | Lịch `pending` đang có → `confirmed` (ghi audit). Trigger không cho tạo/chuyển về `pending`. Cột `appointments.cancel_kind` (`customer` / `no_show` / `other`). Luật sửa của nhân viên thường theo Q-N. Yêu cầu huỷ của nhân viên dùng lại cờ "khách báo huỷ" (B07), thêm loại yêu cầu. |
+| `0022_group_orders.sql` | `orders.guest_no` (1…4), `orders.guest_label` (tên hiển thị khi không có hồ sơ). Ràng buộc: một lịch không có hai đơn chưa huỷ cùng `guest_no`; số đơn chưa huỷ ≤ `guest_count`. Giảm `guest_count` thấp hơn số đơn chưa huỷ thì bị chặn. `app.apply_deposits` trừ mỗi đơn tối đa phần chia đều (`tổng cọc ÷ số khách`, phần lẻ vào Khách 1). |
+| `0020_account_delete.sql` (đã làm) | `users.deleted_at`. Hàm `app.admin_delete_user`: xoá phiên, quyền, đăng ký thông báo; thử xoá hẳn người dùng, gặp ràng buộc khoá ngoại (đã có dữ liệu, kể cả nhật ký đăng nhập) thì xoá SĐT, email, mật khẩu, khoá, thu quyền và đánh dấu đã xoá. Không xoá chính mình. |
 | `0023_demo_data.sql` | Bảng `demo_state` (chưa nạp / đã nạp / đã dùng thật). Hàm `app.demo_golive_wipe()` (quyền chủ DB, chỉ người có `users.manage` gọi): trong một giao dịch tạm tắt trigger chặn xoá, TRUNCATE các bảng nghiệp vụ, đặt lại số đơn về 1, bật lại trigger, ghi audit. |
 
 **Giữ lại khi xoá dữ liệu thử:** tổ chức, chi nhánh, tài khoản, mật khẩu, phiên, vai trò, quyền, dịch vụ, combo, lịch sử giá, nhóm chi, tài khoản tiền (tên), cài đặt lịch, ngày quán đóng cửa, KPI, tuỳ chọn và đăng ký thông báo, nhật ký thao tác. Hồ sơ, mức lương nhân viên theo Q-P.
@@ -81,11 +83,11 @@ Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để 
 - [x] **6A.2** `ConfirmDialog`: bỏ "Thôi", thêm nút X góc phải trên (vùng chạm 44px, `aria-label="Đóng"`), nút hành động rộng hết hàng. `Sheet`: "Đóng" → X. Sửa 2 chỗ tự viết nút "Thôi". *Kiểm:* mở hộp huỷ lịch, hộp tài khoản, bảng tạo lịch; bấm X, bấm nền tối, phím Esc đều đóng.
 
 ### 6D — Xoá tài khoản
-- [ ] **6D.1** Migration 0022 + `deleteAccount()` + `POST /api/accounts/:id/delete`. *Kiểm:* test bảo mật: chỉ Chủ gọi được; không xoá chính mình, Chủ cuối cùng; tài khoản trống bị xoá hẳn; tài khoản có đơn còn tên trong đơn, không đăng nhập được, SĐT tạo lại được.
-- [ ] **6D.2** Nút "Xoá tài khoản" trong bảng tài khoản, hộp xác nhận nói rõ xoá hẳn hay chỉ xoá đăng nhập. Danh sách tài khoản, Nhân viên, ô chọn thợ ẩn người đã xoá. *Kiểm:* thao tác trên trình duyệt.
+- [x] **6D.1** Migration 0020 + `deleteAccount()` + `POST /api/accounts/:id/delete`. *Kiểm:* test bảo mật: chỉ Chủ gọi được; không xoá chính mình, Chủ cuối cùng; tài khoản trống bị xoá hẳn; tài khoản có đơn còn tên trong đơn, không đăng nhập được, SĐT tạo lại được.
+- [x] **6D.2** Nút "Xoá tài khoản" trong bảng tài khoản, hộp xác nhận nói rõ xoá hẳn hay chỉ xoá đăng nhập. Danh sách tài khoản, Nhân viên, ô chọn thợ ẩn người đã xoá. *Kiểm:* thao tác trên trình duyệt.
 
 ### 6B — Màn lịch
-- [ ] **6B.1** Migration 0020; `policy.ts`, `service.ts` bỏ `confirm`, `pending`; luật sửa theo Q-N. Bỏ thông báo "lịch chờ chốt", bỏ "Mới đặt" khỏi bộ lọc, Tổng quan, Cần xử lý. *Kiểm:* sửa test `lich-dat.test.ts` theo S02, S04; lịch cũ `pending` thành `confirmed` sau migrate.
+- [ ] **6B.1** Migration 0021; `policy.ts`, `service.ts` bỏ `confirm`, `pending`; luật sửa theo Q-N. Bỏ thông báo "lịch chờ chốt", bỏ "Mới đặt" khỏi bộ lọc, Tổng quan, Cần xử lý. *Kiểm:* sửa test `lich-dat.test.ts` theo S02, S04; lịch cũ `pending` thành `confirmed` sau migrate.
 - [ ] **6B.2** Chi tiết lịch còn 3 nút. Hộp Huỷ: chọn lý do (Khách báo huỷ / Khách không đến / Lý do khác) + ghi chú; nhân viên thường thì nút gửi yêu cầu. Lý do "Khách không đến" chỉ chọn được khi đã qua giờ hẹn. *Kiểm:* test API theo vai trò; thao tác trên trình duyệt với tài khoản Linh và thợ.
 - [ ] **6B.3** Ô lịch: số khách – tên – SĐT – giờ, dấu "chưa cọc"; ô thấp thì cắt bớt từ phải sang. Thông báo đẩy vẫn không có SĐT. *Kiểm:* xem lịch 1 khách, nhóm 3 khách, ô 30 phút.
 - [ ] **6B.4** Mặc định 48px/giờ; phóng to/thu nhỏ bằng hai ngón (giữ mốc giờ dưới ngón tay, chặn phóng to cả trang trong vùng lịch), nhớ cỡ trên máy. *Kiểm:* mô phỏng thao tác hai ngón trên trình duyệt; anh thử trên iPhone.
@@ -93,7 +95,7 @@ Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để 
 - [ ] **6B.6** Bỏ nút tròn "+ Tạo đơn" ở mọi màn và màn `/don-hang/tao` (S16). API `POST /api/orders` từ chối đơn không gắn lịch; chỗ đang trỏ tới màn tạo đơn rời (ví dụ "Dùng + Tạo đơn" trong thông báo lỗi) đổi sang hướng dẫn tạo lịch. Gói thử (6F) tạo đơn qua lịch. *Kiểm:* xem từng màn; test API tạo đơn không có lịch bị từ chối.
 
 ### 6C — Lịch nhiều khách
-- [ ] **6C.1** Migration 0021; `createOrderFromAppointment` tạo đủ các đơn còn thiếu trong một giao dịch, nhận tên/SĐT từng khách, giữ chống bấm hai lần. Bỏ tham số `additional`. *Kiểm:* test: lịch 2 khách ra đúng 2 đơn; bấm lại không ra thêm; tăng số khách lên 3 rồi bấm Tạo đơn ra đơn thứ 3; giảm số khách khi còn 3 đơn bị chặn.
+- [ ] **6C.1** Migration 0022; `createOrderFromAppointment` tạo đủ các đơn còn thiếu trong một giao dịch, nhận tên/SĐT từng khách, giữ chống bấm hai lần. Bỏ tham số `additional`. *Kiểm:* test: lịch 2 khách ra đúng 2 đơn; bấm lại không ra thêm; tăng số khách lên 3 rồi bấm Tạo đơn ra đơn thứ 3; giảm số khách khi còn 3 đơn bị chặn.
 - [ ] **6C.2** Bảng "Tạo đơn" hỏi tên từng khách (Khách 1 điền sẵn), tạo xong về chi tiết lịch có danh sách Khách 1…N để mở từng đơn. Lịch 1 khách: bấm là vào thẳng đơn như hiện nay. Đơn hiện "Khách 2/2 · lịch 10:00". *Kiểm:* thao tác trên trình duyệt.
 - [ ] **6C.3** Cọc chia đều. *Kiểm:* test `coc-tet.test.ts`: cọc 200.000đ lịch 2 khách, mỗi đơn trừ 100.000đ dù đơn nào xong trước; cọc 300.000đ lịch 3 khách huỷ 1 đơn thì phần đơn huỷ vẫn nằm trong Cần xử lý cọc.
 

@@ -103,6 +103,18 @@ export async function revokeAccount(auth: Auth, userId: string) {
   await withUser(auth.userId, (tx) => tx`select app.admin_revoke_access(${branch.id}::uuid, ${userId}::uuid)`)
 }
 
+/** Xoá tài khoản (S01): chưa có dữ liệu thì xoá hẳn ('deleted'); đã có thì xoá đăng nhập và ẩn ('hidden'). */
+export async function deleteAccount(auth: Auth, userId: string) {
+  const branch = branchFor(auth)
+  checkId(userId)
+  const [row] = await withUser(
+    auth.userId,
+    (tx) => tx<{ mode: 'deleted' | 'hidden' }[]>`
+      select app.admin_delete_user(${branch.id}::uuid, ${userId}::uuid) as mode`,
+  )
+  return { mode: row!.mode }
+}
+
 export async function setAccountActive(auth: Auth, userId: string, active: boolean) {
   const branch = branchFor(auth)
   checkId(userId)

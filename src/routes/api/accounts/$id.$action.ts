@@ -1,6 +1,7 @@
-// POST /api/accounts/:id/reset-password | role | revoke | lock | unlock (chỉ Chủ)
+// POST /api/accounts/:id/reset-password | role | revoke | lock | unlock | delete (chỉ Chủ)
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  deleteAccount,
   RoleBody,
   resetAccountPassword,
   revokeAccount,
@@ -35,6 +36,8 @@ export const Route = createFileRoute('/api/accounts/$id/$action')({
             case 'unlock':
               await setAccountActive(auth, params.id, true)
               return Response.json({ ok: true })
+            case 'delete':
+              return Response.json(await deleteAccount(auth, params.id))
             default:
               throw notFound()
           }

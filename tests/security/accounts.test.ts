@@ -2,6 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   createAccount,
+  deleteAccount,
   listAccounts,
   resetAccountPassword,
   revokeAccount,
@@ -162,5 +163,64 @@ describe('Quản lý tài khoản', () => {
   it('Chủ ở cơ sở này không thao tác được người chỉ thuộc cơ sở khác', async () => {
     const e = await err(resetAccountPassword(auth('linh'), seed().users.mai!.id))
     expect(e.status).toBe(404)
+    expect((await err(deleteAccount(auth('linh'), seed().users.mai!.id))).status).toBe(404)
+  })
+})
+
+describe('Xoá tài khoản (S01)', () => {
+  it('Chỉ Chủ xoá được; không xoá chính mình', async () => {
+    const res = await createAccount(auth('linh'), { name: 'Xoá 1', phone: '0912000401', role: 'staff' })
+    expect((await err(deleteAccount(auth('nhung'), res.id))).status).toBe(403)
+    await expectPgError(
+      withUser(
+        seed().users.nhung!.id,
+        (tx) => tx`select app.admin_delete_user(${seed().branchIds.HTK!}::uuid, ${res.id}::uuid)`,
+      ),
+      '42501',
+    )
+    expect((await err(deleteAccount(auth('linh'), seed().users.linh!.id))).status).toBe(422)
+  })
+
+  it('Tài khoản chưa có dữ liệu bị xoá hẳn; SĐT tạo lại được', async () => {
+    // Tạo xong chưa đăng nhập: chưa có dòng nào trỏ tới tài khoản
+    const res = await createAccount(auth('linh'), { name: 'Xoá 2', phone: '0912000402', role: 'staff' })
+    expect(await deleteAccount(auth('linh'), res.id)).toEqual({ mode: 'deleted' })
+    expect(await owner`select 1 from users where id = ${res.id}`).toHaveLength(0)
+    expect((await listAccounts(auth('linh'))).some((u) => u.id === res.id)).toBe(false)
+    const again = await createAccount(auth('linh'), { name: 'Xoá 2 mới', phone: '0912000402', role: 'staff' })
+    expect(again.id).not.toBe(res.id)
+    const audit = await owner<{ details: { mode: string } }[]>`
+      select details from audit_logs where action = 'admin.user_deleted' and entity_id = ${res.id}`
+    expect(audit[0]!.details.mode).toBe('deleted')
+  })
+
+  it('Tài khoản đã có dữ liệu: xoá đăng nhập, ẩn khỏi danh sách, giữ tên; SĐT dùng lại được', async () => {
+    const res = await createAccount(auth('linh'), { name: 'Xoá 3', phone: '0912000403', role: 'staff' })
+    // Đã đăng nhập: nhật ký đăng nhập (chỉ thêm, không xoá) trỏ tới tài khoản
+    const s = await login({
+      identifier: '0912000403',
+      password: res.tempPassword,
+      ip: `10.7.2.${ip++}`,
+      userAgent: null,
+    })
+    expect(await deleteAccount(auth('linh'), res.id)).toEqual({ mode: 'hidden' })
+    expect(await loadSession(s.token)).toBeNull()
+    const [u] = await owner<
+      { displayName: string; phone: string | null; isActive: boolean; deletedAt: Date | null }[]
+    >`
+      select display_name, phone, is_active, deleted_at from users where id = ${res.id}`
+    expect(u).toMatchObject({ displayName: 'Xoá 3', phone: null, isActive: false })
+    expect(u!.deletedAt).not.toBeNull()
+    const roles =
+      await owner`select 1 from user_branch_roles where user_id = ${res.id} and revoked_at is null`
+    expect(roles).toHaveLength(0)
+    expect((await listAccounts(auth('linh'))).some((x) => x.id === res.id)).toBe(false)
+    const denied = await err(
+      login({ identifier: '0912000403', password: res.tempPassword, ip: `10.7.2.${ip++}`, userAgent: null }),
+    )
+    expect(denied.status).toBe(401)
+    await createAccount(auth('linh'), { name: 'Xoá 3 mới', phone: '0912000403', role: 'staff' })
+    // Xoá lần hai: không còn tài khoản
+    expect((await err(deleteAccount(auth('linh'), res.id))).status).toBe(404)
   })
 })

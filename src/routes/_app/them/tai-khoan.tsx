@@ -1,4 +1,4 @@
-// Thêm → Tài khoản (chỉ Chủ): tạo tài khoản, đặt lại mật khẩu, đổi vai trò, khoá, thu quyền.
+// Thêm → Tài khoản (chỉ Chủ): tạo tài khoản, đặt lại mật khẩu, đổi vai trò, khoá, thu quyền, xoá (S01).
 // Mật khẩu tạm hiện một lần để đưa cho nhân viên; người đó phải đổi khi đăng nhập lần đầu (K04).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -21,7 +21,7 @@ const ROLES = [
   { code: 'staff', label: 'Thợ' },
 ]
 
-type Action = 'reset-password' | 'lock' | 'unlock' | 'revoke'
+type Action = 'reset-password' | 'lock' | 'unlock' | 'revoke' | 'delete'
 const ACTION_TEXT: Record<
   Action,
   { title: string; button: string; done: string; danger?: boolean; hint: string }
@@ -52,6 +52,13 @@ const ACTION_TEXT: Record<
     danger: true,
     hint: 'Người này không còn xem được lịch, dữ liệu của cơ sở. Lịch sử thao tác vẫn giữ.',
   },
+  delete: {
+    title: 'Xoá tài khoản?',
+    button: 'Xoá tài khoản',
+    done: 'Đã xoá tài khoản.',
+    danger: true,
+    hint: 'Tài khoản chưa đăng nhập, chưa có dữ liệu thì xoá hẳn. Đã dùng app thì xoá SĐT, email, mật khẩu và ẩn khỏi danh sách; tên vẫn hiện trong đơn, lương, lịch sử cũ. SĐT dùng lại được cho tài khoản mới. Không hoàn tác được.',
+  },
 }
 
 function AccountsPage() {
@@ -80,10 +87,15 @@ function AccountsPage() {
     setBusy(true)
     setError(null)
     try {
-      const res = await api<{ tempPassword?: string }>(`/api/accounts/${selected.id}/${a}`, {
-        method: 'POST',
-      })
-      toast(ACTION_TEXT[a].done)
+      const res = await api<{ tempPassword?: string; mode?: 'deleted' | 'hidden' }>(
+        `/api/accounts/${selected.id}/${a}`,
+        { method: 'POST' },
+      )
+      toast(
+        res.mode === 'hidden'
+          ? 'Đã xoá đăng nhập và ẩn tài khoản; tên vẫn giữ trong dữ liệu cũ.'
+          : ACTION_TEXT[a].done,
+      )
       if (res.tempPassword) setTemp({ name: selected.displayName, password: res.tempPassword })
       setAction(null)
       setSelected(null)
@@ -224,6 +236,9 @@ function AccountsPage() {
                 Thu quyền ở cơ sở này
               </Button>
             ) : null}
+            <Button block variant="danger" onClick={() => setAction('delete')}>
+              Xoá tài khoản
+            </Button>
             {error ? <Note tone="danger">{error}</Note> : null}
           </div>
         ) : null}
