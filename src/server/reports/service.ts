@@ -97,6 +97,88 @@ async function byStaff(tx: Tx, branchId: string, from: string, to: string, onlyU
   return rows.map((r) => ({ userId: r.userId, name: r.name, amount: n(r.amount), orders: n(r.orders) }))
 }
 
+// ---------------------------------------------------------------- Trang chủ (S14, Đợt 6E)
+
+export type HomeBlock = {
+  /** branch: số toàn quán (Linh, Nhung); mine: số của chính người xem (thợ, K09) */
+  scope: 'branch' | 'mine'
+  today: { net: number; guests: number; paid: number | null; due: number | null; open: number }
+  month: { net: number; guests: number }
+  /** Doanh thu 30 ngày gần nhất, theo ngày làm dịch vụ, đơn đã xác nhận trừ phiếu hoàn */
+  series: { date: string; net: number }[]
+}
+
+function addDaysIso(d: string, n: number) {
+  const t = new Date(`${d}T00:00:00Z`)
+  t.setUTCDate(t.getUTCDate() + n)
+  return t.toISOString().slice(0, 10)
+}
+
+async function homeBlock(
+  tx: Tx,
+  auth: Auth,
+  branchId: string,
+  all: boolean,
+  today: string,
+): Promise<HomeBlock> {
+  const monthFrom = `${today.slice(0, 8)}01`
+  const from30 = addDaysIso(today, -29)
+  // Đơn hôm nay chưa xác nhận (Đang làm, Chờ xác nhận): chưa vào doanh thu, đếm riêng. RLS: thợ chỉ thấy đơn của mình.
+  const [o] = await tx<{ open: string }[]>`
+    select count(*) as open from orders
+    where branch_id = ${branchId} and service_date = ${today}::date and status in ('in_progress', 'awaiting_confirmation')`
+  const open = n(o?.open)
+  if (all) {
+    const t = await totals(tx, branchId, today, today)
+    const m = await totals(tx, branchId, monthFrom, today)
+    const rows = await tx<{ date: string; net: string }[]>`
+      with days as (select generate_series(${from30}::date, ${today}::date, interval '1 day')::date as d),
+      ord as (
+        select service_date as d, sum(net_amount) as amt from orders
+        where branch_id = ${branchId} and status = 'confirmed' and service_date between ${from30}::date and ${today}::date
+        group by 1),
+      rf as (
+        select r.revenue_date as d, sum(r.amount) as amt
+        from order_refunds r join orders o2 on o2.id = r.order_id
+        where r.branch_id = ${branchId} and o2.status = 'confirmed'
+          and r.revenue_date between ${from30}::date and ${today}::date
+        group by 1)
+      select days.d::text as date, coalesce(ord.amt, 0) - coalesce(rf.amt, 0) as net
+      from days left join ord on ord.d = days.d left join rf on rf.d = days.d order by days.d`
+    return {
+      scope: 'branch',
+      today: { net: t.net, guests: t.guests, paid: t.paid, due: t.due, open },
+      month: { net: m.net, guests: m.guests },
+      series: rows.map((r) => ({ date: r.date, net: n(r.net) })),
+    }
+  }
+  const me = auth.userId
+  const [t] = await byStaff(tx, branchId, today, today, me)
+  const [m] = await byStaff(tx, branchId, monthFrom, today, me)
+  const rows = await tx<{ date: string; net: string }[]>`
+    with days as (select generate_series(${from30}::date, ${today}::date, interval '1 day')::date as d),
+    al as (
+      select o.service_date as d, sum(a.allocated_net_amount) as amt
+      from orders o join order_staff_allocations a on a.order_id = o.id and a.rev = o.content_rev
+      where o.branch_id = ${branchId} and o.status = 'confirmed' and a.staff_user_id = ${me}
+        and o.service_date between ${from30}::date and ${today}::date
+      group by 1),
+    rfa as (
+      select r.revenue_date as d, sum(ra.amount) as amt
+      from order_refund_allocations ra join order_refunds r on r.id = ra.refund_id join orders o on o.id = r.order_id
+      where r.branch_id = ${branchId} and o.status = 'confirmed' and ra.staff_user_id = ${me}
+        and r.revenue_date between ${from30}::date and ${today}::date
+      group by 1)
+    select days.d::text as date, coalesce(al.amt, 0) - coalesce(rfa.amt, 0) as net
+    from days left join al on al.d = days.d left join rfa on rfa.d = days.d order by days.d`
+  return {
+    scope: 'mine',
+    today: { net: t?.amount ?? 0, guests: t?.orders ?? 0, paid: null, due: null, open },
+    month: { net: m?.amount ?? 0, guests: m?.orders ?? 0 },
+    series: rows.map((r) => ({ date: r.date, net: n(r.net) })),
+  }
+}
+
 // ---------------------------------------------------------------- Tổng quan (UI02)
 
 export async function overview(auth: Auth, input: { branchId?: string; period: 'day' | 'month' }) {
@@ -187,6 +269,8 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
       },
       /** Lương tạm tính tháng này của chính mình (Q39) */
       myPay: await myPayNow(tx, auth, branch.id),
+      /** Trang chủ (S14): số hôm nay, tháng này, doanh thu 30 ngày — không phụ thuộc period */
+      home: await homeBlock(tx, auth, branch.id, all, today),
     }
   })
 }

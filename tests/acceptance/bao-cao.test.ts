@@ -112,6 +112,32 @@ describe('Báo cáo tháng', () => {
   })
 })
 
+describe('Trang chủ (S14)', () => {
+  it('Linh, Nhung: số toàn quán hôm nay, tháng, 30 ngày; thợ: chỉ số của mình, không có đã thu/còn nợ', async () => {
+    const day = addDays(today, -3)
+    const o = await order(day, [svc('CB02', 'trang')])
+    await confirmOrder(auth('nhung'), o.id, o.version)
+    const n = (await overview(auth('nhung'), { period: 'month' })).home
+    expect(n.scope).toBe('branch')
+    expect(n.series).toHaveLength(30)
+    expect(n.series.at(-1)!.date).toBe(today)
+    expect(n.today.paid).not.toBeNull()
+    expect(n.series.find((s) => s.date === day)!.net).toBeGreaterThanOrEqual(70000)
+    // Ngày trong chuỗi 30 ngày cộng lại khớp báo cáo theo ngày
+    const r = await dayReport(auth('linh'), { date: day })
+    expect(n.series.find((s) => s.date === day)!.net).toBe(r.revenue.net)
+
+    const t = (await overview(auth('trang'), { period: 'month' })).home
+    expect(t.scope).toBe('mine')
+    expect(t.today.paid).toBeNull()
+    expect(t.today.due).toBeNull()
+    // Thợ chỉ thấy phần mình: không lớn hơn số toàn quán của ngày đó
+    const mineDay = t.series.find((s) => s.date === day)!.net
+    expect(mineDay).toBeGreaterThanOrEqual(70000)
+    expect(mineDay).toBeLessThanOrEqual(n.series.find((s) => s.date === day)!.net)
+  })
+})
+
 describe('Tổng quan (UI02)', () => {
   it('Linh, Nhung thấy số toàn quán; thợ chỉ thấy doanh thu của mình; Linh thấy việc cần duyệt, cần xem lại', async () => {
     const lo = await overview(auth('linh'), { period: 'month' })

@@ -100,8 +100,8 @@ Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để 
 - [x] **6C.3** Cọc chia đều. *Kiểm:* test `coc-tet.test.ts`: cọc 200.000đ lịch 2 khách, mỗi đơn trừ 100.000đ dù đơn nào xong trước; cọc 300.000đ lịch 3 khách huỷ 1 đơn thì phần đơn huỷ vẫn nằm trong Cần xử lý cọc.
 
 ### 6E — Trang chủ
-- [ ] **6E.1** `overview()` thêm doanh thu từng ngày 30 ngày gần nhất (quán hoặc của chính thợ, theo quyền). *Kiểm:* test: thợ chỉ nhận số của mình, Nhung không nhận lãi.
-- [ ] **6E.2** Bố cục mới: hàng chỉ số chữ to (2 cột trên iPhone), biểu đồ cột 30 ngày, thẻ "Cần xử lý: N việc" mở danh sách chi tiết, chấm công, lịch hôm nay gọn. *Kiểm:* chụp màn hình 375px sáng/tối với tài khoản Linh, Nhung, thợ.
+- [x] **6E.1** `overview()` thêm doanh thu từng ngày 30 ngày gần nhất (quán hoặc của chính thợ, theo quyền). *Kiểm:* test: thợ chỉ nhận số của mình, Nhung không nhận lãi.
+- [x] **6E.2** Bố cục mới: hàng chỉ số chữ to (2 cột trên iPhone), biểu đồ cột 30 ngày, thẻ "Cần xử lý: N việc" mở danh sách chi tiết, chấm công, lịch hôm nay gọn. *Kiểm:* đo bố cục ở 375px trên trình duyệt (tài khoản Linh): 6 ô, 30 cột, thẻ Cần xử lý, không cuộn ngang. Ảnh chụp trình duyệt bị lỗi khi khung bị che nên chưa có ảnh; **chưa xem ở chế độ tối và tài khoản thợ trên giao diện** (số liệu thợ đã có test).
 
 ### 6F — Dữ liệu dùng thử
 - [ ] **6F.1** Bộ nạp gói thử chạy trên server qua các service của app (như `scripts/demo-data.ts`), dùng tài khoản thật đang có trong cơ sở: 7 ngày trước đến 7 ngày sau; khoảng 50 đơn có thanh toán, giảm giá, chờ xác nhận; lịch nhóm, lịch có cọc (mùa cọc thử); mở sổ, thu chi, chốt quỹ; chấm công, hồ sơ và mức lương (Q-P), tạm ứng. Tên khách, SĐT giả `0900000xxx`. *Kiểm:* test nạp trên DB test rồi kiểm số lượng, báo cáo tháng không lỗi.
