@@ -67,14 +67,15 @@ try {
   >`select id, timezone from branches where code = 'HTK'`
   const today = toLocalDate(new Date())
   let n = 0
-  for (const [off, s, e, name, guests, service, by, confirm, phone] of DEMO) {
+  // Cột "confirm" giữ cho dễ đọc bảng mẫu; từ S02 lịch nào cũng chốt luôn
+  for (const [off, s, e, name, guests, service, by, , phone] of DEMO) {
     const date = addDays(today, off)
     const uid = users.get(by)!
     await sql`
       insert into appointments (branch_id, customer_display_name, phone, start_at, end_at, guest_count, service_summary,
                                 status, search_norm, created_by, updated_by, create_request_id, create_request_hash)
       values (${branch!.id}, ${name}, ${phone ?? null}, ${fromLocal(date, s, branch!.timezone)}, ${fromLocal(date, e, branch!.timezone)},
-              ${guests}, ${service}, ${confirm ? 'confirmed' : 'pending'},
+              ${guests}, ${service}, 'confirmed',
               ${foldVietnamese([name, phone ?? '', service ?? ''].join(' '))}, ${uid}, ${uid}, ${randomUUID()},
               ${createHash('sha256').update(randomUUID()).digest('hex')})`
     n++
