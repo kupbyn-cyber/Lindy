@@ -379,7 +379,7 @@ function PersonSheet(props: {
             </p>
             <div className="flex gap-2">
               <Button block onClick={() => setAdding(false)}>
-                Thôi
+                Không lưu
               </Button>
               <Button
                 block

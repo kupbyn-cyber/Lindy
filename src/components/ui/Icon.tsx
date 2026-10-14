@@ -13,6 +13,7 @@ export type IconName =
   | 'search'
   | 'wallet'
   | 'alert'
+  | 'x'
 
 const DOTS: ReactElement[] = [6, 12, 18].map((x) => (
   <circle key={x} cx={x} cy={12} r={1.6} fill="currentColor" stroke="none" />
@@ -42,6 +43,7 @@ const ICONS: Record<IconName, ReactElement[]> = {
     <path key="b" d="M3.5 9.5h17M15.5 14h2" />,
   ],
   alert: [<circle key="a" cx={12} cy={12} r={8.5} />, <path key="b" d="M12 7.5v5.5M12 16.2v.3" />],
+  x: [<path key="a" d="M6 6l12 12M18 6 6 18" />],
 }
 
 export function Icon(props: {

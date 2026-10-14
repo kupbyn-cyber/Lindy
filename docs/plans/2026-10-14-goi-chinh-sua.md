@@ -77,8 +77,8 @@ Chặn bước 6F.3.
 Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để dùng đúng luồng mới). Mỗi phần commit riêng; xong mỗi phần chạy `bun run check` và `bun run build`.
 
 ### 6A — Giao diện chung
-- [ ] **6A.1** `tokens.json`: `font-display` → Be Vietnam Pro (700 cho tiêu đề, số tiền); thêm `font-brand` = Cormorant Garamond chỉ cho `.wordmark`. Chạy `bun scripts/gen-tokens.ts`. Font Google chỉ tải Cormorant 600. Sửa `design/design-system/README.md`. *Kiểm:* mở Tổng quan, Đơn, Lịch trên trình duyệt; đo `font-family` của `.screen-title`, `.display-money`, `.wordmark`.
-- [ ] **6A.2** `ConfirmDialog`: bỏ "Thôi", thêm nút X góc phải trên (vùng chạm 44px, `aria-label="Đóng"`), nút hành động rộng hết hàng. `Sheet`: "Đóng" → X. Sửa 2 chỗ tự viết nút "Thôi". *Kiểm:* mở hộp huỷ lịch, hộp tài khoản, bảng tạo lịch; bấm X, bấm nền tối, phím Esc đều đóng.
+- [x] **6A.1** `tokens.json`: `font-display` → Be Vietnam Pro (700 cho tiêu đề, số tiền); thêm `font-brand` = Cormorant Garamond chỉ cho `.wordmark`. Chạy `bun scripts/gen-tokens.ts`. Font Google chỉ tải Cormorant 600. Sửa `design/design-system/README.md`. *Kiểm:* mở Tổng quan, Đơn, Lịch trên trình duyệt; đo `font-family` của `.screen-title`, `.display-money`, `.wordmark`.
+- [x] **6A.2** `ConfirmDialog`: bỏ "Thôi", thêm nút X góc phải trên (vùng chạm 44px, `aria-label="Đóng"`), nút hành động rộng hết hàng. `Sheet`: "Đóng" → X. Sửa 2 chỗ tự viết nút "Thôi". *Kiểm:* mở hộp huỷ lịch, hộp tài khoản, bảng tạo lịch; bấm X, bấm nền tối, phím Esc đều đóng.
 
 ### 6D — Xoá tài khoản
 - [ ] **6D.1** Migration 0022 + `deleteAccount()` + `POST /api/accounts/:id/delete`. *Kiểm:* test bảo mật: chỉ Chủ gọi được; không xoá chính mình, Chủ cuối cùng; tài khoản trống bị xoá hẳn; tài khoản có đơn còn tên trong đơn, không đăng nhập được, SĐT tạo lại được.

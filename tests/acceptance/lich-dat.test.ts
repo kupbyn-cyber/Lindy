@@ -576,7 +576,8 @@ describe('Phạm vi và quyền', () => {
         (tx) =>
           tx`insert into appointments (branch_id, customer_display_name, start_at, end_at, created_by, updated_by,
                                      create_request_id, create_request_hash)
-           values (${seed().branchIds.HTK!}, 'x', now(), now() + interval '1 hour', ${seed().users.mai!.id},
+           values (${seed().branchIds.HTK!}, 'x', date_trunc('day', now()) + interval '2 days 3 hours',
+                   date_trunc('day', now()) + interval '2 days 4 hours', ${seed().users.mai!.id},
                    ${seed().users.mai!.id}, gen_random_uuid(), repeat('a', 64))`,
       ),
       '42501',

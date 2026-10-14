@@ -352,9 +352,7 @@ export function Sheet(props: {
       <div className="lo-sheet" role="dialog" aria-modal="true" aria-label={props.title}>
         <div className="lo-sheet-head">
           <h2 className="body-strong m-0 flex-1">{props.title}</h2>
-          <Button variant="quiet" onClick={props.onClose}>
-            Đóng
-          </Button>
+          <CloseButton onClick={props.onClose} />
         </div>
         <div className="lo-sheet-body">{props.children}</div>
         {props.footer ? <div className="lo-sheet-foot">{props.footer}</div> : null}
@@ -373,28 +371,41 @@ export function ConfirmDialog(props: {
   onConfirm: () => void
   onCancel: () => void
 }) {
+  useEffect(() => {
+    if (!props.open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && props.onCancel()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [props.open, props.onCancel])
   if (!props.open) return null
   return (
     <>
       <div className="lo-backdrop" onClick={props.onCancel} aria-hidden="true" />
       <div className="lo-dialog" role="alertdialog" aria-modal="true" aria-label={props.title}>
-        <h2 className="body-strong m-0">{props.title}</h2>
-        {props.children}
-        <div className="flex gap-2">
-          <Button block onClick={props.onCancel}>
-            Thôi
-          </Button>
-          <Button
-            block
-            variant={props.danger ? 'danger' : 'primary'}
-            loading={props.busy}
-            onClick={props.onConfirm}
-          >
-            {props.confirmLabel}
-          </Button>
+        <div className="lo-dialog-head">
+          <h2 className="body-strong m-0 flex-1">{props.title}</h2>
+          <CloseButton onClick={props.onCancel} />
         </div>
+        {props.children}
+        <Button
+          block
+          variant={props.danger ? 'danger' : 'primary'}
+          loading={props.busy}
+          onClick={props.onConfirm}
+        >
+          {props.confirmLabel}
+        </Button>
       </div>
     </>
+  )
+}
+
+/** Nút X ở góc phải trên của hộp thoại và bảng trượt (S05). */
+function CloseButton(props: { onClick: () => void }) {
+  return (
+    <button type="button" className="lo-icon-btn lo-close" aria-label="Đóng" onClick={props.onClick}>
+      <Icon name="x" size={22} />
+    </button>
   )
 }
 

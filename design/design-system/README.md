@@ -28,8 +28,8 @@ LINDY OS là app quản lý nội bộ của Lindy Nailash Studio, dùng chủ y
 
 ## Chữ
 
-- Cormorant Garamond (họ `display`) chỉ cho ba kiểu: `display-money` (tối đa một lần mỗi màn hình), `screen-title`, `wordmark`.
-- Be Vietnam Pro (họ `sans`) cho mọi thứ còn lại: `body`, `body-strong`, `amount`, `label`, `caption`, `overline`, `button-label`, `input-text`, `nav-label`. Cả hai họ chữ có đủ dấu tiếng Việt và tải từ Google Fonts.
+- Be Vietnam Pro (họ `sans`) cho cả app (S13, 14/10/2026), kể cả `display-money` và `screen-title` (đậm 700): `body`, `body-strong`, `amount`, `label`, `caption`, `overline`, `button-label`, `input-text`, `nav-label`.
+- Cormorant Garamond (họ `brand`) chỉ còn cho `wordmark` (chữ LINDY OS), làm dấu hiệu thương hiệu. Cả hai họ chữ có đủ dấu tiếng Việt và tải từ Google Fonts.
 - Số tiền dùng `font-variant-numeric: lining-nums tabular-nums` để các cột số thẳng hàng; `Money` đã đặt sẵn.
 - Ô nhập luôn dùng `input-text` (16px) để Safari không tự phóng to khi chạm.
 - `overline` viết hoa bằng CSS, cho nhãn nhóm trên số liệu như “DOANH THU THUẦN”.
@@ -38,7 +38,8 @@ LINDY OS là app quản lý nội bộ của Lindy Nailash Studio, dùng chủ y
 
 - Lề hai bên `space-4`. Giữa các thẻ `space-3`, giữa các nhóm `space-6`.
 - Trên cùng: `AppBar` với chữ LINDY OS và tên cơ sở. Dưới cùng: `BottomNav` 5 mục (Tổng quan, Đơn hàng, Lịch, Khách, Thêm), biểu tượng kèm chữ, cao `nav-h` cộng vùng an toàn thanh home.
-- `Fab` “+ Tạo đơn” nổi góc phải dưới, cách thanh dưới `space-4`, có trên mọi màn hình trừ khi đang nhập đơn. Cuối danh sách chừa `space-8` để dòng cuối không nằm dưới `Fab`.
+- Không có `Fab` “+ Tạo đơn” (S16, 14/10/2026): mọi đơn tạo từ lịch.
+- Hộp xác nhận và bottom sheet đóng bằng nút X ở góc phải trên (S05); không có nút “Thôi”, “Đóng”.
 - Danh sách dùng `OrderRow` liền nhau, ngăn bằng `line`; không bọc từng dòng trong thẻ riêng.
 - Không có bảng cuộn ngang trên điện thoại; bảng dài chuyển thành danh sách dòng.
 - Luôn chừa `env(safe-area-inset-top)` và `env(safe-area-inset-bottom)` cho tai thỏ và thanh home.
@@ -70,6 +71,6 @@ Gần như không dùng ảnh: không ảnh minh hoạ, không ảnh nền. Màn
 ## Dùng trong app
 
 - Thành phần React nằm ở `components/bundle.js` dưới tên `window.LindyOS`, cần React 18 và stylesheet `components/bundle.css` nạp sau token.
-- Tải phông: `https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Cormorant+Garamond:wght@600&display=swap`.
+- Tải phông: `https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Cormorant+Garamond:wght@600&display=swap`.
 - Giao diện tối: đặt `data-theme="dark"` lên thẻ `html` khi `matchMedia('(prefers-color-scheme: dark)')` khớp, và lắng nghe sự kiện `change` để đổi theo máy. Không có nút bật/tắt riêng.
 - Định dạng tiền bằng `LindyOS.formatVND(n)`; đọc số từ ô nhập bằng `LindyOS.parseVND(text)`. Tiền luôn là số nguyên VND.

@@ -448,7 +448,7 @@ export function OrderEditor(props: {
       <div className="lo-actionbar">
         {isEdit && props.onCancel ? (
           <Button block disabled={!!busy} onClick={props.onCancel}>
-            Thôi
+            Không lưu
           </Button>
         ) : null}
         <Button

@@ -30,7 +30,7 @@ body {
   color: var(--ink);
 }
 .lo-appbar-brand {
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
   white-space: nowrap;
 }
 .lo-appbar-branch {
@@ -219,9 +219,6 @@ body {
 .lo-money {
   font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
-}
-.lo-money-xl {
-  font-family: var(--font-display);
 }
 .lo-tone-muted {
   color: var(--ink-muted);
@@ -490,6 +487,20 @@ select.lo-input {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+/* Nút X góc phải trên (S05): vùng chạm 44px, kéo sát góc để thẳng hàng với lề hộp */
+.lo-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.lo-dialog-head h2 {
+  padding-top: 11px;
+}
+.lo-close {
+  flex: none;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
+  color: var(--ink-muted);
 }
 
 /* Đơn hàng: ô tích chọn tròn trong danh sách dịch vụ (C09) */
