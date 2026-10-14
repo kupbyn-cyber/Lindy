@@ -30,7 +30,6 @@ export const CreateBody = z.strictObject({
   guestCount: guests,
   serviceSummary: service,
   notes,
-  confirm: z.boolean().optional(),
   createRequestId: z.uuid('Thiếu mã yêu cầu.'),
 })
 export type CreateInput = z.infer<typeof CreateBody>
@@ -69,12 +68,6 @@ export const SettingsBody = z.strictObject({
   defaultDurationMin: z.number().int().min(15, 'Ít nhất 15 phút.').max(720, 'Tối đa 720 phút.'),
 })
 
-export const LIST_FILTERS = [
-  'active',
-  'pending',
-  'confirmed',
-  'customer_cancel',
-  'cancelled',
-  'no_show',
-] as const
+// Không còn lọc Mới đặt / Đã chốt lịch: mọi lịch tạo ra là chốt luôn (S02)
+export const LIST_FILTERS = ['active', 'customer_cancel', 'cancelled', 'no_show'] as const
 export type ListFilter = (typeof LIST_FILTERS)[number]

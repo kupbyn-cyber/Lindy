@@ -31,9 +31,7 @@ export const STATUS_TONE: Record<ApptStatus, ChipTone> = {
 
 export const FILTERS = [
   { value: 'active', label: 'Tất cả' },
-  { value: 'pending', label: 'Mới đặt' },
-  { value: 'confirmed', label: 'Đã chốt lịch' },
-  { value: 'customer_cancel', label: 'Khách báo huỷ' },
+  { value: 'customer_cancel', label: 'Yêu cầu huỷ' },
   { value: 'cancelled', label: 'Đã huỷ' },
   { value: 'no_show', label: 'Không đến' },
 ] as const

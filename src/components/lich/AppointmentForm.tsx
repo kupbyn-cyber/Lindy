@@ -15,7 +15,6 @@ import {
 } from '~/components/ui'
 import { ApiError, api } from '~/lib/api'
 import { addMinutes, type Detail, type ListItem, type Settings, type Warnings } from '~/lib/appointments'
-import { useCan } from '~/lib/me'
 import { formatVND } from '~/lib/money'
 import { normalizePhone } from '~/lib/phone'
 import { CustomerPicker } from '../don-hang/pickers'
@@ -62,12 +61,11 @@ export function AppointmentForm(props: {
 }) {
   const toast = useToast()
   const qc = useQueryClient()
-  const can = useCan()
   const isEdit = !!props.editing
   const [v, setV] = useState<Values | null>(null)
   const [version, setVersion] = useState(1)
   const [endTouched, setEndTouched] = useState(false)
-  const [busy, setBusy] = useState<null | 'save' | 'confirm'>(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conflict, setConflict] = useState<Detail | null>(null)
   const [warnings, setWarnings] = useState<Warnings | null>(null)
@@ -148,13 +146,13 @@ export function AppointmentForm(props: {
           ? phoneCheck.error
           : null
 
-  async function save(confirm: boolean) {
+  async function save() {
     if (!v) return
     if (localError) {
       setError(localError)
       return
     }
-    setBusy(confirm ? 'confirm' : 'save')
+    setBusy(true)
     setError(null)
     const fields = {
       customerId: v.customerId,
@@ -178,7 +176,7 @@ export function AppointmentForm(props: {
         props.onSaved?.(d.id)
       } else {
         const res = await api<{ appointment: ListItem }>('/api/appointments', {
-          body: { ...fields, confirm, createRequestId: requestId.current },
+          body: { ...fields, createRequestId: requestId.current },
         })
         let depositNote = ''
         if (season && depositOn && res.appointment.depositState) {
@@ -198,11 +196,7 @@ export function AppointmentForm(props: {
             )
           }
         }
-        toast(
-          confirm
-            ? `Đã tạo và chốt lịch ${res.appointment.startTime}.${depositNote}`
-            : `Đã lưu lịch ${res.appointment.startTime}.${depositNote}`,
-        )
+        toast(`Đã lưu lịch ${res.appointment.startTime}.${depositNote}`)
         props.onSaved?.(res.appointment.id)
       }
       await qc.invalidateQueries({ queryKey: ['appointments'] })
@@ -215,11 +209,9 @@ export function AppointmentForm(props: {
         setError(e instanceof Error ? e.message : 'Có lỗi xảy ra. Thử lại sau.')
       }
     } finally {
-      setBusy(null)
+      setBusy(false)
     }
   }
-
-  const canConfirm = !isEdit && can('appointments.confirm_all')
 
   // Chọn hồ sơ khách có sẵn (module §10): điền tên, SĐT đầy đủ từ hồ sơ
   async function pickCustomer(id: string | null) {
@@ -244,26 +236,9 @@ export function AppointmentForm(props: {
         title={isEdit ? 'Sửa lịch' : 'Lịch mới'}
         onClose={props.onClose}
         footer={
-          canConfirm ? (
-            <>
-              <Button block loading={busy === 'save'} disabled={!!busy} onClick={() => void save(false)}>
-                Lưu
-              </Button>
-              <Button
-                block
-                variant="primary"
-                loading={busy === 'confirm'}
-                disabled={!!busy}
-                onClick={() => void save(true)}
-              >
-                Tạo và chốt
-              </Button>
-            </>
-          ) : (
-            <Button block variant="primary" loading={!!busy} onClick={() => void save(false)}>
-              Lưu
-            </Button>
-          )
+          <Button block variant="primary" loading={busy} onClick={() => void save()}>
+            Lưu lịch
+          </Button>
         }
       >
         {conflict ? (

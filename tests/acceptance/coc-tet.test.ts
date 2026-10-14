@@ -378,6 +378,7 @@ describe('Module 34, PRD 36 — báo huỷ 11 tiếng trước hoặc không đ�
   it('khách không đến → gợi ý giữ; Chin hoàn trái gợi ý → bắt lý do, vào Cần xem lại của Linh [P49]', async () => {
     const a = await newAppt('trang')
     const dep = await heldDeposit(a.id, 100_000)
+    await startIn(a.id, -1) // Khách không đến chỉ ghi được khi đã đến giờ hẹn (S03)
     await transitionAppointment(auth('chin'), a.id, 'no_show', { version: await version(a.id) })
     const d = await getAppointment(auth('chin'), a.id)
     expect(d.deposit!.suggestion).toBe('forfeit')
@@ -409,6 +410,7 @@ describe('Module 34, PRD 36 — báo huỷ 11 tiếng trước hoặc không đ�
   it('S35: hoàn và giữ cùng một cọc song song → chỉ một thao tác thành công', async () => {
     const a = await newAppt('trang')
     const dep = await heldDeposit(a.id, 100_000)
+    await startIn(a.id, -1)
     await transitionAppointment(auth('chin'), a.id, 'no_show', { version: await version(a.id) })
     const v = (await depositOf('chin', a.id, dep)).version
     const res = await Promise.allSettled([

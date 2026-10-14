@@ -66,7 +66,7 @@ Số migration đánh theo thứ tự làm (6D làm trước 6B).
 
 | Migration | Nội dung |
 |---|---|
-| `0021_booking_simplify.sql` | Lịch `pending` đang có → `confirmed` (ghi audit). Trigger không cho tạo/chuyển về `pending`. Cột `appointments.cancel_kind` (`customer` / `no_show` / `other`). Luật sửa của nhân viên thường theo Q-N. Yêu cầu huỷ của nhân viên dùng lại cờ "khách báo huỷ" (B07), thêm loại yêu cầu. |
+| `0021_booking_simplify.sql` | Lịch `pending` đang có → `confirmed` (ghi audit). Trigger không cho tạo/chuyển về `pending`. Không thêm cột: lý do chọn trong hộp Huỷ ghi vào `cancel_reason` ("Khách báo huỷ: …"), "Khách không đến" chuyển trạng thái `no_show` (chỉ khi đã đến giờ hẹn). Luật sửa của nhân viên thường theo S15. Yêu cầu huỷ của nhân viên dùng lại cờ "khách báo huỷ" (B07). |
 | `0022_group_orders.sql` | `orders.guest_no` (1…4), `orders.guest_label` (tên hiển thị khi không có hồ sơ). Ràng buộc: một lịch không có hai đơn chưa huỷ cùng `guest_no`; số đơn chưa huỷ ≤ `guest_count`. Giảm `guest_count` thấp hơn số đơn chưa huỷ thì bị chặn. `app.apply_deposits` trừ mỗi đơn tối đa phần chia đều (`tổng cọc ÷ số khách`, phần lẻ vào Khách 1). |
 | `0020_account_delete.sql` (đã làm) | `users.deleted_at`. Hàm `app.admin_delete_user`: xoá phiên, quyền, đăng ký thông báo; thử xoá hẳn người dùng, gặp ràng buộc khoá ngoại (đã có dữ liệu, kể cả nhật ký đăng nhập) thì xoá SĐT, email, mật khẩu, khoá, thu quyền và đánh dấu đã xoá. Không xoá chính mình. |
 | `0023_demo_data.sql` | Bảng `demo_state` (chưa nạp / đã nạp / đã dùng thật). Hàm `app.demo_golive_wipe()` (quyền chủ DB, chỉ người có `users.manage` gọi): trong một giao dịch tạm tắt trigger chặn xoá, TRUNCATE các bảng nghiệp vụ, đặt lại số đơn về 1, bật lại trigger, ghi audit. |
@@ -87,8 +87,8 @@ Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để 
 - [x] **6D.2** Nút "Xoá tài khoản" trong bảng tài khoản, hộp xác nhận nói rõ xoá hẳn hay chỉ xoá đăng nhập. Danh sách tài khoản, Nhân viên, ô chọn thợ ẩn người đã xoá. *Kiểm:* thao tác trên trình duyệt.
 
 ### 6B — Màn lịch
-- [ ] **6B.1** Migration 0021; `policy.ts`, `service.ts` bỏ `confirm`, `pending`; luật sửa theo Q-N. Bỏ thông báo "lịch chờ chốt", bỏ "Mới đặt" khỏi bộ lọc, Tổng quan, Cần xử lý. *Kiểm:* sửa test `lich-dat.test.ts` theo S02, S04; lịch cũ `pending` thành `confirmed` sau migrate.
-- [ ] **6B.2** Chi tiết lịch còn 3 nút. Hộp Huỷ: chọn lý do (Khách báo huỷ / Khách không đến / Lý do khác) + ghi chú; nhân viên thường thì nút gửi yêu cầu. Lý do "Khách không đến" chỉ chọn được khi đã qua giờ hẹn. *Kiểm:* test API theo vai trò; thao tác trên trình duyệt với tài khoản Linh và thợ.
+- [x] **6B.1** Migration 0021; `policy.ts`, `service.ts` bỏ `confirm`, `pending`; luật sửa theo Q-N. Bỏ thông báo "lịch chờ chốt", bỏ "Mới đặt" khỏi bộ lọc, Tổng quan, Cần xử lý. *Kiểm:* sửa test `lich-dat.test.ts` theo S02, S04; lịch cũ `pending` thành `confirmed` sau migrate.
+- [x] **6B.2** Chi tiết lịch còn 3 nút. Hộp Huỷ: chọn lý do (Khách báo huỷ / Khách không đến / Lý do khác) + ghi chú; nhân viên thường thì nút gửi yêu cầu. Lý do "Khách không đến" chỉ chọn được khi đã qua giờ hẹn. *Kiểm:* test API theo vai trò; thao tác trên trình duyệt với tài khoản Linh và thợ.
 - [ ] **6B.3** Ô lịch: số khách – tên – SĐT – giờ, dấu "chưa cọc"; ô thấp thì cắt bớt từ phải sang. Thông báo đẩy vẫn không có SĐT. *Kiểm:* xem lịch 1 khách, nhóm 3 khách, ô 30 phút.
 - [ ] **6B.4** Mặc định 48px/giờ; phóng to/thu nhỏ bằng hai ngón (giữ mốc giờ dưới ngón tay, chặn phóng to cả trang trong vùng lịch), nhớ cỡ trên máy. *Kiểm:* mô phỏng thao tác hai ngón trên trình duyệt; anh thử trên iPhone.
 - [ ] **6B.5** Vuốt trái/phải: màn Ngày sang ngày bên cạnh, màn Tuần sang tuần bên cạnh; chỉ nhận khi vuốt ngang rõ ràng (≥ 60px, góc < 30°), không bắt đầu sát mép trái 24px (tránh vuốt "quay lại" của Safari); chạm chỗ trống vẫn tạo lịch. *Kiểm:* mô phỏng chạm trên trình duyệt; anh thử trên iPhone.

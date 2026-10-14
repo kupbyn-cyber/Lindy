@@ -52,7 +52,7 @@ type Row = {
   depositAny?: boolean | null
 }
 
-/** Dòng trên lịch: không có SĐT, ghi chú (B08, P11). */
+/** Dòng trên lịch: có SĐT (S10 thay B08 phần ô lịch), không có ghi chú (P11). */
 export type ListItem = {
   id: string
   date: string
@@ -61,6 +61,7 @@ export type ListItem = {
   startAt: string
   endAt: string
   name: string
+  phone: string | null
   guestCount: number
   serviceSummary: string | null
   status: ApptStatus
@@ -79,7 +80,6 @@ export type Warnings = {
 
 export type Detail = ListItem & {
   customerId: string | null
-  phone: string | null
   notes: string | null
   version: number
   createdByName: string | null
@@ -133,6 +133,7 @@ function toItem(r: Row, userId: string, tz: string): ListItem {
     startAt: new Date(r.startAt).toISOString(),
     endAt: new Date(r.endAt).toISOString(),
     name: r.customerDisplayName,
+    phone: r.phone,
     guestCount: r.guestCount,
     serviceSummary: r.serviceSummary,
     status: r.status,
@@ -257,9 +258,6 @@ function notifyText(r: { customerDisplayName: string; guestCount: number; servic
 export async function createAppointment(auth: Auth, input: CreateInput) {
   const branch = requireBranch(auth, input.branchId)
   if (!hasPerm(auth, branch.id, 'appointments.create')) throw forbidden('Không có quyền tạo lịch.')
-  if (input.confirm && !hasPerm(auth, branch.id, 'appointments.confirm_all')) {
-    throw forbidden('Không có quyền Tạo và chốt. Bấm Lưu để tạo lịch Mới đặt.')
-  }
   const phone = cleanPhone(input.phone)
   const service = blankToNull(input.serviceSummary)
   const notes = blankToNull(input.notes)
@@ -282,7 +280,6 @@ export async function createAppointment(auth: Auth, input: CreateInput) {
       guests: input.guestCount,
       service,
       notes,
-      confirm: !!input.confirm,
     })
 
     // Chống tạo trùng (test 17, P3): cùng mã + cùng nội dung → trả lịch đã tạo; khác nội dung → 422.
@@ -315,7 +312,7 @@ export async function createAppointment(auth: Auth, input: CreateInput) {
                                 service_summary, notes, status, search_norm, created_by, updated_by,
                                 create_request_id, create_request_hash)
       values (${branch.id}, ${customerId}, ${name}, ${phone}, ${start}, ${end}, ${input.guestCount}, ${service}, ${notes},
-              ${input.confirm ? 'confirmed' : 'pending'}, ${searchNorm(name, phone, service)},
+              'confirmed', ${searchNorm(name, phone, service)},
               ${auth.userId}, ${auth.userId}, ${input.createRequestId}, ${hash})
       on conflict (created_by, create_request_id) do nothing
       returning *`
@@ -343,7 +340,7 @@ export async function createAppointment(auth: Auth, input: CreateInput) {
       type: 'appointment.created',
       entityType: 'appointment',
       entityId: created.id,
-      title: `Lịch mới ${when} · ${name}${input.confirm ? ' (đã chốt)' : ''}`,
+      title: `Lịch mới ${when} · ${name}`,
       body: notifyText(created),
       pushBody: `Lịch mới ${when} — mở app xem.`,
       url: `/lich/${created.id}`,
@@ -383,11 +380,9 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
   const get = (id: string | null) => (id ? (n.get(id) ?? null) : null)
   const orders = await linkedOrders(tx, row.id)
   const deposit = await depositBlock(tx, auth, row)
-  const hasConfirmedDeposit = !!deposit?.items.some((d) => d.status === 'confirmed')
   return {
     ...toItem(row, auth.userId, s.timezone),
     customerId: row.customerId,
-    phone: row.phone,
     notes: row.notes,
     version: row.version,
     createdByName: get(row.createdBy),
@@ -399,12 +394,7 @@ async function toDetail(tx: Tx, auth: Auth, row: Row): Promise<Detail> {
     customerCancelReportedByName: get(row.customerCancelReportedBy),
     createdAt: new Date(row.createdAt).toISOString(),
     updatedAt: new Date(row.updatedAt).toISOString(),
-    can: appointmentCan(
-      perms(auth, row.branchId),
-      auth.userId,
-      { ...row, hasConfirmedDeposit },
-      activeCount(orders),
-    ),
+    can: appointmentCan(perms(auth, row.branchId), auth.userId, row, activeCount(orders)),
     warnings: ['cancelled', 'no_show'].includes(row.status)
       ? { overlapCount: 0, duplicates: [], outsideHours: row.outsideHours }
       : await computeWarnings(tx, row.branchId, row.startAt, row.endAt, row.phone, row.id, s),
@@ -462,8 +452,6 @@ export async function listAppointments(
              or (${phoneDigits}::text is not null and phone like ${phoneDigits ? `%${escapeLike(phoneDigits)}%` : null} escape '\\'))
         and case ${filter}
               when 'active' then status <> 'cancelled'
-              when 'pending' then status = 'pending'
-              when 'confirmed' then status = 'confirmed'
               when 'customer_cancel' then customer_cancel_reported_at is not null and status in ('pending', 'confirmed')
               when 'cancelled' then status = 'cancelled'
               when 'no_show' then status = 'no_show'
@@ -482,7 +470,6 @@ export async function attentionList(auth: Auth, branchId?: string) {
   const branch = requireBranch(auth, branchId)
   if (!hasPerm(auth, branch.id, 'appointments.manage_all'))
     return {
-      pending: [],
       customerCancel: [],
       overdue: [],
       depositsToConfirm: [],
@@ -495,7 +482,7 @@ export async function attentionList(auth: Auth, branchId?: string) {
     const rows = await tx<Row[]>`
       select a.*, dp.deposit_pending, dp.deposit_held, dp.deposit_any from appointments a ${DEPOSIT_COLS(tx)}
       where branch_id = ${branch.id} and status in ('pending', 'confirmed')
-        and (status = 'pending' or customer_cancel_reported_at is not null or end_at < now())
+        and (customer_cancel_reported_at is not null or end_at < now())
         and end_at > now() - interval '7 days'
       order by start_at limit 200`
     // Lịch cần cọc còn việc: chưa cọc (còn mở, chưa qua giờ), cọc chờ xác nhận, cọc còn giữ khi lịch đã kết thúc
@@ -538,11 +525,6 @@ export async function attentionList(auth: Auth, branchId?: string) {
       customerCancel: rows
         .filter((r) => r.customerCancelReportedAt && new Date(r.endAt).getTime() >= now)
         .map(item),
-      pending: rows
-        .filter(
-          (r) => r.status === 'pending' && !r.customerCancelReportedAt && new Date(r.endAt).getTime() >= now,
-        )
-        .map(item),
     }
   })
 }
@@ -581,12 +563,17 @@ export async function auditTrail(auth: Auth, id: string) {
 export async function updateAppointment(auth: Auth, id: string, input: UpdateInput) {
   return withUser(auth.userId, async (tx) => {
     const row = await loadRow(tx, id)
-    const can = appointmentCan(perms(auth, row.branchId), auth.userId, row)
+    const can = appointmentCan(
+      perms(auth, row.branchId),
+      auth.userId,
+      row,
+      activeCount(await linkedOrders(tx, row.id)),
+    )
     if (!can.edit) {
       throw forbidden(
         ['cancelled', 'no_show', 'completed'].includes(row.status)
           ? 'Lịch đã kết thúc, không sửa được.'
-          : 'Chỉ sửa được lịch do mình tạo khi còn Mới đặt.',
+          : 'Chỉ sửa được lịch do mình tạo, khi chưa tạo đơn và chưa đến giờ hẹn.',
       )
     }
     const s = await loadSettings(tx, row.branchId)
@@ -662,10 +649,9 @@ export async function updateAppointment(auth: Auth, id: string, input: UpdateInp
 
 // ---------------------------------------------------------------- Chuyển trạng thái (1.6)
 
-export type Transition = 'confirm' | 'cancel' | 'report_customer_cancel' | 'arrived' | 'no_show' | 'complete'
+export type Transition = 'cancel' | 'report_customer_cancel' | 'arrived' | 'no_show' | 'complete'
 
 const TARGET: Record<Exclude<Transition, 'report_customer_cancel'>, ApptStatus> = {
-  confirm: 'confirmed',
   cancel: 'cancelled',
   arrived: 'arrived',
   no_show: 'no_show',
@@ -680,13 +666,10 @@ export async function transitionAppointment(
 ) {
   return withUser(auth.userId, async (tx) => {
     const row = await loadRow(tx, id)
-    const [held] = row.depositRequired
-      ? await tx`select 1 from appointment_deposits where appointment_id = ${id} and status = 'confirmed' limit 1`
-      : []
     const can = appointmentCan(
       perms(auth, row.branchId),
       auth.userId,
-      { ...row, hasConfirmedDeposit: !!held },
+      row,
       activeCount(await linkedOrders(tx, row.id)),
     )
     const s = await loadSettings(tx, row.branchId)
@@ -704,7 +687,6 @@ export async function transitionAppointment(
     }
 
     const allowed = {
-      confirm: can.confirm,
       cancel: can.cancel,
       report_customer_cancel: can.reportCustomerCancel,
       arrived: can.markArrived,
@@ -714,10 +696,10 @@ export async function transitionAppointment(
     if (!allowed) {
       throw forbidden(
         action === 'cancel'
-          ? held
-            ? 'Lịch đã có cọc được xác nhận. Báo Linh, Nhung hoặc Chin huỷ lịch.'
-            : 'Không huỷ được lịch này. Dùng Khách báo huỷ để báo Linh, Nhung, Chin.'
-          : 'Không có quyền làm việc này với lịch ở trạng thái hiện tại.',
+          ? 'Không huỷ được lịch này. Bấm Huỷ lịch để gửi yêu cầu cho Linh, Nhung, Chin.'
+          : action === 'no_show' && ['pending', 'confirmed'].includes(row.status)
+            ? 'Chưa đến giờ hẹn, chưa ghi khách không đến được.'
+            : 'Không có quyền làm việc này với lịch ở trạng thái hiện tại.',
       )
     }
     const reason = input.reason?.trim() ?? ''
@@ -753,21 +735,13 @@ export async function transitionAppointment(
         body: `Lý do: ${reason}`,
         pushBody: `Lịch ${when} đã huỷ — mở app xem.`,
       })
-    } else if (action === 'confirm') {
-      await emitEvent(tx, {
-        ...base,
-        type: 'appointment.confirmed',
-        title: `Đã chốt lịch ${when} · ${row.customerDisplayName}`,
-        body: notifyText(row),
-        pushBody: `Lịch ${when} đã được chốt — mở app xem.`,
-      })
     } else if (action === 'report_customer_cancel') {
       await emitEvent(tx, {
         ...base,
         type: 'appointment.customer_cancel',
-        title: `Khách báo huỷ lịch ${when} · ${row.customerDisplayName}`,
-        body: input.note?.trim() ? `Ghi chú: ${input.note.trim()}` : 'Cần huỷ chính thức nếu đúng.',
-        pushBody: `Khách báo huỷ lịch ${when} — mở app xử lý.`,
+        title: `Yêu cầu huỷ lịch ${when} · ${row.customerDisplayName}`,
+        body: input.note?.trim() ? `Lý do: ${input.note.trim()}` : 'Cần huỷ chính thức nếu đúng.',
+        pushBody: `Có yêu cầu huỷ lịch ${when} — mở app xử lý.`,
       })
     }
     return toDetail(tx, auth, updated)

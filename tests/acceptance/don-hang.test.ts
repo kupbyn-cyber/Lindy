@@ -454,7 +454,7 @@ describe('Tạo đơn từ lịch (module §13 test 26–28)', () => {
     expect(a.orders).toEqual([expect.objectContaining({ id: order.id, codeLabel: order.codeLabel })])
     const [hist] = await owner<{ actions: string[] }[]>`
       select array_agg(action order by id) as actions from appointment_audit_events where appointment_id = ${appointment.id}`
-    expect(hist!.actions).toEqual(['created', 'customer_linked', 'arrived', 'in_progress'])
+    expect(hist!.actions).toEqual(['created_confirmed', 'customer_linked', 'arrived', 'in_progress'])
     // Lịch có đơn: không bấm tay Hoàn thành được
     expect(a.can.complete).toBe(false)
   })
@@ -517,7 +517,7 @@ describe('Tạo đơn từ lịch (module §13 test 26–28)', () => {
     expect((await getAppointment(auth('trang'), appointment.id)).status).toBe('arrived')
 
     const other = await createAppointment(auth('trang'), apptInput())
-    const cancelled = await transitionAppointment(auth('trang'), other.appointment.id, 'cancel', {
+    const cancelled = await transitionAppointment(auth('chin'), other.appointment.id, 'cancel', {
       version: 1,
       reason: 'Khách huỷ',
     })

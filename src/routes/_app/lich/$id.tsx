@@ -1,4 +1,6 @@
-// Chi tiết lịch (module §7.2, bước 1.13). Nút hiện theo quyền; server vẫn từ chối gọi trực tiếp.
+// Chi tiết lịch (module §7.2, bước 1.13). Chỉ 3 nút: Sửa lịch · Tạo đơn · Huỷ lịch (S03). Huỷ chọn lý do
+// Khách báo huỷ / Khách không đến / Lý do khác; người không huỷ được thì gửi yêu cầu (S04).
+// Nút hiện theo quyền; server vẫn từ chối gọi trực tiếp.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Phone } from 'lucide-react'
@@ -31,29 +33,18 @@ export const Route = createFileRoute('/_app/lich/$id')({
   component: DetailPage,
 })
 
-type Action = 'confirm' | 'arrived' | 'cancel' | 'report-customer-cancel' | 'no-show' | 'complete'
+type CancelKind = 'customer' | 'no_show' | 'other'
 
-const ACTION_TEXT: Record<Action, { title: string; button: string; done: string; danger?: boolean }> = {
-  confirm: { title: 'Chốt lịch này?', button: 'Chốt lịch', done: 'Đã chốt lịch.' },
-  arrived: { title: 'Khách đã đến?', button: 'Khách đã đến', done: 'Đã ghi khách đến.' },
-  cancel: { title: 'Huỷ lịch này?', button: 'Huỷ lịch', done: 'Đã huỷ lịch.', danger: true },
-  'report-customer-cancel': {
-    title: 'Báo khách huỷ?',
-    button: 'Báo khách huỷ',
-    done: 'Đã báo Linh, Nhung, Chin.',
-  },
-  'no-show': {
-    title: 'Ghi khách không đến?',
-    button: 'Khách không đến',
-    done: 'Đã ghi khách không đến.',
-    danger: true,
-  },
-  complete: { title: 'Đánh dấu hoàn thành?', button: 'Hoàn thành', done: 'Đã đánh dấu hoàn thành.' },
+const CANCEL_KIND_LABEL: Record<CancelKind, string> = {
+  customer: 'Khách báo huỷ',
+  no_show: 'Khách không đến',
+  other: 'Lý do khác',
 }
 
 const AUDIT_LABEL: Record<string, string> = {
   created: 'Tạo lịch',
-  created_confirmed: 'Tạo và chốt',
+  created_confirmed: 'Tạo lịch',
+  auto_confirmed: 'Tự chốt (bỏ bước chốt lịch)',
   updated: 'Sửa',
   rescheduled: 'Đổi giờ',
   confirmed: 'Chốt lịch',
@@ -63,7 +54,7 @@ const AUDIT_LABEL: Record<string, string> = {
   no_show: 'Khách không đến',
   completed: 'Hoàn thành',
   cancelled: 'Huỷ lịch',
-  customer_cancel_reported: 'Khách báo huỷ',
+  customer_cancel_reported: 'Yêu cầu huỷ',
   note: 'Ghi chú thêm',
   deposit_recorded: 'Ghi cọc',
   deposit_confirmed: 'Xác nhận cọc',
@@ -101,12 +92,12 @@ function DetailPage() {
   const navigate = useNavigate()
   const [orderBusy, setOrderBusy] = useState(false)
   const [orderError, setOrderError] = useState<string | null>(null)
-  const [askExtra, setAskExtra] = useState(false)
   // Mã yêu cầu tạo đơn: bấm hai lần không ra hai đơn (test 28)
   const orderRequest = useRef('')
   const [tab, setTab] = useState<'info' | 'history'>('info')
   const [editing, setEditing] = useState(false)
-  const [action, setAction] = useState<Action | null>(null)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [kind, setKind] = useState<CancelKind>('customer')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -127,21 +118,46 @@ function DetailPage() {
     )
   }
   const d = q.data
+  const c = d.can
+  const activeOrders = d.orders.filter((o) => o.status !== 'cancelled')
+  // Người có quyền huỷ thì huỷ luôn; người khác gửi yêu cầu cho Linh, Nhung, Chin (S04)
+  const request = !c.cancel && c.reportCustomerCancel
+  const showCancel = c.cancel || c.reportCustomerCancel
+  const kinds: CancelKind[] = request || c.noShow ? ['customer', 'no_show', 'other'] : ['customer', 'other']
+  const noteRequired = kind === 'other'
 
-  async function run() {
-    if (!action) return
+  function openCancel() {
+    setKind('customer')
+    setText('')
+    setActionError(null)
+    setCancelOpen(true)
+  }
+
+  async function runCancel() {
+    if (noteRequired && !text.trim()) {
+      setActionError('Ghi lý do huỷ.')
+      return
+    }
     setBusy(true)
     setActionError(null)
-    const body: Record<string, unknown> = { version: d.version }
-    if (action === 'cancel') body.reason = text
-    if (action === 'report-customer-cancel' && text.trim()) body.note = text
+    const note = text.trim()
+    const label = CANCEL_KIND_LABEL[kind]
+    const withNote = kind === 'other' ? note : note ? `${label}: ${note}` : label
+    const [path, body, done] = request
+      ? ([
+          'report-customer-cancel',
+          { version: d.version, note: withNote },
+          'Đã gửi yêu cầu huỷ cho Linh, Nhung, Chin.',
+        ] as const)
+      : kind === 'no_show'
+        ? (['no-show', { version: d.version }, 'Đã ghi khách không đến.'] as const)
+        : (['cancel', { version: d.version, reason: withNote }, 'Đã huỷ lịch.'] as const)
     try {
-      const next = await api<Detail>(`/api/appointments/${d.id}/${action}`, { body })
+      const next = await api<Detail>(`/api/appointments/${d.id}/${path}`, { body })
       qc.setQueryData(['appointments', 'detail', d.id], next)
       await qc.invalidateQueries({ queryKey: ['appointments'] })
-      toast(ACTION_TEXT[action].done)
-      setAction(null)
-      setText('')
+      toast(done)
+      setCancelOpen(false)
     } catch (e) {
       if (e instanceof ApiError && e.status === 409 && e.data) {
         qc.setQueryData(['appointments', 'detail', d.id], e.data as Detail)
@@ -154,26 +170,16 @@ function DetailPage() {
     }
   }
 
-  const open = (a: Action) => {
-    setText('')
-    setActionError(null)
-    setAction(a)
-  }
-  const c = d.can
-  const cannotCancelHint = !c.cancel && c.reportCustomerCancel
-  const activeOrders = d.orders.filter((o) => o.status !== 'cancelled')
-
   // Tạo đơn từ lịch (module §10): lịch tự sang Khách đã đến → Đang làm; mở đơn để chọn dịch vụ
-  async function createOrder(additional: boolean) {
+  async function createOrder() {
     setOrderBusy(true)
     setOrderError(null)
     if (!orderRequest.current) orderRequest.current = crypto.randomUUID()
     try {
       const res = await api<{ order: { id: string } }>(`/api/appointments/${d.id}/create-order`, {
-        body: { createRequestId: orderRequest.current, additional },
+        body: { createRequestId: orderRequest.current },
       })
       orderRequest.current = ''
-      setAskExtra(false)
       await qc.invalidateQueries({ queryKey: ['appointments'] })
       await navigate({ to: '/don-hang/$id', params: { id: res.order.id } })
     } catch (e) {
@@ -191,8 +197,11 @@ function DetailPage() {
         </Link>
         <h1 className="screen-title mt-1 mb-1 break-words">{d.name}</h1>
         <div className="flex flex-wrap gap-1">
-          <StatusChip tone={STATUS_TONE[d.status]}>{STATUS_LABEL[d.status]}</StatusChip>
-          {d.customerCancelReported ? <StatusChip tone="warning">Khách báo huỷ</StatusChip> : null}
+          {/* Lịch nào cũng đã chốt (S02): chỉ hiện trạng thái khác */}
+          {d.status !== 'confirmed' ? (
+            <StatusChip tone={STATUS_TONE[d.status]}>{STATUS_LABEL[d.status]}</StatusChip>
+          ) : null}
+          {d.customerCancelReported ? <StatusChip tone="warning">Yêu cầu huỷ</StatusChip> : null}
           {d.depositState && DEPOSIT_STATE_CHIP[d.depositState] ? (
             <StatusChip tone={DEPOSIT_STATE_CHIP[d.depositState]!.tone}>
               {DEPOSIT_STATE_CHIP[d.depositState]!.label}
@@ -246,7 +255,7 @@ function DetailPage() {
               )}
             </Row>
             {d.customerCancelReported ? (
-              <Row label="Khách báo huỷ">
+              <Row label="Yêu cầu huỷ">
                 {d.customerCancelReportedByName ?? ''}
                 {d.customerCancelNote ? ` — ${d.customerCancelNote}` : ''}
               </Row>
@@ -257,7 +266,6 @@ function DetailPage() {
                 {d.cancelledByName ? <span className="text-ink-muted">({d.cancelledByName})</span> : null}
               </Row>
             ) : null}
-            {d.confirmedByName ? <Row label="Người chốt">{d.confirmedByName}</Row> : null}
             <Row label="Người tạo">
               {d.createdByName} <span className="text-ink-muted">· {formatDateTimeShort(d.createdAt)}</span>
             </Row>
@@ -312,112 +320,77 @@ function DetailPage() {
             </div>
           ) : null}
 
+          {/* 3 nút theo thứ tự anh chọn: Sửa lịch · Tạo đơn · Huỷ lịch (S03) */}
           <div className="flex flex-col gap-2 px-4 pb-2">
-            {c.createOrder ? (
-              activeOrders.length === 0 ? (
-                <Button variant="primary" block loading={orderBusy} onClick={() => void createOrder(false)}>
-                  Khách đã đến · Tạo đơn
+            <div className="flex gap-2">
+              {c.edit ? (
+                <Button block onClick={() => setEditing(true)}>
+                  Sửa lịch
                 </Button>
-              ) : (
-                <Button block loading={orderBusy} onClick={() => setAskExtra(true)}>
-                  Tạo thêm đơn (khách khác trong nhóm)
+              ) : null}
+              {c.createOrder && activeOrders.length === 0 ? (
+                <Button variant="primary" block loading={orderBusy} onClick={() => void createOrder()}>
+                  Tạo đơn
                 </Button>
-              )
-            ) : null}
+              ) : null}
+              {showCancel ? (
+                <Button block variant="danger" onClick={openCancel}>
+                  Huỷ lịch
+                </Button>
+              ) : null}
+            </div>
             {orderError ? <Note tone="danger">{orderError}</Note> : null}
-            {c.confirm ? (
-              <Button variant="primary" block onClick={() => open('confirm')}>
-                Chốt lịch
-              </Button>
-            ) : null}
-            {c.markArrived ? (
-              <Button variant={c.confirm ? 'secondary' : 'primary'} block onClick={() => open('arrived')}>
-                Khách đã đến
-              </Button>
-            ) : null}
-            {c.complete ? (
-              <Button variant="primary" block onClick={() => open('complete')}>
-                Hoàn thành
-              </Button>
-            ) : null}
-            {c.edit ? (
-              <Button block onClick={() => setEditing(true)}>
-                Sửa
-              </Button>
-            ) : null}
-            {c.reportCustomerCancel ? (
-              <Button block onClick={() => open('report-customer-cancel')}>
-                Khách báo huỷ
-              </Button>
-            ) : null}
-            {c.noShow ? (
-              <Button block variant="danger" onClick={() => open('no-show')}>
-                Khách không đến
-              </Button>
-            ) : null}
-            {c.cancel ? (
-              <Button block variant="danger" onClick={() => open('cancel')}>
-                Huỷ lịch
-              </Button>
-            ) : null}
-            {cannotCancelHint ? (
-              <p className="caption m-0 text-ink-muted">
-                Không huỷ được lịch này. Khách báo huỷ thì bấm “Khách báo huỷ” để Linh, Nhung, Chin xử lý.
-              </p>
+            {d.customerCancelReported && !c.cancel && ['pending', 'confirmed'].includes(d.status) ? (
+              <p className="caption m-0 text-ink-muted">Đã gửi yêu cầu huỷ, chờ Linh, Nhung, Chin xử lý.</p>
             ) : null}
           </div>
         </>
       )}
 
       <ConfirmDialog
-        open={!!action}
-        title={action ? ACTION_TEXT[action].title : ''}
-        confirmLabel={action ? ACTION_TEXT[action].button : ''}
-        danger={action ? ACTION_TEXT[action].danger : false}
+        open={cancelOpen}
+        title={request ? 'Gửi yêu cầu huỷ lịch?' : 'Huỷ lịch này?'}
+        confirmLabel={request ? 'Gửi yêu cầu huỷ' : kind === 'no_show' ? 'Ghi khách không đến' : 'Huỷ lịch'}
+        danger={!request}
         busy={busy}
-        onConfirm={() => void run()}
-        onCancel={() => setAction(null)}
+        onConfirm={() => void runCancel()}
+        onCancel={() => setCancelOpen(false)}
       >
         <p className="body m-0 text-ink-muted">
           {d.startTime} {formatIsoDate(d.date)} · {d.name}
         </p>
-        {action === 'cancel' && activeOrders.length > 0 ? (
+        <SegmentedControl
+          className="w-full"
+          ariaLabel="Lý do huỷ"
+          options={kinds.map((k) => ({ value: k, label: CANCEL_KIND_LABEL[k] }))}
+          value={kind}
+          onChange={(v) => {
+            setKind(v as CancelKind)
+            setActionError(null)
+          }}
+        />
+        {kind === 'no_show' && !request ? (
+          <p className="caption m-0 text-ink-muted">Cọc (nếu có) chuyển sang chờ Nhung giữ cọc.</p>
+        ) : null}
+        {request ? (
+          <p className="caption m-0 text-ink-muted">
+            Lịch giữ nguyên đến khi Linh, Nhung hoặc Chin huỷ chính thức.
+          </p>
+        ) : null}
+        {!request && activeOrders.length > 0 ? (
           <Note tone="warning">
             Lịch có {activeOrders.length} đơn liên kết. Huỷ lịch không huỷ đơn; xử lý đơn riêng.
           </Note>
         ) : null}
-        {action === 'cancel' ? (
+        {kind !== 'no_show' || request ? (
           <TextArea
-            label="Lý do huỷ (bắt buộc)"
+            label={noteRequired ? 'Lý do (bắt buộc)' : 'Ghi chú (không bắt buộc)'}
             value={text}
-            maxLength={500}
-            onChange={(e) => setText(e.target.value)}
-          />
-        ) : null}
-        {action === 'report-customer-cancel' ? (
-          <TextArea
-            label="Ghi chú (không bắt buộc)"
-            value={text}
-            maxLength={500}
+            maxLength={450}
             onChange={(e) => setText(e.target.value)}
           />
         ) : null}
         {actionError ? <Note tone="danger">{actionError}</Note> : null}
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        open={askExtra}
-        title="Tạo thêm đơn cho lịch này?"
-        confirmLabel="Tạo thêm đơn"
-        busy={orderBusy}
-        onConfirm={() => void createOrder(true)}
-        onCancel={() => setAskExtra(false)}
-      >
-        <p className="body m-0 text-ink-muted">
-          Lịch đã có {activeOrders.map((o) => o.codeLabel).join(', ')}. Chỉ tạo thêm khi là khách khác trong
-          nhóm {d.guestCount > 1 ? `(${d.guestCount} khách)` : ''}.
-        </p>
-        {orderError ? <Note tone="danger">{orderError}</Note> : null}
       </ConfirmDialog>
 
       <AppointmentForm

@@ -1,4 +1,4 @@
-// Danh sách Cần xử lý (§7.1) cho Linh, Nhung, Chin: Mới đặt chưa chốt, Khách báo huỷ, quá giờ chưa đánh dấu (K02).
+// Danh sách Cần xử lý (§7.1) cho Linh, Nhung, Chin: yêu cầu huỷ (S04), quá giờ chưa đánh dấu (K02).
 // Cọc (Đợt 3): cọc chờ xác nhận (Nhung, Linh), lịch chưa cọc (K16), cọc chờ hoàn/giữ (Linh, Nhung, Chin).
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -8,7 +8,6 @@ import type { ListItem } from '~/lib/appointments'
 import { AppointmentRows } from './views'
 
 type Attention = {
-  pending: ListItem[]
   customerCancel: ListItem[]
   overdue: ListItem[]
   depositsToConfirm: ListItem[]
@@ -34,8 +33,8 @@ export function AttentionPanel(props: { compact?: boolean }) {
     {
       key: 'overdue',
       items: d.overdue,
-      title: 'Quá giờ, chưa đánh dấu đến/không đến',
-      short: 'quá giờ chưa đánh dấu',
+      title: 'Quá giờ, chưa tạo đơn hoặc huỷ',
+      short: 'quá giờ chưa xử lý',
       tone: 'text-danger',
     },
     {
@@ -62,8 +61,8 @@ export function AttentionPanel(props: { compact?: boolean }) {
     {
       key: 'customerCancel',
       items: d.customerCancel,
-      title: 'Khách báo huỷ',
-      short: 'Khách báo huỷ',
+      title: 'Yêu cầu huỷ lịch',
+      short: 'yêu cầu huỷ',
       tone: 'text-warning',
     },
     {
@@ -71,13 +70,6 @@ export function AttentionPanel(props: { compact?: boolean }) {
       items: d.depositsMissing ?? [],
       title: 'Mùa cọc: lịch chưa cọc',
       short: 'chưa cọc',
-      tone: 'text-ink-muted',
-    },
-    {
-      key: 'pending',
-      items: d.pending,
-      title: 'Mới đặt, chưa chốt',
-      short: 'Mới đặt',
       tone: 'text-ink-muted',
     },
   ]

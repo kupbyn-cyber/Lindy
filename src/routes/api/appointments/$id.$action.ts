@@ -1,4 +1,4 @@
-// POST /api/appointments/:id/confirm | cancel | report-customer-cancel | arrived | no-show | complete
+// POST /api/appointments/:id/cancel | report-customer-cancel | arrived | no-show | complete (không còn confirm, S02)
 // POST /api/appointments/:id/create-order   — tạo đơn từ lịch (module §10; additional=true là "Tạo thêm đơn")
 // POST /api/appointments/:id/deposits       — ghi khoản cọc (mùa cọc, chờ Nhung, Linh xác nhận)
 // GET  /api/appointments/:id/audit
@@ -14,7 +14,6 @@ import { FromAppointmentBody } from '~/server/orders/schema'
 import { createOrderFromAppointment } from '~/server/orders/service'
 
 const ACTIONS: Record<string, Transition> = {
-  confirm: 'confirm',
   cancel: 'cancel',
   'report-customer-cancel': 'report_customer_cancel',
   arrived: 'arrived',

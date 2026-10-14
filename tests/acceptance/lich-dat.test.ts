@@ -17,6 +17,7 @@ import {
 import { closeSql, withUser } from '../../src/server/db/client'
 import { AppError } from '../../src/server/http/errors'
 import { limitWrites, resetWriteLimits } from '../../src/server/http/route'
+import { createOrderFromAppointment } from '../../src/server/orders/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
 import { expectPgError, ownerSql, seed } from '../helpers/db'
 
@@ -71,9 +72,9 @@ async function eventsFor(appointmentId: string) {
 }
 
 describe('Tạo lịch', () => {
-  it('01 — Trang tạo lịch 09:00, 2 khách: Mới đặt, không có trường thợ, kết thúc 11:00', async () => {
+  it('01 — Trang tạo lịch 09:00, 2 khách: Đã chốt lịch luôn (S02), không có trường thợ, kết thúc 11:00', async () => {
     const res = await createAppointment(auth('trang'), input({ guestCount: 2 }))
-    expect(res.appointment.status).toBe('pending')
+    expect(res.appointment.status).toBe('confirmed')
     expect(res.appointment.startTime).toBe('09:00')
     expect(res.appointment.endTime).toBe('11:00')
     const detail = await getAppointment(auth('trang'), res.appointment.id)
@@ -83,16 +84,28 @@ describe('Tạo lịch', () => {
     expect(cols.map((c) => c.columnName)).not.toContain('staff_id')
   })
 
-  it('10 — Nhung "Tạo và chốt": Đã chốt lịch ngay, confirmed_by = Nhung', async () => {
-    const res = await createAppointment(auth('nhung'), input({ confirm: true }))
+  it('S02 — ai tạo lịch cũng chốt luôn: confirmed_by = người tạo', async () => {
+    const res = await createAppointment(auth('trang'), input())
     expect(res.appointment.status).toBe('confirmed')
     const [r] = await owner`select confirmed_by from appointments where id = ${res.appointment.id}`
-    expect(r!.confirmedBy).toBe(seed().users.nhung!.id)
+    expect(r!.confirmedBy).toBe(seed().users.trang!.id)
   })
 
-  it('10b — Trang không "Tạo và chốt" được (giao diện và API)', async () => {
-    const e = await err(createAppointment(auth('trang'), input({ confirm: true })))
-    expect(e.status).toBe(403)
+  it('S02 — không tạo được lịch Mới đặt: API không nhận trường confirm, DB chặn status pending', async () => {
+    expect(CreateBody.safeParse({ ...input(), confirm: true }).success).toBe(false)
+    const trangId = seed().users.trang!.id
+    await expectPgError(
+      withUser(
+        trangId,
+        (tx) =>
+          tx`insert into appointments (branch_id, customer_display_name, start_at, end_at, status, created_by,
+                                     updated_by, create_request_id, create_request_hash)
+           values (${seed().branchIds.HTK!}, 'x', date_trunc('day', now()) + interval '2 days 3 hours',
+                   date_trunc('day', now()) + interval '2 days 4 hours', 'pending', ${trangId}, ${trangId},
+                   gen_random_uuid(), repeat('a', 64))`,
+      ),
+      'P0001',
+    )
   })
 
   it('K05 — tối đa 4 khách một lịch; giờ kết thúc phải cùng ngày', async () => {
@@ -132,7 +145,7 @@ describe('Tạo lịch', () => {
 })
 
 describe('Sửa lịch', () => {
-  it('02 — Trang sửa lịch mình tạo còn Mới đặt: được, lịch sử lưu trước/sau', async () => {
+  it('02 — Trang sửa lịch mình tạo, chưa có đơn, chưa đến giờ (S15): được, lịch sử lưu trước/sau', async () => {
     const { appointment } = await createAppointment(auth('trang'), input())
     const d = await updateAppointment(auth('trang'), appointment.id, {
       version: 1,
@@ -145,15 +158,34 @@ describe('Sửa lịch', () => {
     expect((upd.afterJson as { notes: string }).notes).toBe('khách thích màu nude')
   })
 
-  it('03 — Trang sửa lịch mình tạo đã chốt: bị chặn ở API và DB', async () => {
+  it('03 — Trang sửa lịch mình tạo đã có đơn (S15): bị chặn ở API và DB', async () => {
     const { appointment } = await createAppointment(auth('trang'), input())
-    const c = await transitionAppointment(auth('nhung'), appointment.id, 'confirm', { version: 1 })
-    expect(c.status).toBe('confirmed')
+    await createOrderFromAppointment(auth('trang'), appointment.id, { createRequestId: rid() })
+    const c = await getAppointment(auth('nhung'), appointment.id)
     expect(c.can.edit).toBe(true) // Nhung vẫn sửa được
     const t = await getAppointment(auth('trang'), appointment.id)
     expect(t.can.edit).toBe(false) // giao diện ẩn nút Sửa
     const e = await err(updateAppointment(auth('trang'), appointment.id, { version: t.version, notes: 'x' }))
     expect(e.status).toBe(403)
+    await expectPgError(
+      withUser(
+        seed().users.trang!.id,
+        (tx) => tx`update appointments set notes = 'x' where id = ${appointment.id}`,
+      ),
+      '42501',
+    )
+  })
+
+  it('S15 — Trang sửa lịch mình tạo đã đến giờ hẹn: bị chặn ở API và DB', async () => {
+    const { appointment } = await createAppointment(
+      auth('trang'),
+      input({ date: addDays(toLocalDate(new Date()), -1) }),
+    )
+    const t = await getAppointment(auth('trang'), appointment.id)
+    expect(t.can.edit).toBe(false)
+    expect(
+      (await err(updateAppointment(auth('trang'), appointment.id, { version: 1, notes: 'x' }))).status,
+    ).toBe(403)
     await expectPgError(
       withUser(
         seed().users.trang!.id,
@@ -225,13 +257,10 @@ describe('Sửa lịch', () => {
     }
     const { appointment } = await createAppointment(auth('trang'), input())
     const trangId = seed().users.trang!.id
-    // Tự chốt lịch của mình
+    // Đưa lịch về Mới đặt (S02: không còn trạng thái này cho lịch mới)
     await expectPgError(
-      withUser(
-        trangId,
-        (tx) => tx`update appointments set status = 'confirmed' where id = ${appointment.id}`,
-      ),
-      '42501',
+      withUser(trangId, (tx) => tx`update appointments set status = 'pending' where id = ${appointment.id}`),
+      'P0001',
     )
     // Đổi người tạo, chuyển cơ sở
     await expectPgError(
@@ -256,8 +285,8 @@ describe('Sửa lịch', () => {
         tx`update appointments set confirmed_by = ${seed().users.nhung!.id} where id = ${appointment.id}`,
     )
     const [r] = await owner`select confirmed_by, status from appointments where id = ${appointment.id}`
-    expect(r!.confirmedBy).toBeNull()
-    expect(r!.status).toBe('pending')
+    expect(r!.confirmedBy).toBe(trangId)
+    expect(r!.status).toBe('confirmed')
     // Không xoá được
     await expectPgError(
       withUser(trangId, (tx) => tx`delete from appointments where id = ${appointment.id}`),
@@ -267,40 +296,47 @@ describe('Sửa lịch', () => {
 })
 
 describe('Huỷ, khách báo huỷ, khách đến', () => {
-  it('05 — Trang huỷ lịch mình tạo còn Mới đặt, có lý do: được; lưu người huỷ, lý do', async () => {
+  it('05 — Chin huỷ lịch Trang tạo, có lý do: được; lưu người huỷ, lý do', async () => {
     const { appointment } = await createAppointment(auth('trang'), input())
-    const d = await transitionAppointment(auth('trang'), appointment.id, 'cancel', {
+    const d = await transitionAppointment(auth('chin'), appointment.id, 'cancel', {
       version: 1,
-      reason: 'Ghi nhầm ngày',
+      reason: 'Khách báo huỷ: bận việc',
     })
     expect(d.status).toBe('cancelled')
-    expect(d.cancelReason).toBe('Ghi nhầm ngày')
-    expect(d.cancelledByName).toBe('Trang')
+    expect(d.cancelReason).toBe('Khách báo huỷ: bận việc')
+    expect(d.cancelledByName).toBe('Chin')
   })
 
-  it('06 — Trang huỷ lịch mình tạo nhưng bỏ trống lý do: 422 (cả ở DB)', async () => {
+  it('06 — huỷ bỏ trống lý do: 422 (cả ở DB)', async () => {
     const { appointment } = await createAppointment(auth('trang'), input())
     const e = await err(
-      transitionAppointment(auth('trang'), appointment.id, 'cancel', { version: 1, reason: '  ' }),
+      transitionAppointment(auth('chin'), appointment.id, 'cancel', { version: 1, reason: '  ' }),
     )
     expect(e.status).toBe(422)
     await expectPgError(
       withUser(
-        seed().users.trang!.id,
+        seed().users.chin!.id,
         (tx) => tx`update appointments set status = 'cancelled' where id = ${appointment.id}`,
       ),
       ['P0001', '23514'],
     )
   })
 
-  it('07 — Trang huỷ lịch đã chốt hoặc lịch người khác: 403, gợi ý Khách báo huỷ', async () => {
+  it('07 — S04: Trang huỷ lịch (kể cả lịch mình tạo): 403, gợi ý gửi yêu cầu huỷ', async () => {
     const own = await createAppointment(auth('trang'), input())
-    await transitionAppointment(auth('nhung'), own.appointment.id, 'confirm', { version: 1 })
     const e1 = await err(
-      transitionAppointment(auth('trang'), own.appointment.id, 'cancel', { version: 2, reason: 'x' }),
+      transitionAppointment(auth('trang'), own.appointment.id, 'cancel', { version: 1, reason: 'x' }),
     )
     expect(e1.status).toBe(403)
-    expect(e1.message).toMatch('Khách báo huỷ')
+    expect(e1.message).toMatch('yêu cầu')
+    await expectPgError(
+      withUser(
+        seed().users.trang!.id,
+        (tx) =>
+          tx`update appointments set status = 'cancelled', cancel_reason = 'x' where id = ${own.appointment.id}`,
+      ),
+      '42501',
+    )
     const other = await createAppointment(auth('chin'), input())
     const e2 = await err(
       transitionAppointment(auth('trang'), other.appointment.id, 'cancel', { version: 1, reason: 'x' }),
@@ -311,8 +347,8 @@ describe('Huỷ, khách báo huỷ, khách đến', () => {
     expect(d.can.reportCustomerCancel).toBe(true)
   })
 
-  it('08 — Trang bấm Khách báo huỷ trên lịch đã chốt: giữ trạng thái, có nhãn; Linh, Nhung, Chin nhận thông báo', async () => {
-    const { appointment } = await createAppointment(auth('nhung'), input({ confirm: true }))
+  it('08 — Trang gửi yêu cầu huỷ: giữ trạng thái, có nhãn; Linh, Nhung, Chin nhận thông báo', async () => {
+    const { appointment } = await createAppointment(auth('nhung'), input())
     const d = await transitionAppointment(auth('trang'), appointment.id, 'report_customer_cancel', {
       version: 1,
       note: 'Khách nhắn bận',
@@ -352,8 +388,21 @@ describe('Huỷ, khách báo huỷ, khách đến', () => {
     expect(d.status).toBe('arrived')
   })
 
-  it('Khách không đến, Hoàn thành bấm tay: chỉ người có quyền lịch mở rộng', async () => {
-    const a = await createAppointment(auth('trang'), input())
+  it('Khách không đến (S03): chỉ người có quyền lịch mở rộng, chỉ khi đã đến giờ hẹn; Hoàn thành bấm tay', async () => {
+    const future = await createAppointment(auth('trang'), input())
+    const early = await err(
+      transitionAppointment(auth('chin'), future.appointment.id, 'no_show', { version: 1 }),
+    )
+    expect(early.status).toBe(403)
+    expect(early.message).toMatch('Chưa đến giờ hẹn')
+    await expectPgError(
+      withUser(
+        seed().users.chin!.id,
+        (tx) => tx`update appointments set status = 'no_show' where id = ${future.appointment.id}`,
+      ),
+      'P0001',
+    )
+    const a = await createAppointment(auth('trang'), input({ date: addDays(toLocalDate(new Date()), -1) }))
     expect(
       (await err(transitionAppointment(auth('trang'), a.appointment.id, 'no_show', { version: 1 }))).status,
     ).toBe(403)
@@ -378,21 +427,23 @@ describe('Huỷ, khách báo huỷ, khách đến', () => {
     ).toBe('completed')
   })
 
-  it('S11 — chốt, huỷ với version cũ → 409 [P9]', async () => {
+  it('S11 — huỷ với version cũ → 409 [P9]', async () => {
     const { appointment } = await createAppointment(auth('trang'), input())
     await updateAppointment(auth('trang'), appointment.id, {
       version: 1,
       startTime: '16:00',
       endTime: '18:00',
     })
-    const e = await err(transitionAppointment(auth('nhung'), appointment.id, 'confirm', { version: 1 }))
+    const e = await err(
+      transitionAppointment(auth('nhung'), appointment.id, 'cancel', { version: 1, reason: 'x' }),
+    )
     expect(e.status).toBe(409)
     expect((e.data as { startTime: string }).startTime).toBe('16:00')
   })
 
   it('18 — huỷ lịch đã chốt: còn trong DB, có lịch sử; ẩn khỏi lịch mặc định, hiện khi lọc Đã huỷ', async () => {
     const date = nextDay()
-    const { appointment } = await createAppointment(auth('nhung'), input({ date, confirm: true }))
+    const { appointment } = await createAppointment(auth('nhung'), input({ date }))
     await transitionAppointment(auth('nhung'), appointment.id, 'cancel', { version: 1, reason: 'Khách huỷ' })
     const [r] = await owner`select status from appointments where id = ${appointment.id}`
     expect(r!.status).toBe('cancelled')
@@ -416,7 +467,7 @@ describe('Cảnh báo §8', () => {
       auth('chin'),
       input({ date, startTime: '10:00', endTime: '11:30', customerDisplayName: 'B' }),
     )
-    expect(b.appointment.status).toBe('pending')
+    expect(b.appointment.status).toBe('confirmed')
     expect(b.warnings.overlapCount).toBe(1)
     const list = await listAppointments(auth('trang'), { from: date, to: date })
     expect(list.items.length).toBe(2)
@@ -468,7 +519,7 @@ describe('Cảnh báo §8', () => {
   it('lịch huỷ, không đến không tính trùng giờ', async () => {
     const date = nextDay()
     const a = await createAppointment(auth('trang'), input({ date, startTime: '10:00', endTime: '11:00' }))
-    await transitionAppointment(auth('trang'), a.appointment.id, 'cancel', { version: 1, reason: 'nhầm' })
+    await transitionAppointment(auth('chin'), a.appointment.id, 'cancel', { version: 1, reason: 'nhầm' })
     const w = await checkWarnings(auth('trang'), { date, startTime: '10:00', endTime: '11:00' })
     expect(w.overlapCount).toBe(0)
   })
@@ -476,13 +527,13 @@ describe('Cảnh báo §8', () => {
 
 describe('Thông báo §9', () => {
   it('19 — tạo, đổi giờ, huỷ: mỗi thao tác đúng một sự kiện; người thao tác không nhận', async () => {
-    const { appointment } = await createAppointment(auth('trang'), input())
-    const u = await updateAppointment(auth('trang'), appointment.id, {
+    const { appointment } = await createAppointment(auth('chin'), input())
+    const u = await updateAppointment(auth('chin'), appointment.id, {
       version: 1,
       startTime: '10:00',
       endTime: '12:00',
     })
-    await transitionAppointment(auth('trang'), appointment.id, 'cancel', {
+    await transitionAppointment(auth('chin'), appointment.id, 'cancel', {
       version: u.version,
       reason: 'Khách huỷ',
     })
@@ -492,19 +543,18 @@ describe('Thông báo §9', () => {
       'appointment.rescheduled',
       'appointment.cancelled',
     ])
-    for (const e of ev) expect(e.recipients).not.toContain(seed().users.trang!.id)
+    for (const e of ev) expect(e.recipients).not.toContain(seed().users.chin!.id)
+    for (const e of ev) expect(e.recipients).toContain(seed().users.trang!.id) // B13
     // Sửa ghi chú (không đổi giờ) không phát thông báo
     const b = await createAppointment(auth('trang'), input())
     await updateAppointment(auth('trang'), b.appointment.id, { version: 1, notes: 'x' })
     expect((await eventsFor(b.appointment.id)).length).toBe(1)
   })
 
-  it('20 — Nhung chốt lịch: nhân viên thường không nhận thông báo chốt', async () => {
+  it('20 — S02: không còn bước chốt nên không có thông báo chốt lịch', async () => {
     const { appointment } = await createAppointment(auth('trang'), input())
-    await transitionAppointment(auth('nhung'), appointment.id, 'confirm', { version: 1 })
-    const ev = (await eventsFor(appointment.id)).find((e) => e.type === 'appointment.confirmed')!
-    expect(ev.recipients).not.toContain(seed().users.trang!.id)
-    expect(ev.recipients).toEqual(expect.arrayContaining([seed().users.linh!.id, seed().users.chin!.id]))
+    const ev = await eventsFor(appointment.id)
+    expect(ev.map((e) => e.type)).toEqual(['appointment.created'])
   })
 
   it('23 — nội dung đẩy ra màn hình khoá không có tên khách, SĐT, ghi chú', async () => {
@@ -584,16 +634,14 @@ describe('Phạm vi và quyền', () => {
     )
   })
 
-  it('S13 — giới hạn khoảng ngày, độ dài; danh sách không trả SĐT, ghi chú [P11]', async () => {
+  it('S13 — giới hạn khoảng ngày, độ dài; danh sách có SĐT (S10), không có ghi chú [P11]', async () => {
     const date = nextDay()
     const e = await err(listAppointments(auth('trang'), { from: date, to: addDays(date, 63) }))
     expect(e.status).toBe(422)
     await createAppointment(auth('trang'), input({ date, phone: '0900000001', notes: 'bí mật' }))
     const list = await listAppointments(auth('trang'), { from: date, to: date })
-    for (const it of list.items) {
-      expect(Object.keys(it)).not.toContain('phone')
-      expect(Object.keys(it)).not.toContain('notes')
-    }
+    expect(list.items.map((it) => it.phone)).toContain('0900000001')
+    for (const it of list.items) expect(Object.keys(it)).not.toContain('notes')
     expect(CreateBody.safeParse(input({ notes: 'x'.repeat(1001) })).success).toBe(false)
     expect(CreateBody.safeParse(input({ customerDisplayName: 'x'.repeat(101) })).success).toBe(false)
   })
