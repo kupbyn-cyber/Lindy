@@ -104,6 +104,9 @@ function MorePage() {
             hint="Giờ mở cửa, thời lượng mặc định, mùa cọc Tết, ngày đóng cửa"
           />
         ) : null}
+        {can('users.manage') ? (
+          <Row to="/them/du-lieu-thu" label="Dữ liệu dùng thử" hint="Nạp gói thử; xoá để bắt đầu dùng thật" />
+        ) : null}
       </div>
       <div className="px-4 pt-6">
         <Button block variant="danger" onClick={() => setConfirm(true)}>

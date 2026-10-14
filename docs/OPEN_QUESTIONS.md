@@ -19,6 +19,11 @@ Cập nhật: 13/10/2026 sau Đợt 5. Trả lời xong câu nào thì chuyển 
 - Bật sao lưu tự động trên Vibe Host; mở thử file XLSX xuất từ app trên máy tính và iPhone; in thử báo cáo tháng ra PDF.
 - **Nhập dữ liệu cũ (Đợt 5B, đã có màn ghép cột):** khi app đã chạy ổn ở quán (Q42), Linh nhập thử một tab tháng thật; nếu số tiền, ngày có kiểu ghi app chưa đọc được thì gửi em file đó để bổ sung.
 
+## 2b. Sau Đợt 6 (anh làm khi triển khai)
+
+- Thử trên iPhone thật: vuốt trái/phải đổi ngày, chụm hai ngón phóng to lịch, hộp thoại nút X, trang chủ (cả tài khoản thợ), chế độ tối.
+- Trên Mắt Bão: Thêm → Dữ liệu dùng thử → "Xoá dữ liệu hiện có rồi nạp gói thử" cho cả quán thử; xong thì "Xoá, bắt đầu dùng thật", nhập hồ sơ nhân viên thật (S17) và mở sổ tiền thật. Bật sao lưu Vibe Host trước khi bấm xoá.
+
 ## 3. Sau phản biện Đợt 3 (chờ anh quyết)
 
 - **P62 — trả tip trước khi đối soát sao kê:** hiện Nhung trả tip tiền mặt cho thợ được ngay khi tip vừa ghi (tip ghi vào tài khoản ngân hàng, hiện ở "chuyển khoản chưa đối soát" khi chốt quỹ). Giữ như vậy, hay chỉ cho trả tip đã khớp sao kê (an toàn hơn, cuối ngày chậm hơn)?

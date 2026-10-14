@@ -1,6 +1,6 @@
 # Kế hoạch Đợt 6 — Gói chỉnh sửa sau Đợt 5
 
-**Ngày:** 14/10/2026 · **Trạng thái:** ĐÃ DUYỆT 14/10/2026. Q-N theo đề xuất (S15), Q-O chọn (c) bỏ mọi màn và chỉ tạo đơn từ lịch (S16), Q-P theo đề xuất (S17). `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
+**Ngày:** 14/10/2026 · **Trạng thái:** ĐÃ DUYỆT 14/10/2026. **ĐÃ LÀM XONG 15/10/2026** (6A–6F, mục 9). Q-N theo đề xuất (S15), Q-O chọn (c) bỏ mọi màn và chỉ tạo đơn từ lịch (S16), Q-P theo đề xuất (S17). `[x]` xong và đã kiểm; `[~]` làm một phần; `[ ]` chưa làm.
 **Nguồn:** 11 yêu cầu của anh (14/10/2026); Phiếu 4 `docs/surveys/04-phieu-chinh-sua.md`; `docs/DECISIONS.md` S01–S14 (thắng B02–B04, B06, B08 phần ô lịch, G11); module lịch v1.2; PRD v1.2.
 
 ## 1. Hiểu yêu cầu
@@ -104,9 +104,9 @@ Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để 
 - [x] **6E.2** Bố cục mới: hàng chỉ số chữ to (2 cột trên iPhone), biểu đồ cột 30 ngày, thẻ "Cần xử lý: N việc" mở danh sách chi tiết, chấm công, lịch hôm nay gọn. *Kiểm:* đo bố cục ở 375px trên trình duyệt (tài khoản Linh): 6 ô, 30 cột, thẻ Cần xử lý, không cuộn ngang. Ảnh chụp trình duyệt bị lỗi khi khung bị che nên chưa có ảnh; **chưa xem ở chế độ tối và tài khoản thợ trên giao diện** (số liệu thợ đã có test).
 
 ### 6F — Dữ liệu dùng thử
-- [ ] **6F.1** Bộ nạp gói thử chạy trên server qua các service của app (như `scripts/demo-data.ts`), dùng tài khoản thật đang có trong cơ sở: 7 ngày trước đến 7 ngày sau; khoảng 50 đơn có thanh toán, giảm giá, chờ xác nhận; lịch nhóm, lịch có cọc (mùa cọc thử); mở sổ, thu chi, chốt quỹ; chấm công, hồ sơ và mức lương (Q-P), tạm ứng. Tên khách, SĐT giả `0900000xxx`. *Kiểm:* test nạp trên DB test rồi kiểm số lượng, báo cáo tháng không lỗi.
-- [ ] **6F.2** Màn Thêm → Dữ liệu dùng thử (chỉ Chủ): "Nạp dữ liệu thử" khi còn trống; "Xoá, bắt đầu dùng thật" phải gõ `XOA DU LIEU THU`. *Kiểm:* thao tác trên trình duyệt local.
-- [ ] **6F.3** Migration 0023 + `app.demo_golive_wipe()`. *Kiểm:* test: sau khi xoá, mọi bảng nghiệp vụ trống, bảng giữ lại không đổi số dòng, số đơn mới bắt đầu từ 1, đăng nhập vẫn được, gọi lần hai bị từ chối, thợ và Nhung gọi bị từ chối, trigger chặn xoá bật lại đầy đủ.
+- [x] **6F.1** Bộ nạp gói thử (`src/server/ops/demo.ts`) chạy trên server qua các service của app, dùng tài khoản thật đang có trong cơ sở, không phát thông báo: 7 ngày trước đến 7 ngày sau (khoảng 77 lịch, 50–58 đơn), đơn có thanh toán, một đơn còn nợ, đơn hôm nay chờ xác nhận và đang làm; lịch nhóm 2 khách; một lịch khách báo huỷ, một lịch khách không đến; mở sổ, 3 phiếu chi; chấm công 7 ngày, hồ sơ và mức lương theo `data/staff.csv` (S17), một đề nghị tạm ứng. Khách thử SĐT `09000001xx`. **Không làm:** cọc Tết (bật mùa cọc thử sẽ bắt mọi lịch thật tạo trong lúc thử phải cọc), chốt quỹ, giảm giá. *Kiểm:* test nạp trên DB test rồi kiểm số lượng, báo cáo tháng không lỗi.
+- [x] **6F.2** Màn Thêm → Dữ liệu dùng thử (chỉ Chủ): "Nạp dữ liệu thử" khi còn trống; app còn dữ liệu thử tay cũ (như trên hosting, Phiếu 4 câu 18) thì "Xoá dữ liệu hiện có rồi nạp gói thử" (gõ chữ xác nhận, chỉ trước lần nạp đầu, migration 0024); "Xoá, bắt đầu dùng thật" phải gõ `XOA DU LIEU THU`. *Kiểm:* thao tác trên trình duyệt local.
+- [x] **6F.3** Migration 0023, 0024 + `app.demo_golive_wipe()`, `app.demo_clear_existing()`. File test `tests/ops/demo.test.ts` chạy sau cùng (`tests/setup/sequencer.ts`) vì xoá thật DB test. *Kiểm:* test: sau khi xoá, mọi bảng nghiệp vụ trống, bảng giữ lại không đổi số dòng, số đơn mới bắt đầu từ 1, đăng nhập vẫn được, gọi lần hai bị từ chối, thợ và Nhung gọi bị từ chối, trigger chặn xoá bật lại đầy đủ.
 
 ## 6. Không làm
 
@@ -130,3 +130,12 @@ Thứ tự: 6A → 6D → 6B → 6C → 6E → 6F (gói thử làm cuối để 
 | Zoom hai ngón và vuốt đụng cử chỉ của Safari | Chỉ bắt cử chỉ trong vùng lịch; tránh mép trái; anh thử trên iPhone trước khi triển khai. |
 | Chia cọc lệch khi tổng cọc không chia hết | Chia theo số nguyên VND, phần lẻ vào Khách 1; test cho trường hợp lẻ. |
 | Migration lỗi trên hosting | Release chạy migration trước khi bật server; lỗi thì Vibe Host giữ bản đang chạy (T04). Mỗi phần một commit, quay lại bằng `git revert`. |
+
+## 9. Kết quả (15/10/2026)
+
+- 6A–6F xong, mỗi phần một commit. `bun run check` (lint, typecheck, 333 test) và `bun run build` qua; quét bundle không có bí mật, `staff.csv` chỉ nằm ở bundle server.
+- Migration mới: 0020 (xoá tài khoản), 0021 (bỏ bước chốt lịch), 0022 (lịch nhiều khách), 0023–0024 (dữ liệu dùng thử).
+- Đã kiểm trên trình duyệt local (375px): font, nút X, xoá tài khoản, 3 nút chi tiết lịch, hộp huỷ, ô lịch, vuốt, chụm hai ngón (giả lập chạm), tạo 2 đơn cho lịch 2 khách, trang chủ, màn Dữ liệu dùng thử (chưa bấm xoá trên DB dev).
+- **Chưa kiểm:** thao tác thật trên iPhone (vuốt, chụm hai ngón, Safari), chế độ tối, trang chủ của tài khoản thợ trên giao diện (số liệu đã có test). Chưa triển khai lên Mắt Bão.
+- Test `so-tien` (chốt quỹ) hỏng nếu chạy đúng 00:00–00:01: lỗi phụ thuộc giờ có từ trước, chạy lại sau 00:01 thì qua.
+- Trên hosting: Chủ vào Thêm → Dữ liệu dùng thử → "Xoá dữ liệu hiện có rồi nạp gói thử"; dùng thử xong bấm "Xoá, bắt đầu dùng thật", rồi nhập hồ sơ nhân viên thật và mở sổ tiền thật.

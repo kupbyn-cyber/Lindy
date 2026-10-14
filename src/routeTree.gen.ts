@@ -36,6 +36,7 @@ import { Route as AppThemCanXemLaiRouteImport } from './routes/_app/them/can-xem
 import { Route as AppThemChotNgayRouteImport } from './routes/_app/them/chot-ngay'
 import { Route as AppThemDanhMucRouteImport } from './routes/_app/them/danh-muc'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
+import { Route as AppThemDuLieuThuRouteImport } from './routes/_app/them/du-lieu-thu'
 import { Route as AppThemLuongRouteImport } from './routes/_app/them/luong'
 import { Route as AppThemNhanVienRouteImport } from './routes/_app/them/nhan-vien'
 import { Route as AppThemNhapDuLieuCuRouteImport } from './routes/_app/them/nhap-du-lieu-cu'
@@ -63,6 +64,8 @@ import { Route as ApiCatalogKindRouteImport } from './routes/api/catalog/$kind'
 import { Route as ApiClosedDaysIndexRouteImport } from './routes/api/closed-days/index'
 import { Route as ApiCustomersIndexRouteImport } from './routes/api/customers/index'
 import { Route as ApiCustomersIdRouteImport } from './routes/api/customers/$id'
+import { Route as ApiDemoIndexRouteImport } from './routes/api/demo/index'
+import { Route as ApiDemoActionRouteImport } from './routes/api/demo/$action'
 import { Route as ApiExpensesIndexRouteImport } from './routes/api/expenses/index'
 import { Route as ApiExportKindRouteImport } from './routes/api/export/$kind'
 import { Route as ApiLeaveIndexRouteImport } from './routes/api/leave/index'
@@ -241,6 +244,11 @@ const AppThemDoiMatKhauRoute = AppThemDoiMatKhauRouteImport.update({
   path: '/them/doi-mat-khau',
   getParentRoute: () => AppRoute,
 } as any)
+const AppThemDuLieuThuRoute = AppThemDuLieuThuRouteImport.update({
+  id: '/them/du-lieu-thu',
+  path: '/them/du-lieu-thu',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppThemLuongRoute = AppThemLuongRouteImport.update({
   id: '/them/luong',
   path: '/them/luong',
@@ -375,6 +383,16 @@ const ApiCustomersIndexRoute = ApiCustomersIndexRouteImport.update({
 const ApiCustomersIdRoute = ApiCustomersIdRouteImport.update({
   id: '/api/customers/$id',
   path: '/api/customers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDemoIndexRoute = ApiDemoIndexRouteImport.update({
+  id: '/api/demo/',
+  path: '/api/demo/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDemoActionRoute = ApiDemoActionRouteImport.update({
+  id: '/api/demo/$action',
+  path: '/api/demo/$action',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiExpensesIndexRoute = ApiExpensesIndexRouteImport.update({
@@ -620,6 +638,7 @@ export interface FileRoutesByFullPath {
   '/them/chot-ngay': typeof AppThemChotNgayRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/du-lieu-thu': typeof AppThemDuLieuThuRoute
   '/them/luong': typeof AppThemLuongRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
@@ -639,6 +658,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/demo/$action': typeof ApiDemoActionRoute
   '/api/export/$kind': typeof ApiExportKindRoute
   '/api/legacy/analyze': typeof ApiLegacyAnalyzeRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
@@ -666,6 +686,7 @@ export interface FileRoutesByFullPath {
   '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/closed-days/': typeof ApiClosedDaysIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
+  '/api/demo/': typeof ApiDemoIndexRoute
   '/api/expenses/': typeof ApiExpensesIndexRoute
   '/api/leave/': typeof ApiLeaveIndexRoute
   '/api/legacy/': typeof ApiLegacyIndexRoute
@@ -718,6 +739,7 @@ export interface FileRoutesByTo {
   '/them/chot-ngay': typeof AppThemChotNgayRoute
   '/them/danh-muc': typeof AppThemDanhMucRoute
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/them/du-lieu-thu': typeof AppThemDuLieuThuRoute
   '/them/luong': typeof AppThemLuongRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
@@ -737,6 +759,7 @@ export interface FileRoutesByTo {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/demo/$action': typeof ApiDemoActionRoute
   '/api/export/$kind': typeof ApiExportKindRoute
   '/api/legacy/analyze': typeof ApiLegacyAnalyzeRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
@@ -764,6 +787,7 @@ export interface FileRoutesByTo {
   '/api/catalog': typeof ApiCatalogIndexRoute
   '/api/closed-days': typeof ApiClosedDaysIndexRoute
   '/api/customers': typeof ApiCustomersIndexRoute
+  '/api/demo': typeof ApiDemoIndexRoute
   '/api/expenses': typeof ApiExpensesIndexRoute
   '/api/leave': typeof ApiLeaveIndexRoute
   '/api/legacy': typeof ApiLegacyIndexRoute
@@ -818,6 +842,7 @@ export interface FileRoutesById {
   '/_app/them/chot-ngay': typeof AppThemChotNgayRoute
   '/_app/them/danh-muc': typeof AppThemDanhMucRoute
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
+  '/_app/them/du-lieu-thu': typeof AppThemDuLieuThuRoute
   '/_app/them/luong': typeof AppThemLuongRoute
   '/_app/them/nhan-vien': typeof AppThemNhanVienRoute
   '/_app/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
@@ -837,6 +862,7 @@ export interface FileRoutesById {
   '/api/auth/password': typeof ApiAuthPasswordRoute
   '/api/catalog/$kind': typeof ApiCatalogKindRoute
   '/api/customers/$id': typeof ApiCustomersIdRouteWithChildren
+  '/api/demo/$action': typeof ApiDemoActionRoute
   '/api/export/$kind': typeof ApiExportKindRoute
   '/api/legacy/analyze': typeof ApiLegacyAnalyzeRoute
   '/api/money/$action': typeof ApiMoneyActionRoute
@@ -864,6 +890,7 @@ export interface FileRoutesById {
   '/api/catalog/': typeof ApiCatalogIndexRoute
   '/api/closed-days/': typeof ApiClosedDaysIndexRoute
   '/api/customers/': typeof ApiCustomersIndexRoute
+  '/api/demo/': typeof ApiDemoIndexRoute
   '/api/expenses/': typeof ApiExpensesIndexRoute
   '/api/leave/': typeof ApiLeaveIndexRoute
   '/api/legacy/': typeof ApiLegacyIndexRoute
@@ -918,6 +945,7 @@ export interface FileRouteTypes {
     | '/them/chot-ngay'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
+    | '/them/du-lieu-thu'
     | '/them/luong'
     | '/them/nhan-vien'
     | '/them/nhap-du-lieu-cu'
@@ -937,6 +965,7 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/demo/$action'
     | '/api/export/$kind'
     | '/api/legacy/analyze'
     | '/api/money/$action'
@@ -964,6 +993,7 @@ export interface FileRouteTypes {
     | '/api/catalog/'
     | '/api/closed-days/'
     | '/api/customers/'
+    | '/api/demo/'
     | '/api/expenses/'
     | '/api/leave/'
     | '/api/legacy/'
@@ -1016,6 +1046,7 @@ export interface FileRouteTypes {
     | '/them/chot-ngay'
     | '/them/danh-muc'
     | '/them/doi-mat-khau'
+    | '/them/du-lieu-thu'
     | '/them/luong'
     | '/them/nhan-vien'
     | '/them/nhap-du-lieu-cu'
@@ -1035,6 +1066,7 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/demo/$action'
     | '/api/export/$kind'
     | '/api/legacy/analyze'
     | '/api/money/$action'
@@ -1062,6 +1094,7 @@ export interface FileRouteTypes {
     | '/api/catalog'
     | '/api/closed-days'
     | '/api/customers'
+    | '/api/demo'
     | '/api/expenses'
     | '/api/leave'
     | '/api/legacy'
@@ -1115,6 +1148,7 @@ export interface FileRouteTypes {
     | '/_app/them/chot-ngay'
     | '/_app/them/danh-muc'
     | '/_app/them/doi-mat-khau'
+    | '/_app/them/du-lieu-thu'
     | '/_app/them/luong'
     | '/_app/them/nhan-vien'
     | '/_app/them/nhap-du-lieu-cu'
@@ -1134,6 +1168,7 @@ export interface FileRouteTypes {
     | '/api/auth/password'
     | '/api/catalog/$kind'
     | '/api/customers/$id'
+    | '/api/demo/$action'
     | '/api/export/$kind'
     | '/api/legacy/analyze'
     | '/api/money/$action'
@@ -1161,6 +1196,7 @@ export interface FileRouteTypes {
     | '/api/catalog/'
     | '/api/closed-days/'
     | '/api/customers/'
+    | '/api/demo/'
     | '/api/expenses/'
     | '/api/leave/'
     | '/api/legacy/'
@@ -1213,6 +1249,7 @@ export interface RootRouteChildren {
   ApiAuthPasswordRoute: typeof ApiAuthPasswordRoute
   ApiCatalogKindRoute: typeof ApiCatalogKindRoute
   ApiCustomersIdRoute: typeof ApiCustomersIdRouteWithChildren
+  ApiDemoActionRoute: typeof ApiDemoActionRoute
   ApiExportKindRoute: typeof ApiExportKindRoute
   ApiLegacyAnalyzeRoute: typeof ApiLegacyAnalyzeRoute
   ApiMoneyActionRoute: typeof ApiMoneyActionRoute
@@ -1236,6 +1273,7 @@ export interface RootRouteChildren {
   ApiCatalogIndexRoute: typeof ApiCatalogIndexRoute
   ApiClosedDaysIndexRoute: typeof ApiClosedDaysIndexRoute
   ApiCustomersIndexRoute: typeof ApiCustomersIndexRoute
+  ApiDemoIndexRoute: typeof ApiDemoIndexRoute
   ApiExpensesIndexRoute: typeof ApiExpensesIndexRoute
   ApiLeaveIndexRoute: typeof ApiLeaveIndexRoute
   ApiLegacyIndexRoute: typeof ApiLegacyIndexRoute
@@ -1452,6 +1490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppThemDoiMatKhauRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/them/du-lieu-thu': {
+      id: '/_app/them/du-lieu-thu'
+      path: '/them/du-lieu-thu'
+      fullPath: '/them/du-lieu-thu'
+      preLoaderRoute: typeof AppThemDuLieuThuRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/them/luong': {
       id: '/_app/them/luong'
       path: '/them/luong'
@@ -1639,6 +1684,20 @@ declare module '@tanstack/react-router' {
       path: '/api/customers/$id'
       fullPath: '/api/customers/$id'
       preLoaderRoute: typeof ApiCustomersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/demo/': {
+      id: '/api/demo/'
+      path: '/api/demo'
+      fullPath: '/api/demo/'
+      preLoaderRoute: typeof ApiDemoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/demo/$action': {
+      id: '/api/demo/$action'
+      path: '/api/demo/$action'
+      fullPath: '/api/demo/$action'
+      preLoaderRoute: typeof ApiDemoActionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/expenses/': {
@@ -1958,6 +2017,7 @@ interface AppRouteChildren {
   AppThemChotNgayRoute: typeof AppThemChotNgayRoute
   AppThemDanhMucRoute: typeof AppThemDanhMucRoute
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
+  AppThemDuLieuThuRoute: typeof AppThemDuLieuThuRoute
   AppThemLuongRoute: typeof AppThemLuongRoute
   AppThemNhanVienRoute: typeof AppThemNhanVienRoute
   AppThemNhapDuLieuCuRoute: typeof AppThemNhapDuLieuCuRoute
@@ -1986,6 +2046,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppThemChotNgayRoute: AppThemChotNgayRoute,
   AppThemDanhMucRoute: AppThemDanhMucRoute,
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
+  AppThemDuLieuThuRoute: AppThemDuLieuThuRoute,
   AppThemLuongRoute: AppThemLuongRoute,
   AppThemNhanVienRoute: AppThemNhanVienRoute,
   AppThemNhapDuLieuCuRoute: AppThemNhapDuLieuCuRoute,
@@ -2082,6 +2143,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthPasswordRoute: ApiAuthPasswordRoute,
   ApiCatalogKindRoute: ApiCatalogKindRoute,
   ApiCustomersIdRoute: ApiCustomersIdRouteWithChildren,
+  ApiDemoActionRoute: ApiDemoActionRoute,
   ApiExportKindRoute: ApiExportKindRoute,
   ApiLegacyAnalyzeRoute: ApiLegacyAnalyzeRoute,
   ApiMoneyActionRoute: ApiMoneyActionRoute,
@@ -2105,6 +2167,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCatalogIndexRoute: ApiCatalogIndexRoute,
   ApiClosedDaysIndexRoute: ApiClosedDaysIndexRoute,
   ApiCustomersIndexRoute: ApiCustomersIndexRoute,
+  ApiDemoIndexRoute: ApiDemoIndexRoute,
   ApiExpensesIndexRoute: ApiExpensesIndexRoute,
   ApiLeaveIndexRoute: ApiLeaveIndexRoute,
   ApiLegacyIndexRoute: ApiLegacyIndexRoute,

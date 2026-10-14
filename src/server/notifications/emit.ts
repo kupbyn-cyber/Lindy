@@ -1,6 +1,10 @@
 // Phát sự kiện thông báo trong cùng giao dịch nghiệp vụ (outbox). Push gửi nền; lỗi push không làm mất dữ liệu.
+import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Tx } from '../db/client'
 import { NOTIFICATION_TYPES, type NotificationType } from './types'
+
+/** Chạy trong quietNotifications.run(true, …) thì không phát thông báo (bộ nạp dữ liệu dùng thử, S12). */
+export const quietNotifications = new AsyncLocalStorage<boolean>()
 
 export type EmitInput = {
   branchId: string
@@ -18,6 +22,7 @@ export type EmitInput = {
 }
 
 export async function emitEvent(tx: Tx, e: EmitInput) {
+  if (quietNotifications.getStore()) return null
   const audience = NOTIFICATION_TYPES[e.type].audience
   const [row] = await tx<{ id: string | null }[]>`
     select app.emit_event(

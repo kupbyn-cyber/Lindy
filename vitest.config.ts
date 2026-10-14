@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { defineConfig } from 'vitest/config'
+import LastDemoSequencer from './tests/setup/sequencer'
 
 if (existsSync('.env')) process.loadEnvFile('.env')
 
@@ -9,6 +10,7 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     globalSetup: ['tests/setup/global.ts'],
     fileParallelism: false,
+    sequence: { sequencer: LastDemoSequencer },
     testTimeout: 20000,
     hookTimeout: 60000,
     env: {
