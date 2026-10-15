@@ -54,6 +54,22 @@ export async function balancesOf(tx: Tx, branchId: string, on?: string): Promise
   return rows.map((r) => ({ ...r, balance: book ? n(r.balance) : null }))
 }
 
+/** Tài khoản ngân hàng nhận tiền thu chuyển khoản của cơ sở và thông tin vẽ QR (S26); chưa nhập → bankBin null. */
+async function bankAccountOf(tx: Tx, branchId: string) {
+  const [r] = await tx<
+    {
+      id: string
+      name: string
+      bankBin: string | null
+      bankAccountNo: string | null
+      bankAccountName: string | null
+    }[]
+  >`
+    select id, name, bank_bin, bank_account_no, bank_account_name from money_accounts
+    where branch_id = ${branchId} and type = 'bank' and is_active order by code limit 1`
+  return r ?? null
+}
+
 export async function getBook(auth: Auth, input: { branchId?: string } = {}) {
   const branch = requireReader(auth, input.branchId)
   return withUser(auth.userId, async (tx) => {
@@ -63,9 +79,29 @@ export async function getBook(auth: Auth, input: { branchId?: string } = {}) {
       today: await branchToday(tx, branch.id),
       book,
       accounts: await balancesOf(tx, branch.id),
-      can: { open: !book && hasPerm(auth, branch.id, 'cashbook.owner') },
+      bankAccount: await bankAccountOf(tx, branch.id),
+      can: {
+        open: !book && hasPerm(auth, branch.id, 'cashbook.owner'),
+        editBank: hasPerm(auth, branch.id, 'cashbook.owner'),
+      },
     }
   })
+}
+
+/** Linh nhập, sửa tài khoản nhận chuyển khoản (S26). DB kiểm quyền lại và ghi nhật ký trước / sau. */
+export async function saveBankAccount(
+  auth: Auth,
+  input: { branchId?: string; bankBin: string; accountNo: string; accountName: string },
+) {
+  const branch = requireBranch(auth, input.branchId)
+  if (!hasPerm(auth, branch.id, 'cashbook.owner'))
+    throw forbidden('Chỉ chủ quán sửa tài khoản nhận chuyển khoản.')
+  await withUser(auth.userId, async (tx) => {
+    await tx`
+      select app.bank_account_save(${branch.id}::uuid, ${input.bankBin}::text, ${input.accountNo}::text,
+                                   ${input.accountName}::text)`
+  })
+  return getBook(auth, { branchId: branch.id })
 }
 
 export async function openBook(

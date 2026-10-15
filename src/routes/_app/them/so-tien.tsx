@@ -1,6 +1,7 @@
 // UI06 — Sổ tiền (Đợt 3, bước 3.3, 3.14, 3.17; PRD §7.1–7.3). Linh, Nhung (money_accounts.read_balance).
 // Số dư từng tài khoản, mở sổ (Linh, một lần), bút toán theo ngày với đầu kỳ / vào / ra / cuối kỳ.
-// Nhung, Linh: chuyển nội bộ, đối soát khoản ngân hàng với sao kê. Linh: thu khác, góp/rút vốn, điều chỉnh.
+// Nhung, Linh: chuyển nội bộ, đối soát khoản ngân hàng với sao kê. Linh: thu khác, góp/rút vốn, điều chỉnh,
+// tài khoản nhận chuyển khoản để hộp ghi tiền thu của đơn hiện QR (S26).
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -20,6 +21,7 @@ import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { LEDGER_LABEL } from '~/lib/money-book'
 import { addDays, formatIsoDate, toLocalDate, toLocalTime } from '~/lib/time'
+import { ACCOUNT_NO_RE, BANKS, bankName, normalizeAccountNo } from '~/lib/vietqr'
 import type { getBook, listEntries } from '~/server/money/service'
 
 export const Route = createFileRoute('/_app/them/so-tien')({
@@ -65,6 +67,7 @@ function Page() {
         <>
           {book.data.book ? <Balances b={book.data} /> : <NotOpened b={book.data} />}
           {book.data.book ? <MoneyActions b={book.data} /> : null}
+          <BankCard b={book.data} />
           <EntryList b={book.data} />
         </>
       ) : null}
@@ -199,6 +202,149 @@ function NotOpened(props: { b: Book }) {
         </div>
       </ConfirmDialog>
     </Card>
+  )
+}
+
+// ---------------------------------------------------------------- Tài khoản nhận chuyển khoản, QR (S23–S26)
+
+function BankCard(props: { b: Book }) {
+  const acc = props.b.bankAccount
+  const [editing, setEditing] = useState(false)
+  if (!acc) return null
+  return (
+    <Card title="Tài khoản nhận chuyển khoản">
+      {acc.bankBin ? (
+        <>
+          <span className="body-strong">
+            {bankName(acc.bankBin)} · {acc.bankAccountNo}
+          </span>
+          <span className="body text-ink-muted">{acc.bankAccountName}</span>
+          <p className="caption m-0 text-ink-muted">
+            Hộp ghi tiền thu của đơn hiện QR có sẵn số tiền, nội dung LINDY + mã đơn, tiền vào tài khoản này.
+          </p>
+        </>
+      ) : (
+        <p className="body m-0 text-ink-muted">
+          Chưa nhập. Nhập ngân hàng, số tài khoản của {acc.name} để hộp ghi tiền thu của đơn hiện QR chuyển
+          khoản có sẵn số tiền.
+        </p>
+      )}
+      {props.b.can.editBank ? (
+        <Button onClick={() => setEditing(true)}>{acc.bankBin ? 'Sửa tài khoản' : 'Nhập tài khoản'}</Button>
+      ) : null}
+      {editing ? <BankSheet b={props.b} onClose={() => setEditing(false)} /> : null}
+    </Card>
+  )
+}
+
+function BankSheet(props: { b: Book; onClose: () => void }) {
+  const acc = props.b.bankAccount!
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [bin, setBin] = useState(acc.bankBin ?? '')
+  const [accountNo, setAccountNo] = useState(acc.bankAccountNo ?? '')
+  const [accountName, setAccountName] = useState(acc.bankAccountName ?? '')
+  const [confirm, setConfirm] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const no = normalizeAccountNo(accountNo)
+  const noError =
+    no && !ACCOUNT_NO_RE.test(no) ? 'Số tài khoản gồm 4–19 chữ số hoặc chữ cái, không dấu.' : undefined
+  const ready = !!bin && ACCOUNT_NO_RE.test(no) && !!accountName.trim()
+
+  async function save() {
+    setBusy(true)
+    setError(null)
+    try {
+      const next = await api<Book>('/api/money/bank-account', {
+        body: { bankBin: bin, accountNo: no, accountName },
+      })
+      qc.setQueryData(['money', 'book'], next)
+      // Đơn đang mở lấy lại thông tin tài khoản để QR đúng tài khoản mới
+      void qc.invalidateQueries({ queryKey: ['orders'] })
+      toast('Đã lưu tài khoản nhận chuyển khoản.')
+      props.onClose()
+    } catch (e) {
+      setError(errorText(e))
+      setConfirm(false)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Sheet
+      open
+      title="Tài khoản nhận chuyển khoản"
+      onClose={props.onClose}
+      footer={
+        <Button block variant="primary" disabled={!ready} onClick={() => setConfirm(true)}>
+          Lưu tài khoản
+        </Button>
+      }
+    >
+      <Note tone="warning">
+        Khách quét QR sẽ chuyển tiền vào tài khoản này. Kiểm kỹ số tài khoản; lưu xong nên chuyển thử 1.000đ.
+      </Note>
+      <div className="lo-field">
+        <label className="lo-field-label label" htmlFor="bank-bin">
+          Ngân hàng
+        </label>
+        <select
+          id="bank-bin"
+          className="lo-input input-text"
+          value={bin}
+          onChange={(e) => setBin(e.target.value)}
+        >
+          <option value="" disabled>
+            Chọn ngân hàng
+          </option>
+          {BANKS.map((b) => (
+            <option key={b.bin} value={b.bin}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <TextField
+        label="Số tài khoản"
+        value={accountNo}
+        maxLength={30}
+        autoComplete="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+        error={noError}
+        onChange={(e) => setAccountNo(e.target.value)}
+      />
+      <TextField
+        label="Tên chủ tài khoản"
+        value={accountName}
+        maxLength={60}
+        autoComplete="off"
+        autoCapitalize="characters"
+        hint="Như trên app ngân hàng, ví dụ NGUYEN THI LINH"
+        onChange={(e) => setAccountName(e.target.value)}
+      />
+      {error ? <Note tone="danger">{error}</Note> : null}
+      <ConfirmDialog
+        open={confirm}
+        title="Lưu tài khoản nhận tiền?"
+        confirmLabel="Lưu"
+        busy={busy}
+        onConfirm={() => void save()}
+        onCancel={() => setConfirm(false)}
+      >
+        <div className="flex flex-col gap-1">
+          <span className="body-strong">
+            {bankName(bin)} · {no}
+          </span>
+          <span className="body text-ink-muted">{accountName.trim()}</span>
+          <p className="caption m-0 text-ink-muted">
+            Từ giờ QR ở hộp ghi tiền thu chuyển tiền vào tài khoản này.
+          </p>
+        </div>
+      </ConfirmDialog>
+    </Sheet>
   )
 }
 

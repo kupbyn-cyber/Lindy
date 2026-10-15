@@ -1,6 +1,7 @@
 // Kiểm đầu vào API sổ tiền. Schema strict: trường lạ → 422. Số tiền là số nguyên VND.
 import { z } from 'zod'
 import { isIsoDate } from '~/lib/time'
+import { ACCOUNT_NO_RE, normalizeAccountNo } from '~/lib/vietqr'
 
 const isoDate = z.string().refine(isIsoDate, 'Ngày không hợp lệ.')
 
@@ -75,3 +76,14 @@ export const CloseDayBody = z.strictObject({
 })
 
 export const ReviewCloseBody = z.strictObject({ id: z.uuid() })
+
+/** Tài khoản nhận chuyển khoản để vẽ QR (S26): ngân hàng (mã BIN), số tài khoản, tên chủ tài khoản. */
+export const BankAccountBody = z.strictObject({
+  branchId: z.uuid().optional(),
+  bankBin: z.string().regex(/^[0-9]{6}$/, 'Chọn ngân hàng.'),
+  accountNo: z
+    .string()
+    .transform(normalizeAccountNo)
+    .refine((s) => ACCOUNT_NO_RE.test(s), 'Số tài khoản gồm 4–19 chữ số hoặc chữ cái, không dấu.'),
+  accountName: z.string().trim().min(1, 'Nhập tên chủ tài khoản.').max(60, 'Tối đa 60 ký tự.'),
+})

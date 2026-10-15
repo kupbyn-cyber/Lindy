@@ -425,6 +425,8 @@ export type OrderDetail = {
   version: number
   doneProblems: string[]
   can: OrderCan
+  /** Tài khoản nhận chuyển khoản để vẽ QR (S23–S26): chỉ gửi cho người ghi được tiền thu; chưa nhập → null */
+  transferQr: { bankBin: string; accountNo: string; accountName: string } | null
 }
 
 async function names(tx: Tx, ids: (string | null | undefined)[]) {
@@ -609,6 +611,13 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
   const get = (id: string | null) => (id ? (n.get(id) ?? null) : null)
   const paid = payments.filter((p) => !p.voidedAt).reduce((a, p) => a + p.amount, 0)
   const refunded = refundRows.reduce((a, r) => a + Number(r.amount), 0)
+  const can = canFor(auth, o)
+  // Tài khoản ngân hàng nhận tiền thu chuyển khoản của cơ sở (cùng tài khoản app.bank_account_save sửa)
+  const [bank] = can.recordPayment
+    ? await tx<{ bankBin: string | null; bankAccountNo: string | null; bankAccountName: string | null }[]>`
+        select bank_bin, bank_account_no, bank_account_name from money_accounts
+        where branch_id = ${o.branchId} and type = 'bank' and is_active order by code limit 1`
+    : []
 
   return {
     id: o.id,
@@ -751,7 +760,11 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     reviewedByName: get(o.reviewedBy),
     version: o.version,
     doneProblems: problemsOf(content),
-    can: canFor(auth, o),
+    can,
+    transferQr:
+      bank?.bankBin && bank.bankAccountNo && bank.bankAccountName
+        ? { bankBin: bank.bankBin, accountNo: bank.bankAccountNo, accountName: bank.bankAccountName }
+        : null,
   }
 }
 

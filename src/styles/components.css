@@ -455,6 +455,10 @@ select.lo-input {
   transform: translateY(-50%);
   z-index: 55;
   max-width: 420px;
+  /* Hộp dài (QR chuyển khoản, tip) cuộn bên trong, không tràn khỏi màn hình iPhone */
+  max-height: calc(100dvh - 2 * var(--space-4));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   margin: 0 auto;
   padding: var(--space-4);
   background: var(--surface-raised);

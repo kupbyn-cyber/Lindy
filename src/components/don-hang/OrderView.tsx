@@ -29,6 +29,7 @@ import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import { Attachments } from '../tien/Attachments'
 import { PhotoSheet } from './PhotoSheet'
 import { CAUSE_LABEL, OUTCOME_LABEL, TicketSheet } from './TicketSheet'
+import { TransferQr } from './TransferQr'
 
 type Dialog =
   | null
@@ -858,6 +859,7 @@ export function OrderView(props: {
               onChange={(v) => setMethod(v as 'cash' | 'transfer')}
             />
             <MoneyInput label="Số tiền" value={amount} onValueChange={setAmount} />
+            {method === 'transfer' ? <TransferQr order={d} amount={amount} /> : null}
             {method === 'transfer' && c.recordTip ? tipFields(false) : null}
           </>
         ) : null}
