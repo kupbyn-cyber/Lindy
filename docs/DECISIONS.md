@@ -221,3 +221,7 @@ Nguồn: `docs/surveys/04-phieu-chinh-sua.md`. Kế hoạch: `docs/plans/2026-10
 | **S24** | Nơi hiện QR | Chỉ ở hộp **ghi tiền thu của đơn**, khi chọn **Chuyển khoản**. **Không** hiện ở nhận cọc lịch. | |
 | **S25** | Tip và QR | Số tiền trên QR **chỉ là tiền thu của đơn**, **không gộp tip**: khách chuyển tip riêng cho nhân viên. | Phần ghi tip giữ hộ hiện có giữ nguyên. |
 | **S26** | Thông tin tài khoản nhận tiền | Ngân hàng, số tài khoản, tên chủ tài khoản của "Tài khoản cs HTK": **chủ thêm sau**. Chưa có thì không hiện QR. | |
+| **S27** | Bỏ tip trên app (15/10/2026) | **Bỏ tính năng tip**: khách tip **chuyển riêng cho nhân viên**, app không ghi tip. | Thay Q15 (tip giữ hộ). |
+| **S28** | Phiếu xử lý | **Ẩn** chức năng lập phiếu xử lý (bảo hành, khiếu nại) **trong bản này**. | Tạm ẩn, chưa bỏ. |
+| **S29** | Hộp ghi tiền thu | Mở hộp ghi tiền thu thì **chọn sẵn Chuyển khoản** (hiện QR trước), vì phần lớn khách chuyển khoản. | |
+| **S30** | Bố cục nút màn chi tiết đơn (anh duyệt 15/10/2026) | **Nút chính cố định** ngay trên menu dưới, theo trạng thái: Làm xong / Duyệt giảm giá / Xác nhận bill / Ghi tiền thu (kèm số tiền). **Chụp ảnh, Sửa đơn** hai nút nhỏ cạnh nhau. **Hoàn tiền, Huỷ đơn** thành chữ nhỏ ở cuối, tách xa nút chính (vẫn hỏi lại). Dòng tiền thu chỉ ghi "Chuyển khoản" / "Tiền mặt". | Thay cách xếp dọc mọi nút toàn chiều ngang. |

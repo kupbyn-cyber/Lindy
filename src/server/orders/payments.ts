@@ -1,30 +1,21 @@
 // Ghi tiền thu của đơn (bước 2.11). Chỉ Nhung, Linh (order.confirm). Tiền mặt → Tiền mặt cs …; chuyển khoản →
 // Tài khoản cs …. Chống bấm hai lần bằng mã thu tiền; khoá dòng đơn khi kiểm tổng thu ≤ phải thu [P30].
 // Không sửa khoản thu; nhập nhầm thì huỷ (có lý do) rồi ghi lại. Trả lại tiền cho khách: phiếu hoàn (refunds.ts).
-// Khách chuyển khoản kèm tip: phần tip ghi riêng (tips.ts), không tính vào tiền đơn.
+// App không ghi tip (S27): khách tip chuyển riêng cho nhân viên.
 import { formatVND } from '~/lib/money'
 import type { Auth } from '../auth/context'
 import { hasPerm } from '../auth/context'
 import { withUser } from '../db/client'
 import { forbidden, invalid, notFound } from '../http/errors'
 import { detailOf, loadRow } from './service'
-import { recordTipTx } from './tips'
 
 const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s)
 
 export async function recordPayment(
   auth: Auth,
   orderId: string,
-  input: {
-    idempotencyKey: string
-    amount: number
-    method: 'cash' | 'transfer'
-    /** Khách chuyển khoản kèm tip (Q15): tip giữ hộ thợ, không tính vào tiền đơn */
-    tip?: { amount: number; split?: { userId: string; amount: number }[] | null } | null
-  },
+  input: { idempotencyKey: string; amount: number; method: 'cash' | 'transfer' },
 ) {
-  if (input.tip && input.method !== 'transfer')
-    throw invalid('Tip chỉ ghi khi khách chuyển khoản vào tài khoản quán; tip tiền mặt thợ tự nhận.')
   if (!isUuid(orderId)) throw notFound('Không tìm thấy đơn.')
   return withUser(auth.userId, async (tx) => {
     // Khoá dòng đơn: hai lần thu song song phải chờ nhau
@@ -47,11 +38,7 @@ export async function recordPayment(
       select coalesce(sum(amount), 0)::int as paid from payments where order_id = ${orderId} and voided_at is null`
     const due = o.netAmount - (p?.paid ?? 0)
     if (input.amount > due)
-      throw invalid(
-        due <= 0
-          ? 'Đơn đã thu đủ.'
-          : `Số thu lớn hơn số còn phải thu (${formatVND(due)}). Phần khách chuyển dư là tip thì ghi vào ô Tip.`,
-      )
+      throw invalid(due <= 0 ? 'Đơn đã thu đủ.' : `Số thu lớn hơn số còn phải thu (${formatVND(due)}).`)
 
     const [account] = await tx<{ id: string }[]>`
       select id from money_accounts
@@ -70,11 +57,6 @@ export async function recordPayment(
         insert into order_audit_events (order_id, branch_id, actor_user_id, action, after_json)
         values (${orderId}, ${o.branchId}, ${auth.userId}, 'payment_recorded',
                 ${tx.json({ paymentId: row.id, amount: input.amount, method: input.method })})`
-      // Tip cùng lần chuyển khoản: mã nhóm tip = mã thu tiền (bấm lại không ghi hai lần)
-      if (input.tip && input.tip.amount > 0) {
-        if (!hasPerm(auth, o.branchId, 'cashbook.manage')) throw forbidden('Chỉ Nhung, Linh ghi tip.')
-        await recordTipTx(tx, orderId, input.idempotencyKey, input.tip)
-      }
     }
     return detailOf(tx, auth, await loadRow(tx, orderId))
   })

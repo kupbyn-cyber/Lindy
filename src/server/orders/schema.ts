@@ -90,27 +90,14 @@ export const CancelOrderBody = z.strictObject({
   reason: z.string().trim().min(1, 'Cần ghi lý do huỷ đơn.').max(500, 'Lý do tối đa 500 ký tự.'),
 })
 
-// Tip giữ hộ (Q15, Đợt 3): số tip và cách chia; bỏ trống cách chia = theo phần tiền từng thợ
-const tip = z.strictObject({
-  amount: z.number().int('Số tiền phải là số nguyên.').min(1, 'Số tip phải lớn hơn 0.').max(10_000_000),
-  split: z
-    .array(z.strictObject({ userId: z.uuid(), amount: z.number().int().min(0).max(10_000_000) }))
-    .max(4, 'Tip chia tối đa 4 thợ.')
-    .nullable()
-    .optional(),
-})
-
+// Không còn trường tip (S27: app bỏ tip, khách tip chuyển riêng cho nhân viên); gửi kèm tip → 422 (schema strict)
 export const PaymentBody = z.strictObject({
   idempotencyKey: z.uuid('Thiếu mã thu tiền.'),
   amount: z.number().int('Số tiền phải là số nguyên.').min(1, 'Số tiền phải lớn hơn 0.').max(100_000_000),
   method: z.enum(['cash', 'transfer']),
-  tip: tip.nullable().optional(),
 })
 
-export const TipBody = tip.extend({ idempotencyKey: z.uuid('Thiếu mã ghi tip.') })
-export const VoidTipBody = z.strictObject({
-  reason: z.string().trim().min(1, 'Cần ghi lý do huỷ tip.').max(500),
-})
+// Tip đã ghi trước S27 (nếu còn): Nhung, Linh trả nốt cho thợ ở Chốt quỹ
 export const PayTipsBody = z.strictObject({
   branchId: z.uuid().optional(),
   staffUserId: z.uuid(),

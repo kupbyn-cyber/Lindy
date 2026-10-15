@@ -117,6 +117,12 @@ body {
 .lo-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
+/* Máy hẹp (nhiều máy Android rộng 360px): nút bớt lề ngang để chữ trong hàng nút không bị xuống dòng */
+@media (max-width: 389px) {
+  .lo-btn {
+    padding-inline: var(--space-2);
+  }
+}
 .lo-btn-primary {
   background: var(--accent);
   color: var(--on-accent);
@@ -195,6 +201,17 @@ body {
 .lo-money {
   font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
+}
+/* Số tiền chữ to trong ô (FitMoney, trang Tổng quan): cỡ chữ ≤ --fit-max, co theo bề rộng ô (@container) và số ký tự
+   --fit-chars để số dài không tràn ô trên máy hẹp. 0.62em ≈ bề rộng trung bình một ký tự số đậm, có dư. */
+.lo-fit {
+  display: block;
+  min-width: 0;
+}
+.lo-fit .lo-money {
+  display: block;
+  font-size: min(var(--fit-max), calc(100cqi / (var(--fit-chars) * 0.62)));
+  line-height: 1.25;
 }
 .lo-tone-muted {
   color: var(--ink-muted);
@@ -638,6 +655,7 @@ select.lo-input {
   }
   .lo-appbar,
   .lo-nav,
+  .lo-actionbar,
   .lo-backdrop,
   .lo-btn,
   .lo-icon-btn,

@@ -6,6 +6,7 @@ import { Phone } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import { Button, Money, Note, Sheet, StatusChip, TextField, useToast } from '~/components/ui'
 import { ApiError, api, errorText } from '~/lib/api'
+import { TICKETS_ENABLED } from '~/lib/features'
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, type OrderStatus } from '~/lib/orders'
 import { normalizePhone } from '~/lib/phone'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
@@ -25,13 +26,14 @@ function CustomerPage() {
     queryFn: () => api<Customer>(`/api/customers/${id}`),
   })
   const [editing, setEditing] = useState(false)
-  // Ưu đãi bù khiếu nại còn dùng được (bước 2.18): thợ thấy để áp ở bill sau
+  // Ưu đãi bù khiếu nại còn dùng được (bước 2.18): thợ thấy để áp ở bill sau; tạm ẩn cùng phiếu xử lý (S28)
   const comp = useQuery({
     queryKey: ['customers', 'compensations', id, null],
     queryFn: () =>
       api<{ items: { ticketId: string; percent: number; orderCodeLabel: string }[] }>(
         `/api/customers/${id}/compensations`,
       ),
+    enabled: TICKETS_ENABLED,
   })
 
   if (q.isLoading) return <p className="body px-4 text-ink-muted">Đang tải…</p>

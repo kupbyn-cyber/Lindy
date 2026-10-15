@@ -1,11 +1,13 @@
-// Nghiệm thu tip giữ hộ và hoàn tiền (Đợt 3B-2, bước 3.15–3.16): PRD §18 test 5 (kỳ mở), 44; K18; test bảo mật
-// S44–S46 (kế hoạch Đợt 3 mục 10.2).
+// Nghiệm thu tip giữ hộ và hoàn tiền (Đợt 3B-2, bước 3.15–3.16): PRD §18 test 5 (kỳ mở); K18; test bảo mật
+// S44–S46 (kế hoạch Đợt 3 mục 10.2). Từ S27 app bỏ tip: không ghi tip mới (server và DB chặn); tip ghi từ trước vẫn
+// trả nốt được.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { toLocalDate } from '../../src/lib/time'
 import { closeSql, withUser } from '../../src/server/db/client'
 import { AppError, fromDbError } from '../../src/server/http/errors'
 import { recordPayment, voidPayment } from '../../src/server/orders/payments'
 import { refundOrder, reviewRefund } from '../../src/server/orders/refunds'
+import { PaymentBody } from '../../src/server/orders/schema'
 import {
   cancelOrder,
   confirmOrder,
@@ -14,7 +16,7 @@ import {
   listOrders,
   markDone,
 } from '../../src/server/orders/service'
-import { payTips, recordTip, tipSummary, voidTip } from '../../src/server/orders/tips'
+import { payTips, tipSummary } from '../../src/server/orders/tips'
 import { overview } from '../../src/server/reports/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
 import { expectPgError, ownerSql, seed } from '../helpers/db'
@@ -80,35 +82,49 @@ const revenue = async () => (await overview(auth('linh'), { period: 'day' })).re
 const staffRevenue = async (k: SeedKey) =>
   (await overview(auth('linh'), { period: 'day' })).byStaff.find((s) => s.userId === uid(k))?.amount ?? 0
 
-describe('3.15 — tip giữ hộ (Q14, Q15)', () => {
-  it('PRD 44: tip 50.000đ chuyển vào Tài khoản → giữ cho Chin; cuối ngày trả tiền mặt; doanh thu không đổi', async () => {
+/** Tip ghi từ trước S27 (dữ liệu cũ): ghi bằng quyền chủ bảng DB như Nhung đã ghi lúc app còn tip */
+async function oldTip(orderId: string, staff: SeedKey, amount: number) {
+  await owner.begin(async (tx) => {
+    await tx`select set_config('app.user_id', ${uid('nhung')}, true)`
+    await tx`select app.record_tip(${orderId}::uuid, ${[uid(staff)]}::uuid[], ${[String(amount)]}::text[]::bigint[],
+                                   gen_random_uuid())`
+  })
+}
+
+describe('S27 — app bỏ tip', () => {
+  it('không ghi tip mới: hộp thu tiền không nhận tip; Linh, Nhung gọi thẳng hàm DB ghi, huỷ tip cũng bị chặn', async () => {
+    const tipBody = { idempotencyKey: rid(), amount: 100_000, method: 'transfer', tip: { amount: 10_000 } }
+    expect(PaymentBody.safeParse(tipBody).success).toBe(false)
+    const o = await confirmed([['trang', 100_000]])
+    expect('recordTip' in o.can).toBe(false)
+    for (const k of ['linh', 'nhung'] as const) {
+      await expectPgError(
+        withUser(
+          uid(k),
+          (
+            tx,
+          ) => tx`select app.record_tip(${o.id}::uuid, ${[uid('trang')]}::uuid[], ${['1000']}::text[]::bigint[],
+                                           gen_random_uuid())`,
+        ),
+        '42501',
+      )
+      await expectPgError(
+        withUser(uid(k), (tx) => tx`select app.void_tip(gen_random_uuid(), 'x')`),
+        '42501',
+      )
+    }
+  })
+
+  it('tip ghi từ trước vẫn trả nốt cho thợ (Chốt quỹ); trả hết thì hết; thợ chỉ thấy tip của mình', async () => {
     const rev0 = await revenue()
-    const bank0 = await sumOf(acc.bank)
     const o = await confirmed([['chin', 300_000]])
-    const key = rid()
-    const d = await recordPayment(auth('nhung'), o.id, {
-      idempotencyKey: key,
-      amount: 300_000,
-      method: 'transfer',
-      tip: { amount: 50_000 },
-    })
-    // Bấm hai lần cùng mã → không ghi thêm khoản thu, tip
-    await recordPayment(auth('nhung'), o.id, {
-      idempotencyKey: key,
-      amount: 300_000,
-      method: 'transfer',
-      tip: { amount: 50_000 },
-    })
-    expect(d.tips).toMatchObject([{ staffName: 'Chin', amount: 50_000, paid: false }])
-    expect(d.dueAmount).toBe(0)
-    expect((await sumOf(acc.bank)) - bank0).toBe(350_000)
+    await recordPayment(auth('nhung'), o.id, { idempotencyKey: rid(), amount: 300_000, method: 'transfer' })
+    await oldTip(o.id, 'chin', 50_000)
     expect((await revenue()) - rev0).toBe(300_000) // tip không phải doanh thu
 
     const sum = await tipSummary(auth('nhung'))
     expect(sum.holding.find((h) => h.staffUserId === uid('chin'))?.amount).toBe(50_000)
-    // Thợ chỉ thấy tip của mình
-    const chin = await tipSummary(auth('chin'))
-    expect(chin.holding.map((h) => h.staffUserId)).toEqual([uid('chin')])
+    expect((await tipSummary(auth('chin'))).holding.map((h) => h.staffUserId)).toEqual([uid('chin')])
     expect((await tipSummary(auth('trang'))).holding.some((h) => h.staffUserId === uid('chin'))).toBe(false)
 
     const cash0 = await sumOf(acc.cash)
@@ -119,69 +135,11 @@ describe('3.15 — tip giữ hộ (Q14, Q15)', () => {
     expect(
       (await err(payTips(auth('nhung'), { staffUserId: uid('chin'), idempotencyKey: rid() }))).status,
     ).toBe(422)
+    expect((await tipSummary(auth('nhung'))).holding.some((h) => h.staffUserId === uid('chin'))).toBe(false)
     expect((await getOrder(auth('nhung'), o.id)).tips[0]!.paid).toBe(true)
-  })
-
-  it('bill nhiều thợ chia tip theo phần tiền; khách chỉ định thì nhập tay, tổng phải khớp', async () => {
-    const o = await confirmed([
-      ['chin', 200_000],
-      ['trang', 100_000],
-    ])
-    const d = await recordTip(auth('nhung'), o.id, { idempotencyKey: rid(), amount: 30_000 })
-    expect(Object.fromEntries(d.tips.map((t) => [t.staffName, t.amount]))).toEqual({
-      Chin: 20_000,
-      Trang: 10_000,
-    })
-    const bad = recordTip(auth('nhung'), o.id, {
-      idempotencyKey: rid(),
-      amount: 20_000,
-      split: [{ userId: uid('trang'), amount: 15_000 }],
-    })
-    expect((await err(bad)).status).toBe(422)
-    const named = await recordTip(auth('nhung'), o.id, {
-      idempotencyKey: rid(),
-      amount: 20_000,
-      split: [{ userId: uid('trang'), amount: 20_000 }],
-    })
-    expect(named.tips.filter((t) => t.staffName === 'Trang').map((t) => t.amount)).toEqual([10_000, 20_000])
-  })
-
-  it('tip tiền mặt không ghi; thợ không ghi, không huỷ tip; huỷ tip chưa trả có bút toán đảo, đã trả thì không huỷ', async () => {
-    const o = await confirmed([['trang', 100_000]])
-    const cashTip = recordPayment(auth('nhung'), o.id, {
-      idempotencyKey: rid(),
-      amount: 100_000,
-      method: 'cash',
-      tip: { amount: 10_000 },
-    })
-    expect((await err(cashTip)).status).toBe(422)
     expect(
-      (await err(recordTip(auth('trang'), o.id, { idempotencyKey: rid(), amount: 10_000 }))).status,
+      (await err(payTips(auth('trang'), { staffUserId: uid('trang'), idempotencyKey: rid() }))).status,
     ).toBe(403)
-    await expectPgError(
-      withUser(
-        uid('chin'),
-        (
-          tx,
-        ) => tx`select app.record_tip(${o.id}::uuid, ${[uid('chin')]}::uuid[], ${['1000']}::text[]::bigint[],
-                                         gen_random_uuid())`,
-      ),
-      ['42501', '22P02'],
-    )
-    const d = await recordTip(auth('nhung'), o.id, { idempotencyKey: rid(), amount: 10_000 })
-    const t = d.tips[0]!
-    expect((await err(voidTip(auth('trang'), t.id, 'x'))).status).toBe(403)
-    await voidTip(auth('nhung'), t.id, 'Ghi nhầm')
-    const led = await owner<{ entryType: string; amount: string }[]>`
-      select entry_type, amount from money_ledger_entries where source_type = 'tip' and source_id = ${t.id} order by id`
-    expect(led.map((l) => [l.entryType, Number(l.amount)])).toEqual([
-      ['tip_in', 10_000],
-      ['tip_in_void', -10_000],
-    ])
-    // Đã trả cho thợ → không huỷ được
-    const d2 = await recordTip(auth('nhung'), o.id, { idempotencyKey: rid(), amount: 5_000 })
-    await payTips(auth('linh'), { staffUserId: uid('trang'), idempotencyKey: rid() })
-    expect((await err(voidTip(auth('nhung'), d2.tips.find((x) => !x.voided)!.id, 'x'))).status).toBe(422)
   })
 })
 

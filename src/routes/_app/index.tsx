@@ -3,7 +3,7 @@
 // của chính mình (K09). Biểu đồ doanh thu 30 ngày. "Cần xử lý" gộp thành một thẻ đếm số việc, bấm vào mới xem.
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { type ReactNode, useState } from 'react'
+import { type CSSProperties, type ReactNode, useState } from 'react'
 import { AttendanceCard } from '~/components/cong/AttendanceCard'
 import { AttentionPanel, useAttention } from '~/components/lich/AttentionPanel'
 import { TodaySummary } from '~/components/lich/TodaySummary'
@@ -112,13 +112,30 @@ function Tile(props: { label: string; children: ReactNode; sub?: ReactNode; wide
       {props.sub ? <span className="caption text-ink-muted">{props.sub}</span> : null}
     </>
   )
-  const cls = cx('lo-card flex min-w-0 flex-col gap-1 no-underline', props.wide && 'col-span-2')
+  // @container: số tiền trong ô co chữ theo bề rộng ô (FitMoney)
+  const cls = cx('lo-card @container flex min-w-0 flex-col gap-1 no-underline', props.wide && 'col-span-2')
   return props.to ? (
     <Link to={props.to} className={cls}>
       {body}
     </Link>
   ) : (
     <div className={cls}>{body}</div>
+  )
+}
+
+/**
+ * Số tiền chữ to trong ô: tối đa `max` px, ô hẹp (máy Android rộng 360px) hay số dài thì co chữ cho vừa ô thay vì
+ * tràn ra ngoài và đẩy cả trang rộng ra. Cỡ chữ tính theo bề rộng ô và số ký tự của số tiền.
+ */
+function FitMoney(props: { value: number; max: number; tone?: 'negative' }) {
+  const style = {
+    '--fit-max': `${props.max}px`,
+    '--fit-chars': formatVND(props.value).length,
+  } as CSSProperties
+  return (
+    <span className="lo-fit" style={style}>
+      <Money value={props.value} size="xl" tone={props.tone} />
+    </span>
   )
 }
 
@@ -139,13 +156,13 @@ function Tiles(props: { h: HomeBlock; money: Data['money']; myPay: Data['myPay']
     return (
       <div className="grid grid-cols-2 gap-3">
         <Tile label="Doanh thu của bạn hôm nay" wide sub={openNote}>
-          <Money value={h.today.net} size="xl" />
+          <FitMoney value={h.today.net} max={30} />
         </Tile>
         <Tile label="Khách bạn làm hôm nay">
           <Count value={h.today.guests} unit="khách" />
         </Tile>
         <Tile label={`Doanh thu tháng ${month}`} sub={`${h.month.guests} khách`}>
-          <Money value={h.month.net} size="xl" className="text-[24px]! leading-[30px]!" />
+          <FitMoney value={h.month.net} max={24} />
         </Tile>
         {myPay ? (
           <Tile
@@ -154,7 +171,7 @@ function Tiles(props: { h: HomeBlock; money: Data['money']; myPay: Data['myPay']
             to="/them/luong"
             sub={`Gồm hoa hồng ${formatVND(myPay.commission)}${myPay.advances ? ` · đã tạm ứng ${formatVND(myPay.advances)}` : ''} · xem phiếu lương`}
           >
-            <Money value={myPay.grossPay} size="xl" />
+            <FitMoney value={myPay.grossPay} max={30} />
           </Tile>
         ) : null}
       </div>
@@ -163,24 +180,19 @@ function Tiles(props: { h: HomeBlock; money: Data['money']; myPay: Data['myPay']
   return (
     <div className="grid grid-cols-2 gap-3">
       <Tile label="Doanh thu hôm nay" wide sub={openNote}>
-        <Money value={h.today.net} size="xl" />
+        <FitMoney value={h.today.net} max={30} />
       </Tile>
       <Tile label="Số khách hôm nay" sub={h.today.open ? `+ ${h.today.open} chưa xác nhận` : undefined}>
         <Count value={h.today.guests} unit="khách" />
       </Tile>
       <Tile label={`Doanh thu tháng ${month}`} sub={`${h.month.guests} khách`}>
-        <Money value={h.month.net} size="xl" className="text-[24px]! leading-[30px]!" />
+        <FitMoney value={h.month.net} max={24} />
       </Tile>
       <Tile label="Hôm nay đã thu" to="/don-hang">
-        <Money value={h.today.paid ?? 0} size="xl" className="text-[24px]! leading-[30px]!" />
+        <FitMoney value={h.today.paid ?? 0} max={24} />
       </Tile>
       <Tile label="Khách còn nợ" to="/don-hang">
-        <Money
-          value={h.today.due ?? 0}
-          size="xl"
-          tone={(h.today.due ?? 0) > 0 ? 'negative' : undefined}
-          className="text-[24px]! leading-[30px]!"
-        />
+        <FitMoney value={h.today.due ?? 0} max={24} tone={(h.today.due ?? 0) > 0 ? 'negative' : undefined} />
       </Tile>
       {money ? (
         money.some((m) => m.balance == null) ? (
@@ -190,11 +202,10 @@ function Tiles(props: { h: HomeBlock; money: Data['money']; myPay: Data['myPay']
         ) : (
           money.map((m) => (
             <Tile key={m.id} label={m.name} to="/them/so-tien">
-              <Money
+              <FitMoney
                 value={m.balance ?? 0}
-                size="xl"
+                max={24}
                 tone={(m.balance ?? 0) < 0 ? 'negative' : undefined}
-                className="text-[24px]! leading-[30px]!"
               />
             </Tile>
           ))

@@ -19,6 +19,7 @@ import {
   useToast,
 } from '~/components/ui'
 import { ApiError, api } from '~/lib/api'
+import { TICKETS_ENABLED } from '~/lib/features'
 import { useBranch, useCan, useMe } from '~/lib/me'
 import { formatVND } from '~/lib/money'
 import {
@@ -100,7 +101,7 @@ export function OrderEditor(props: {
   const [priceEdit, setPriceEdit] = useState<Set<string>>(new Set())
   const [adjustReason, setAdjustReason] = useState('')
   const confirmedEdit = props.order?.status === 'confirmed'
-  // Ưu đãi bù khiếu nại còn dùng được của khách đang chọn (bước 2.18)
+  // Ưu đãi bù khiếu nại còn dùng được của khách đang chọn (bước 2.18); tạm ẩn cùng phiếu xử lý (S28)
   const customerId = draft.customer?.id ?? null
   const compensations = useQuery({
     queryKey: ['customers', 'compensations', customerId, props.order?.id ?? null],
@@ -108,7 +109,7 @@ export function OrderEditor(props: {
       api<{ items: { ticketId: string; percent: number; orderCodeLabel: string }[] }>(
         `/api/customers/${customerId}/compensations${props.order ? `?excludeOrder=${props.order.id}` : ''}`,
       ),
-    enabled: !!customerId,
+    enabled: TICKETS_ENABLED && !!customerId,
   })
   // Mã yêu cầu sinh khi mở màn tạo đơn; mất mạng thì gửi lại cùng mã, không tạo trùng [P3]
   const requestId = useRef('')

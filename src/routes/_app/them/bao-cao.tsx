@@ -356,7 +356,7 @@ function DayView(props: { q: ReturnType<typeof useQuery<Day>> }) {
       <Staff rows={d.byStaff} />
       <Receipts rows={d.receipts} />
       <Cashflow f={d.cashflow} revenueNet={d.revenue.net} />
-      <Card title="Chốt quỹ, tip">
+      <Card title={d.tipsHolding.count ? 'Chốt quỹ, tip' : 'Chốt quỹ'}>
         {d.dayClose ? (
           <>
             <Line label="Tiền mặt lý thuyết" value={d.dayClose.expected} />
@@ -368,10 +368,13 @@ function DayView(props: { q: ReturnType<typeof useQuery<Day>> }) {
         ) : (
           <span className="body text-ink-muted">Ngày này chưa chốt quỹ.</span>
         )}
-        <Line
-          label={`Tip giữ hộ chưa trả thợ (${d.tipsHolding.count} khoản, hiện tại)`}
-          value={d.tipsHolding.amount}
-        />
+        {/* App bỏ tip (S27): chỉ hiện khi còn tip ghi từ trước chưa trả thợ */}
+        {d.tipsHolding.count ? (
+          <Line
+            label={`Tip giữ hộ chưa trả thợ (${d.tipsHolding.count} khoản, hiện tại)`}
+            value={d.tipsHolding.amount}
+          />
+        ) : null}
       </Card>
       <Deposits d={d.deposits} period="trong ngày" />
       <Appointments a={d.appointments} />

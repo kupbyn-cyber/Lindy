@@ -245,7 +245,10 @@ function CloseForm(props: { d: Data; onDone: () => void }) {
   )
 }
 
-/** Tip giữ hộ chưa trả (Q15): cuối ngày Nhung trả tiền mặt cho từng thợ, app ghi tiền ra khỏi quỹ tiền mặt. */
+/**
+ * Tip giữ hộ chưa trả (Q15): Nhung trả tiền mặt cho từng thợ, app ghi tiền ra khỏi quỹ tiền mặt. Từ S27 app không ghi
+ * tip mới; thẻ chỉ hiện khi còn tip ghi từ trước chưa trả, trả hết thì tự ẩn.
+ */
 function TipsCard() {
   const qc = useQueryClient()
   const toast = useToast()

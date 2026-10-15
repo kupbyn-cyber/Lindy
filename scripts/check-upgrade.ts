@@ -256,7 +256,7 @@ try {
     log(`Thu chi: chi 50.000đ, chuyển 20.000đ → Tiền mặt ${bal2.cash}đ, Tài khoản ${bal2.bank}đ`)
     if (bal2.cash !== 1000000 || bal2.bank !== bankExpected + 20000) throw new Error('Thu chi sai số dư.')
 
-    // Tip, hoàn tiền, chứng từ (0014, 0015): xác nhận đơn cọc ở trên, thu 300.000đ CK kèm tip 20.000đ, hoàn 50.000đ TM
+    // Hoàn tiền, chứng từ (0014, 0015): xác nhận đơn cọc ở trên, thu 300.000đ CK, hoàn 50.000đ TM (app bỏ tip từ S27)
     const { refundOrder } = await import('../src/server/orders/refunds')
     const { addAttachment } = await import('../src/server/attachments/service')
     const c2 = await confirmOrder(auth, d2.id, d2.version)
@@ -264,7 +264,6 @@ try {
       idempotencyKey: crypto.randomUUID(),
       amount: 300000,
       method: 'transfer',
-      tip: { amount: 20000 },
     })
     const rf = await refundOrder(auth, c2.id, {
       idempotencyKey: crypto.randomUUID(),
@@ -280,10 +279,10 @@ try {
     )
     const bal3 = Object.fromEntries((await getBook(auth)).accounts.map((x) => [x.type, x.balance]))
     log(
-      `Tip, hoàn: tip ${rf.tips.reduce((s, t) => s + t.amount, 0)}đ, hoàn ${rf.refundedAmount}đ, ${att.items.length} ảnh → Tiền mặt ${bal3.cash}đ, Tài khoản ${bal3.bank}đ`,
+      `Hoàn: hoàn ${rf.refundedAmount}đ, ${att.items.length} ảnh → Tiền mặt ${bal3.cash}đ, Tài khoản ${bal3.bank}đ`,
     )
-    if (bal3.cash !== 950000 || bal3.bank !== bankExpected + 20000 + 320000 || att.items.length !== 1)
-      throw new Error('Tip, hoàn tiền sai.')
+    if (bal3.cash !== 950000 || bal3.bank !== bankExpected + 20000 + 300000 || att.items.length !== 1)
+      throw new Error('Hoàn tiền sai.')
 
     // Nhân viên, chấm công (0016): cơ sở cũ có sẵn cài đặt lương, mốc KPI; hồ sơ + chính sách Linh; Vào ca, duyệt công;
     // ngày đóng cửa ngày mai; đơn nghỉ ngày kia
