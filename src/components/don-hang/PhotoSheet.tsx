@@ -10,6 +10,8 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{ blob: Blob; url: string } | null>(null)
+  // Đã lưu / gửi xong ảnh đang xem: báo cho người dùng và đổi nút cuối thành Đóng
+  const [saved, setSaved] = useState(false)
   const camera = useRef<HTMLInputElement>(null)
   const library = useRef<HTMLInputElement>(null)
 
@@ -20,12 +22,14 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
       if (r) URL.revokeObjectURL(r.url)
       return null
     })
+    setSaved(false)
     setError(null)
   }, [props.open])
 
   async function onFile(file: File | undefined) {
     if (!file) return
     setBusy(true)
+    setSaved(false)
     setError(null)
     try {
       const photo = await loadPhoto(file)
@@ -52,7 +56,10 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
   async function share() {
     if (!file) return
     try {
+      // iPhone trả về khi đã lưu vào Ảnh hoặc gửi xong
       await navigator.share({ files: [file] })
+      setSaved(true)
+      toast('Đã lưu / gửi ảnh.')
     } catch (e) {
       // Người dùng đóng bảng chia sẻ thì thôi
       if (e instanceof Error && e.name !== 'AbortError') toast('Không mở được bảng chia sẻ.', 'error')
@@ -66,24 +73,36 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
       onClose={props.onClose}
       footer={
         result ? (
-          <>
-            <Button block onClick={() => camera.current?.click()} disabled={busy}>
-              Chụp lại
-            </Button>
-            {canShare ? (
-              <Button block variant="primary" onClick={() => void share()}>
-                Lưu / Chia sẻ
+          saved ? (
+            <>
+              <Button block onClick={() => camera.current?.click()} disabled={busy}>
+                Chụp ảnh khác
               </Button>
-            ) : (
-              <a
-                className="lo-btn lo-btn-primary lo-btn-block button-label"
-                href={result.url}
-                download={fileName}
-              >
-                Tải ảnh
-              </a>
-            )}
-          </>
+              <Button block variant="primary" onClick={props.onClose}>
+                Đóng
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button block onClick={() => camera.current?.click()} disabled={busy}>
+                Chụp lại
+              </Button>
+              {canShare ? (
+                <Button block variant="primary" onClick={() => void share()}>
+                  Lưu / Chia sẻ
+                </Button>
+              ) : (
+                <a
+                  className="lo-btn lo-btn-primary lo-btn-block button-label"
+                  href={result.url}
+                  download={fileName}
+                  onClick={() => setSaved(true)}
+                >
+                  Tải ảnh
+                </a>
+              )}
+            </>
+          )
         ) : null
       }
     >
@@ -106,12 +125,22 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
 
       {result ? (
         <>
+          {/* Cao tối đa ~nửa màn hình để thấy trọn ảnh 4:5 cùng các nút, không phải cuộn */}
           <img
             src={result.url}
             alt="Ảnh thành phẩm có khung LINDY"
-            className="block w-full rounded-[var(--radius-md)] border border-line"
+            className="mx-auto block h-auto max-h-[58dvh] w-auto max-w-full rounded-[var(--radius-md)] border border-line"
           />
-          {canShare ? (
+          {saved ? (
+            <>
+              <p className="body-strong m-0 text-success">Đã lưu / gửi ảnh.</p>
+              {canShare ? (
+                <Button variant="quiet" block onClick={() => void share()}>
+                  Gửi thêm nơi khác
+                </Button>
+              ) : null}
+            </>
+          ) : canShare ? (
             <p className="caption m-0 text-ink-muted">
               Lưu / Chia sẻ: chọn “Lưu hình ảnh” để vào Ảnh, hoặc gửi thẳng Instagram, Zalo.
             </p>

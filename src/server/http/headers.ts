@@ -4,7 +4,7 @@ const CSP = [
   "script-src 'self' 'unsafe-inline'", // TanStack Start chèn script hydrate nội tuyến
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data:",
+  "img-src 'self' data: blob:", // blob: cho ảnh thành phẩm ghép khung trên máy (S18)
   "connect-src 'self'",
   "worker-src 'self'",
   "manifest-src 'self'",
