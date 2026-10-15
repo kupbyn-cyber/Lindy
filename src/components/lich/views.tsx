@@ -233,17 +233,60 @@ function usePinchZoom(scroller: RefObject<HTMLDivElement | null>) {
 
 // ---------------------------------------------------------------- Ô lịch
 
+/**
+ * Màu ô lịch kiểu lịch iPhone (S31): nền màu nhạt, vạch trái đậm, chữ cùng tông, theo trạng thái. Hồng mận = đã chốt;
+ * xanh = khách đã đến, đang làm; xám = xong; xám mờ gạch ngang = huỷ, không đến. Chưa cọc, cọc chờ xác nhận, yêu cầu
+ * huỷ: vạch trái cam (thấy cả khi ô quá thấp). Mọi cặp chữ/nền đạt ≥ 4.5:1, vạch đạt 3:1 (tokens.json).
+ */
+const CAL = {
+  booked: {
+    box: 'bg-cal-booked-bg text-cal-booked-ink',
+    bar: 'border-l-cal-booked-bar',
+    dot: 'bg-cal-booked-bar',
+    sub: 'text-cal-booked-sub',
+  },
+  active: {
+    box: 'bg-cal-active-bg text-cal-active-ink',
+    bar: 'border-l-cal-active-bar',
+    dot: 'bg-cal-active-bar',
+    sub: 'text-cal-active-sub',
+  },
+  done: {
+    box: 'bg-cal-done-bg text-cal-done-ink',
+    bar: 'border-l-cal-done-bar',
+    dot: 'bg-cal-done-bar',
+    sub: 'text-cal-done-sub',
+  },
+  cancel: {
+    box: 'bg-cal-cancel-bg text-cal-cancel-ink line-through',
+    bar: 'border-l-cal-cancel-bar',
+    dot: 'bg-cal-cancel-bar',
+    sub: 'text-cal-cancel-ink',
+  },
+}
+
+function calTone(it: ListItem) {
+  if (it.status === 'arrived' || it.status === 'in_progress') return CAL.active
+  if (it.status === 'completed') return CAL.done
+  if (it.status === 'cancelled' || it.status === 'no_show') return CAL.cancel
+  return CAL.booked
+}
+
+/** Lịch còn hiệu lực mà chưa cọc, cọc chờ xác nhận hoặc khách báo huỷ: vạch cam */
+function needsDepositBar(it: ListItem) {
+  const t = calTone(it)
+  return (
+    (t === CAL.booked || t === CAL.active) &&
+    (it.customerCancelReported || it.depositState === 'missing' || it.depositState === 'pending')
+  )
+}
+
 function blockClass(it: ListItem) {
+  const t = calTone(it)
   return cx(
-    'absolute overflow-hidden rounded-[6px] border px-1.5 py-0.5 text-left',
-    (it.status === 'pending' || it.status === 'confirmed') && 'border-line-strong bg-surface-raised text-ink',
-    (it.status === 'arrived' || it.status === 'in_progress') && 'border-success bg-success-soft text-ink',
-    it.status === 'completed' && 'border-line bg-surface-sunken text-ink-muted',
-    (it.status === 'cancelled' || it.status === 'no_show') &&
-      'border-line bg-surface-sunken text-ink-muted line-through',
-    // Chưa cọc, yêu cầu huỷ: viền trái màu cảnh báo để thấy cả khi ô quá thấp
-    (it.customerCancelReported || it.depositState === 'missing' || it.depositState === 'pending') &&
-      'border-l-4 border-l-warning',
+    'absolute overflow-hidden rounded-[6px] border-l-4 px-1.5 py-0.5 text-left',
+    t.box,
+    needsDepositBar(it) ? 'border-l-cal-deposit-bar' : t.bar,
   )
 }
 
@@ -359,6 +402,7 @@ export function DayTimeline(props: {
           {placed.map((p) => {
             const parts = cellParts(p)
             const dep = p.depositState ? DEPOSIT_STATE_CHIP[p.depositState] : undefined
+            const tone = calTone(p)
             return (
               <Link
                 key={p.id}
@@ -380,14 +424,22 @@ export function DayTimeline(props: {
                       {parts.slice(0, p.guestCount > 1 ? 2 : 1).join(' · ')}
                     </span>
                     {parts.slice(p.guestCount > 1 ? 2 : 1).map((s) => (
-                      <span key={s} className="caption block truncate text-ink-muted">
+                      <span key={s} className={cx('caption block truncate', tone.sub)}>
                         {s}
                       </span>
                     ))}
                     {p.customerCancelReported ? (
-                      <span className="caption block truncate text-warning">Yêu cầu huỷ</span>
+                      <span className="caption block truncate text-cal-deposit-ink">Yêu cầu huỷ</span>
                     ) : dep ? (
-                      <span className="caption block truncate text-warning">{dep.label}</span>
+                      // Đã cọc là trạng thái tốt: chữ thường; chưa cọc, cọc chờ: chữ cam như vạch
+                      <span
+                        className={cx(
+                          'caption block truncate',
+                          p.depositState === 'held' ? tone.sub : 'text-cal-deposit-ink',
+                        )}
+                      >
+                        {dep.label}
+                      </span>
                     ) : null}
                   </>
                 ) : (
@@ -395,8 +447,10 @@ export function DayTimeline(props: {
                     <span className="font-semibold">
                       {parts.slice(0, p.guestCount > 1 ? 2 : 1).join(' · ')}
                     </span>
-                    {' · '}
-                    {parts.slice(p.guestCount > 1 ? 2 : 1).join(' · ')}
+                    <span className={tone.sub}>
+                      {' · '}
+                      {parts.slice(p.guestCount > 1 ? 2 : 1).join(' · ')}
+                    </span>
                   </span>
                 )}
               </Link>
@@ -450,7 +504,7 @@ export function WeekGrid(props: {
                     {it.guestCount > 1 ? `${it.guestCount} · ` : ''}
                     {it.name}
                   </span>
-                  <span className="caption block text-ink-muted">{it.startTime}</span>
+                  <span className={cx('caption block', calTone(it).sub)}>{it.startTime}</span>
                 </Link>
               ))}
               {list.length === 0 ? <span className="caption py-2 text-center text-ink-muted">—</span> : null}
@@ -472,7 +526,15 @@ export function AppointmentRows(props: { items: ListItem[]; showDate?: boolean; 
     <div className="border-t border-line">
       {props.items.map((it) => (
         <Link key={it.id} to="/lich/$id" params={{ id: it.id }} className="lo-row lo-row-action">
-          <span className="lo-row-main">
+          {/* Vạch màu trạng thái, cùng màu ô lịch ở màn Ngày, Tuần (S31) */}
+          <span
+            aria-hidden="true"
+            className={cx(
+              'w-1 shrink-0 self-stretch rounded-full',
+              needsDepositBar(it) ? 'bg-cal-deposit-bar' : calTone(it).dot,
+            )}
+          />
+          <span className="lo-row-main flex-1">
             <span className="lo-row-title body-strong">
               {it.guestCount > 1 ? `${it.guestCount} khách · ` : ''}
               {it.name}
