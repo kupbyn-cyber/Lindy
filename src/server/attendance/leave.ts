@@ -1,6 +1,7 @@
 // Đăng ký nghỉ (Đợt 4A, bước 4.6; PRD §8, Q27, Q28). Mọi người đăng ký; Nhung, Linh duyệt / từ chối; Nhung, Linh
 // đăng ký cho mình thì duyệt luôn, có audit. Người đăng ký huỷ khi chưa duyệt; nghỉ đã duyệt chỉ Nhung, Linh huỷ (lý do).
 // Trigger leave_guard trong DB kiểm lại cùng luật, trùng ngày, tháng đã khoá.
+import { isIsoDate } from '~/lib/time'
 import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
 import { withUser } from '../db/client'
@@ -8,6 +9,27 @@ import { conflict, forbidden, invalid, notFound } from '../http/errors'
 import { LEAVE_SELECT, type LeaveView, leaveView } from './service'
 
 const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s)
+
+/**
+ * Người nghỉ ngày `date` cho đầu màn Lịch (S32): ai xem được lịch cơ sở đều đọc được để chủ động sắp lịch. Chỉ tên và
+ * đã duyệt / chờ duyệt (hàm DB app.staff_off_on kiểm quyền lại, không trả lý do).
+ */
+export async function staffOff(auth: Auth, input: { branchId?: string; date: string }) {
+  const branch = requireBranch(auth, input.branchId)
+  if (!hasPerm(auth, branch.id, 'appointments.read_branch')) throw forbidden('Không có quyền xem lịch.')
+  if (!isIsoDate(input.date)) throw invalid('Ngày không hợp lệ.')
+  const rows = await withUser(
+    auth.userId,
+    (tx) => tx<{ displayName: string; status: 'approved' | 'requested' }[]>`
+      select display_name, status from app.staff_off_on(${branch.id}::uuid, ${input.date}::date)
+      order by display_name`,
+  )
+  return {
+    date: input.date,
+    off: rows.filter((r) => r.status === 'approved').map((r) => r.displayName),
+    pending: rows.filter((r) => r.status === 'requested').map((r) => r.displayName),
+  }
+}
 
 type Row = Parameters<typeof leaveView>[1]
 

@@ -52,6 +52,7 @@ import { Route as ApiAppointmentsIndexRouteImport } from './routes/api/appointme
 import { Route as ApiAppointmentsIdRouteImport } from './routes/api/appointments/$id'
 import { Route as ApiAppointmentsAttentionRouteImport } from './routes/api/appointments/attention'
 import { Route as ApiAppointmentsCheckRouteImport } from './routes/api/appointments/check'
+import { Route as ApiAppointmentsOffRouteImport } from './routes/api/appointments/off'
 import { Route as ApiAttachmentsIndexRouteImport } from './routes/api/attachments/index'
 import { Route as ApiAttachmentsIdRouteImport } from './routes/api/attachments/$id'
 import { Route as ApiAttendanceIndexRouteImport } from './routes/api/attendance/index'
@@ -322,6 +323,11 @@ const ApiAppointmentsAttentionRoute =
 const ApiAppointmentsCheckRoute = ApiAppointmentsCheckRouteImport.update({
   id: '/api/appointments/check',
   path: '/api/appointments/check',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAppointmentsOffRoute = ApiAppointmentsOffRouteImport.update({
+  id: '/api/appointments/off',
+  path: '/api/appointments/off',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAttachmentsIndexRoute = ApiAttachmentsIndexRouteImport.update({
@@ -645,6 +651,7 @@ export interface FileRoutesByFullPath {
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
+  '/api/appointments/off': typeof ApiAppointmentsOffRoute
   '/api/attachments/$id': typeof ApiAttachmentsIdRouteWithChildren
   '/api/attendance/$action': typeof ApiAttendanceActionRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -745,6 +752,7 @@ export interface FileRoutesByTo {
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
+  '/api/appointments/off': typeof ApiAppointmentsOffRoute
   '/api/attachments/$id': typeof ApiAttachmentsIdRouteWithChildren
   '/api/attendance/$action': typeof ApiAttendanceActionRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -847,6 +855,7 @@ export interface FileRoutesById {
   '/api/appointments/$id': typeof ApiAppointmentsIdRouteWithChildren
   '/api/appointments/attention': typeof ApiAppointmentsAttentionRoute
   '/api/appointments/check': typeof ApiAppointmentsCheckRoute
+  '/api/appointments/off': typeof ApiAppointmentsOffRoute
   '/api/attachments/$id': typeof ApiAttachmentsIdRouteWithChildren
   '/api/attendance/$action': typeof ApiAttendanceActionRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -949,6 +958,7 @@ export interface FileRouteTypes {
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
+    | '/api/appointments/off'
     | '/api/attachments/$id'
     | '/api/attendance/$action'
     | '/api/auth/login'
@@ -1049,6 +1059,7 @@ export interface FileRouteTypes {
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
+    | '/api/appointments/off'
     | '/api/attachments/$id'
     | '/api/attendance/$action'
     | '/api/auth/login'
@@ -1150,6 +1161,7 @@ export interface FileRouteTypes {
     | '/api/appointments/$id'
     | '/api/appointments/attention'
     | '/api/appointments/check'
+    | '/api/appointments/off'
     | '/api/attachments/$id'
     | '/api/attendance/$action'
     | '/api/auth/login'
@@ -1230,6 +1242,7 @@ export interface RootRouteChildren {
   ApiAppointmentsIdRoute: typeof ApiAppointmentsIdRouteWithChildren
   ApiAppointmentsAttentionRoute: typeof ApiAppointmentsAttentionRoute
   ApiAppointmentsCheckRoute: typeof ApiAppointmentsCheckRoute
+  ApiAppointmentsOffRoute: typeof ApiAppointmentsOffRoute
   ApiAttachmentsIdRoute: typeof ApiAttachmentsIdRouteWithChildren
   ApiAttendanceActionRoute: typeof ApiAttendanceActionRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
@@ -1587,6 +1600,13 @@ declare module '@tanstack/react-router' {
       path: '/api/appointments/check'
       fullPath: '/api/appointments/check'
       preLoaderRoute: typeof ApiAppointmentsCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/appointments/off': {
+      id: '/api/appointments/off'
+      path: '/api/appointments/off'
+      fullPath: '/api/appointments/off'
+      preLoaderRoute: typeof ApiAppointmentsOffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/attachments/': {
@@ -2116,6 +2136,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAppointmentsIdRoute: ApiAppointmentsIdRouteWithChildren,
   ApiAppointmentsAttentionRoute: ApiAppointmentsAttentionRoute,
   ApiAppointmentsCheckRoute: ApiAppointmentsCheckRoute,
+  ApiAppointmentsOffRoute: ApiAppointmentsOffRoute,
   ApiAttachmentsIdRoute: ApiAttachmentsIdRouteWithChildren,
   ApiAttendanceActionRoute: ApiAttendanceActionRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,

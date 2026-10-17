@@ -1,16 +1,17 @@
 // UI15 — Màn lịch chính (module §7.1): Ngày / Tuần / Danh sách, lọc trạng thái, tìm tên hoặc SĐT, Cần xử lý.
 // Đợt 6B: vuốt ngang đổi ngày/tuần, trục giờ phóng to bằng hai ngón (S10); nút "+" tạo lịch giữ nguyên (S11).
+// S32: đầu màn Ngày là thẻ ngày · số lịch, người nghỉ, Cần xử lý (DayHeader); bỏ dòng hướng dẫn thao tác.
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Clock, Search as SearchIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AppointmentForm } from '~/components/lich/AppointmentForm'
-import { AttentionPanel } from '~/components/lich/AttentionPanel'
+import { DayHeader } from '~/components/lich/DayHeader'
 import { AppointmentRows, DateStrip, DayTimeline, GroupedList, WeekGrid } from '~/components/lich/views'
-import { Button, cx, Icon, IconButton, SegmentedControl } from '~/components/ui'
+import { Button, Icon, IconButton, SegmentedControl } from '~/components/ui'
 import { errorText } from '~/lib/api'
 import { FILTERS, type Filter, useAppointments, useBookingSettings } from '~/lib/appointments'
 import { useCan } from '~/lib/me'
-import { addDays, formatIsoDate, isIsoDate, startOfWeek, toLocalDate, weekdayLong } from '~/lib/time'
+import { addDays, formatIsoDate, isIsoDate, startOfWeek, toLocalDate } from '~/lib/time'
 
 type View = 'ngay' | 'tuan' | 'ds'
 type Search = { view?: View; d?: string; loc?: Filter }
@@ -149,20 +150,15 @@ function SchedulePage() {
             </div>
           )}
 
-          {can('appointments.manage_all') && view === 'ngay' && date === today ? (
-            <AttentionPanel compact />
-          ) : null}
-
           {list.isError ? <p className="body px-4 text-danger">{errorText(list.error)}</p> : null}
 
           {view === 'ngay' ? (
             <>
-              <p className={cx('caption m-0 px-4 text-ink-muted')}>
-                {weekdayLong(date)} {formatIsoDate(date)} ·{' '}
-                {list.isLoading ? 'Đang tải…' : `${items.length} lịch`}
-                {canCreate ? ' · Chạm khoảng trống để tạo lịch' : ''} · Vuốt ngang đổi ngày, chụm hai ngón để
-                phóng to
-              </p>
+              <DayHeader
+                date={date}
+                count={list.isLoading ? null : items.length}
+                showAttention={can('appointments.manage_all') && date === today}
+              />
               <DayTimeline
                 date={date}
                 items={items}

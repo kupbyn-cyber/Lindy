@@ -83,9 +83,8 @@ export function AttentionPanel(props: { compact?: boolean }) {
     .join(' · ')
 
   return (
-    <section
-      className={props.compact ? 'mx-4 rounded-[var(--radius-md)] border border-line bg-surface-raised' : ''}
-    >
+    // compact: một dòng nằm trong thẻ đầu màn Lịch (DayHeader, S32)
+    <section className={props.compact ? 'border-t border-line' : ''}>
       {props.compact ? (
         <div className="flex items-center gap-2 px-3 py-1">
           <span className="label flex-1">
