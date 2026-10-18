@@ -5,7 +5,16 @@ import { Link } from '@tanstack/react-router'
 import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { cx, StatusChip } from '~/components/ui'
 import { DEPOSIT_STATE_CHIP, type ListItem, layoutDay, STATUS_LABEL, STATUS_TONE } from '~/lib/appointments'
-import { addDays, formatIsoDate, hhmmToMinutes, minutesToHHMM, weekdayLong, weekdayShort } from '~/lib/time'
+import {
+  addDays,
+  formatIsoDate,
+  hhmmToMinutes,
+  minutesToHHMM,
+  toLocalDate,
+  toLocalTime,
+  weekdayLong,
+  weekdayShort,
+} from '~/lib/time'
 
 // ---------------------------------------------------------------- Thanh ngày
 
@@ -320,6 +329,24 @@ function Badges(props: { it: ListItem }) {
 const GUTTER = 40
 const HOURS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0'))
 
+/**
+ * Giờ hiện tại (giờ Việt Nam) khi `date` là hôm nay, tự cập nhật mỗi 30 giây; ngày khác → null. Chỉ tính sau khi mở trên
+ * máy (không tính lúc dựng trang ở server) để giờ không lệch.
+ */
+function useNowOn(date: string) {
+  const [now, setNow] = useState<{ date: string; time: string } | null>(null)
+  useEffect(() => {
+    const read = () => {
+      const d = new Date()
+      setNow({ date: toLocalDate(d), time: toLocalTime(d) })
+    }
+    read()
+    const t = setInterval(read, 30_000)
+    return () => clearInterval(t)
+  }, [])
+  return now && now.date === date ? now.time : null
+}
+
 export function DayTimeline(props: {
   date: string
   items: ListItem[]
@@ -333,6 +360,7 @@ export function DayTimeline(props: {
   const { pxPerHour, loaded } = usePinchZoom(scroller)
   const pxPerMin = pxPerHour / 60
   useSwipe(swipeLayer, props.onSwipe, props.date)
+  const now = useNowOn(props.date)
 
   // Mở sẵn ở 08:00 mỗi khi đổi ngày (và khi vừa đọc cỡ đã nhớ)
   // biome-ignore lint/correctness/useExhaustiveDependencies: chạy lại khi đổi ngày là chủ ý
@@ -457,6 +485,22 @@ export function DayTimeline(props: {
             )
           })}
         </div>
+        {/* Vạch giờ hiện tại kiểu lịch iPhone (S34): chỉ ngày hôm nay, nằm trên ô lịch, chạm xuyên qua */}
+        {now ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute right-0 left-0"
+            style={{ top: hhmmToMinutes(now) * pxPerMin }}
+          >
+            <div
+              className="absolute right-0 border-t-2 border-cal-now"
+              style={{ left: GUTTER - 2, top: -1 }}
+            />
+            <span className="caption absolute left-0.5 -translate-y-1/2 rounded-full bg-cal-now px-1 font-semibold text-on-cal-now">
+              {now}
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>
   )

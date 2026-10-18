@@ -54,6 +54,23 @@ export async function handle(request: Request, fn: () => Promise<Response>): Pro
 }
 
 /**
+ * API cho trạm in (Đợt 7): xác thực bằng mã kết nối trong header `Authorization: Bearer …`, không dùng cookie nên
+ * không cần kiểm Origin. Thiếu mã → 401.
+ */
+export async function handleStation(
+  request: Request,
+  fn: (token: string) => Promise<Response>,
+): Promise<Response> {
+  try {
+    const m = /^Bearer ([\w-]{20,100})$/.exec(request.headers.get('authorization') ?? '')
+    if (!m) throw new AppError(401, 'Thiếu mã kết nối trạm in.', 'unauthorized')
+    return await fn(m[1]!)
+  } catch (e) {
+    return errorResponse(e)
+  }
+}
+
+/**
  * Đọc body JSON có giới hạn kích thước và kiểm bằng zod (schema nên dùng .strict()). Mặc định 64KB; API nhận file (nhập
  * dữ liệu cũ) đặt giới hạn riêng.
  */

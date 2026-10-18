@@ -28,6 +28,7 @@ import {
   PAYMENT_TONE,
 } from '~/lib/orders'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
+import type { PrintJobView } from '~/server/print/service'
 import { Attachments } from '../tien/Attachments'
 import { PhotoSheet } from './PhotoSheet'
 import { CAUSE_LABEL, OUTCOME_LABEL, TicketSheet } from './TicketSheet'
@@ -43,18 +44,44 @@ type Dialog =
   | { kind: 'voidTicket'; ticketId: string }
   | { kind: 'refund' }
 
-export function OrderView(props: {
-  order: OrderDetail
-  onEdit: () => void
-  /** Vừa bấm Làm xong ở màn sửa: mở luôn Chụp ảnh thành phẩm (S18) */
-  openPhoto?: boolean
-}) {
+export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
   const d = props.order
   const c = d.can
   const qc = useQueryClient()
   const toast = useToast()
-  const [photoOpen, setPhotoOpen] = useState(!!props.openPhoto)
+  const [photoOpen, setPhotoOpen] = useState(false)
   const canPhoto = d.status === 'awaiting_confirmation' || d.status === 'confirmed'
+  // In bill qua trạm in (Đợt 7, S36): ai xem được đơn đã bấm Làm xong đều in được; nhận tiền → in bill → chụp ảnh
+  const canPrint = canPhoto
+  const [printing, setPrinting] = useState(false)
+  const [printedNow, setPrintedNow] = useState(false)
+  const printed = !!d.billPrintedAt || printedNow
+
+  async function printBill() {
+    setPrinting(true)
+    try {
+      let job = await api<PrintJobView>(`/api/orders/${d.id}/print-bill`, {
+        body: { idempotencyKey: crypto.randomUUID() },
+      })
+      // Trạm in hỏi app mỗi 2 giây; chờ tối đa 30 giây
+      const until = Date.now() + 30_000
+      while ((job.status === 'queued' || job.status === 'printing') && Date.now() < until) {
+        await new Promise((r) => setTimeout(r, 1500))
+        job = await api<PrintJobView>(`/api/print/jobs/${job.id}`)
+      }
+      if (job.status === 'printed') {
+        setPrintedNow(true)
+        toast('Đã in bill.')
+        void qc.invalidateQueries({ queryKey: ['orders', 'detail', d.id] })
+      } else if (job.status === 'queued' || job.status === 'printing')
+        toast('Trạm in chưa phản hồi. Kiểm tra MacBook trạm in đang bật và có mạng.', 'error')
+      else toast(`Chưa in được: ${job.error ?? 'máy in báo lỗi'}`, 'error')
+    } catch (e) {
+      toast(errorText(e), 'error')
+    } finally {
+      setPrinting(false)
+    }
+  }
   const [dialog, setDialog] = useState<Dialog>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -154,7 +181,6 @@ export function OrderView(props: {
       qc.setQueryData(['orders', 'detail', d.id], next)
       await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
       toast(`Đã bấm Làm xong đơn ${d.codeLabel}.`)
-      setPhotoOpen(true)
     } catch (e) {
       toast(errorText(e), 'error')
     } finally {
@@ -204,11 +230,16 @@ export function OrderView(props: {
   // hoàn tiền, huỷ đơn thành chữ nhỏ ở cuối, tách xa nút chính.
   const payDue = c.recordPayment && d.dueAmount > 0
   const approveFirst = c.approveDiscount && !c.confirm
-  const hasBar = c.done || approveFirst || c.confirm || payDue
+  // Đã thu đủ: nút chính là In bill; in xong thì In lại + Chụp ảnh thành phẩm (S36)
+  const printInBar = !c.done && !payDue && canPrint && d.dueAmount === 0 && (c.confirm || !approveFirst)
+  const photoInBar = printInBar && printed && !c.confirm
+  const hasBar = c.done || approveFirst || c.confirm || payDue || printInBar
   const canRefund = c.refund && d.refundable > 0
   const canCancel = c.cancel && (d.status !== 'confirmed' || d.refundable === 0)
+  const printInGrid = canPrint && !printInBar
   const secondary = [
-    canPhoto ? 'photo' : null,
+    canPhoto && !photoInBar ? 'photo' : null,
+    printInGrid ? 'print' : null,
     c.edit ? 'edit' : null,
     c.markReviewed ? 'reviewed' : null,
   ].filter(Boolean)
@@ -539,9 +570,14 @@ export function OrderView(props: {
         {c.confirmBlocked ? <Note tone="warning">{c.confirmBlocked}</Note> : null}
         {secondary.length > 0 ? (
           <div className={cx('grid gap-2', secondary.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
-            {canPhoto ? (
+            {canPhoto && !photoInBar ? (
               <Button icon="camera" onClick={() => setPhotoOpen(true)}>
                 Chụp ảnh
+              </Button>
+            ) : null}
+            {printInGrid ? (
+              <Button loading={printing} loadingText="Đang in…" onClick={() => void printBill()}>
+                {printed ? 'In lại bill' : 'In bill'}
               </Button>
             ) : null}
             {c.edit ? <Button onClick={props.onEdit}>Sửa đơn</Button> : null}
@@ -641,6 +677,22 @@ export function OrderView(props: {
                   onClick={() => open({ kind: 'payment' })}
                 >
                   {c.confirm || approveFirst ? 'Ghi tiền thu' : `Ghi tiền thu ${formatVND(d.dueAmount)}`}
+                </Button>
+              ) : null}
+              {printInBar ? (
+                <Button
+                  variant={c.confirm || printed ? 'secondary' : 'primary'}
+                  block
+                  loading={printing}
+                  loadingText="Đang in…"
+                  onClick={() => void printBill()}
+                >
+                  {printed ? 'In lại bill' : 'In bill'}
+                </Button>
+              ) : null}
+              {photoInBar ? (
+                <Button variant="primary" block icon="camera" onClick={() => setPhotoOpen(true)}>
+                  Chụp ảnh
                 </Button>
               ) : null}
               {c.confirm ? (

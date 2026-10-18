@@ -1,9 +1,10 @@
-// Chụp ảnh thành phẩm (S18–S21): mở camera iPhone (hoặc chọn ảnh có sẵn), app tự ghép khung LINDY, bấm Lưu / Chia sẻ
+// Chụp ảnh thành phẩm (S18, S21, S35): mở camera iPhone (hoặc chọn ảnh có sẵn), app tự ghép khung LINDY NAIL STUDIO
+// khổ 3:4, bấm Lưu / Chia sẻ
 // để lưu vào Ảnh hoặc gửi Instagram, Zalo. Ảnh không gửi lên server, không lưu trong app.
 import { useEffect, useRef, useState } from 'react'
 import { Button, Note, Sheet, useToast } from '~/components/ui'
 import type { OrderDetail } from '~/lib/orders'
-import { canvasToJpeg, drawFrame, frameFileName, frameInfo, loadPhoto } from '~/lib/photo-frame'
+import { canvasToJpeg, drawFrame, frameFileName, loadPhoto } from '~/lib/photo-frame'
 
 export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: () => void }) {
   const toast = useToast()
@@ -33,7 +34,7 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
     setError(null)
     try {
       const photo = await loadPhoto(file)
-      const canvas = await drawFrame(photo, frameInfo(props.order))
+      const canvas = await drawFrame(photo)
       if ('close' in photo && typeof photo.close === 'function') photo.close()
       const blob = await canvasToJpeg(canvas)
       setResult((old) => {
@@ -151,8 +152,8 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
       ) : (
         <>
           <p className="body m-0 text-ink-muted">
-            Chụp móng vừa làm, app tự ghép khung LINDY (dịch vụ, tên khách che bớt, thợ, ngày) để lưu hoặc
-            đăng Instagram.
+            Chụp móng vừa làm kèm bill, app tự ghép khung LINDY NAIL STUDIO (khổ 3:4) để lưu hoặc đăng
+            Instagram.
           </p>
           <Button
             variant="primary"

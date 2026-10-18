@@ -38,6 +38,7 @@ import { Route as AppThemDanhMucRouteImport } from './routes/_app/them/danh-muc'
 import { Route as AppThemDoiMatKhauRouteImport } from './routes/_app/them/doi-mat-khau'
 import { Route as AppThemDuLieuThuRouteImport } from './routes/_app/them/du-lieu-thu'
 import { Route as AppThemLuongRouteImport } from './routes/_app/them/luong'
+import { Route as AppThemMayInRouteImport } from './routes/_app/them/may-in'
 import { Route as AppThemNhanVienRouteImport } from './routes/_app/them/nhan-vien'
 import { Route as AppThemNhapDuLieuCuRouteImport } from './routes/_app/them/nhap-du-lieu-cu'
 import { Route as AppThemSoTienRouteImport } from './routes/_app/them/so-tien'
@@ -86,6 +87,8 @@ import { Route as ApiPayrollIndexRouteImport } from './routes/api/payroll/index'
 import { Route as ApiPayrollActionRouteImport } from './routes/api/payroll/$action'
 import { Route as ApiPeopleIndexRouteImport } from './routes/api/people/index'
 import { Route as ApiPeopleActionRouteImport } from './routes/api/people/$action'
+import { Route as ApiPrintIndexRouteImport } from './routes/api/print/index'
+import { Route as ApiPrintActionRouteImport } from './routes/api/print/$action'
 import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
 import { Route as ApiPushSubscriptionsRouteImport } from './routes/api/push/subscriptions'
 import { Route as ApiPushTestRouteImport } from './routes/api/push/test'
@@ -106,6 +109,8 @@ import { Route as ApiNotificationsIdReadRouteImport } from './routes/api/notific
 import { Route as ApiOrdersIdActionRouteImport } from './routes/api/orders/$id.$action'
 import { Route as ApiPaymentsIdActionRouteImport } from './routes/api/payments/$id.$action'
 import { Route as ApiPayrollAdjustmentsIdActionRouteImport } from './routes/api/payroll-adjustments/$id.$action'
+import { Route as ApiPrintAgentActionRouteImport } from './routes/api/print/agent/$action'
+import { Route as ApiPrintJobsIdRouteImport } from './routes/api/print/jobs/$id'
 import { Route as ApiPushSubscriptionsIdRouteImport } from './routes/api/push/subscriptions.$id'
 import { Route as ApiRefundsIdActionRouteImport } from './routes/api/refunds/$id.$action'
 import { Route as ApiTicketsIdActionRouteImport } from './routes/api/tickets/$id.$action'
@@ -252,6 +257,11 @@ const AppThemDuLieuThuRoute = AppThemDuLieuThuRouteImport.update({
 const AppThemLuongRoute = AppThemLuongRouteImport.update({
   id: '/them/luong',
   path: '/them/luong',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemMayInRoute = AppThemMayInRouteImport.update({
+  id: '/them/may-in',
+  path: '/them/may-in',
   getParentRoute: () => AppRoute,
 } as any)
 const AppThemNhanVienRoute = AppThemNhanVienRouteImport.update({
@@ -497,6 +507,16 @@ const ApiPeopleActionRoute = ApiPeopleActionRouteImport.update({
   path: '/api/people/$action',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPrintIndexRoute = ApiPrintIndexRouteImport.update({
+  id: '/api/print/',
+  path: '/api/print/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPrintActionRoute = ApiPrintActionRouteImport.update({
+  id: '/api/print/$action',
+  path: '/api/print/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPushConfigRoute = ApiPushConfigRouteImport.update({
   id: '/api/push/config',
   path: '/api/push/config',
@@ -599,6 +619,16 @@ const ApiPayrollAdjustmentsIdActionRoute =
     path: '/api/payroll-adjustments/$id/$action',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPrintAgentActionRoute = ApiPrintAgentActionRouteImport.update({
+  id: '/api/print/agent/$action',
+  path: '/api/print/agent/$action',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPrintJobsIdRoute = ApiPrintJobsIdRouteImport.update({
+  id: '/api/print/jobs/$id',
+  path: '/api/print/jobs/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPushSubscriptionsIdRoute = ApiPushSubscriptionsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -640,6 +670,7 @@ export interface FileRoutesByFullPath {
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/du-lieu-thu': typeof AppThemDuLieuThuRoute
   '/them/luong': typeof AppThemLuongRoute
+  '/them/may-in': typeof AppThemMayInRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
   '/them/so-tien': typeof AppThemSoTienRoute
@@ -671,6 +702,7 @@ export interface FileRoutesByFullPath {
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
   '/api/payroll/$action': typeof ApiPayrollActionRoute
   '/api/people/$action': typeof ApiPeopleActionRoute
+  '/api/print/$action': typeof ApiPrintActionRoute
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
@@ -696,6 +728,7 @@ export interface FileRoutesByFullPath {
   '/api/orders/': typeof ApiOrdersIndexRoute
   '/api/payroll/': typeof ApiPayrollIndexRoute
   '/api/people/': typeof ApiPeopleIndexRoute
+  '/api/print/': typeof ApiPrintIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
   '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
@@ -712,6 +745,8 @@ export interface FileRoutesByFullPath {
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/payroll-adjustments/$id/$action': typeof ApiPayrollAdjustmentsIdActionRoute
+  '/api/print/agent/$action': typeof ApiPrintAgentActionRoute
+  '/api/print/jobs/$id': typeof ApiPrintJobsIdRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
   '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
@@ -741,6 +776,7 @@ export interface FileRoutesByTo {
   '/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/them/du-lieu-thu': typeof AppThemDuLieuThuRoute
   '/them/luong': typeof AppThemLuongRoute
+  '/them/may-in': typeof AppThemMayInRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
   '/them/so-tien': typeof AppThemSoTienRoute
@@ -772,6 +808,7 @@ export interface FileRoutesByTo {
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
   '/api/payroll/$action': typeof ApiPayrollActionRoute
   '/api/people/$action': typeof ApiPeopleActionRoute
+  '/api/print/$action': typeof ApiPrintActionRoute
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
@@ -797,6 +834,7 @@ export interface FileRoutesByTo {
   '/api/orders': typeof ApiOrdersIndexRoute
   '/api/payroll': typeof ApiPayrollIndexRoute
   '/api/people': typeof ApiPeopleIndexRoute
+  '/api/print': typeof ApiPrintIndexRoute
   '/api/staff': typeof ApiStaffIndexRoute
   '/api/tips': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
@@ -813,6 +851,8 @@ export interface FileRoutesByTo {
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/payroll-adjustments/$id/$action': typeof ApiPayrollAdjustmentsIdActionRoute
+  '/api/print/agent/$action': typeof ApiPrintAgentActionRoute
+  '/api/print/jobs/$id': typeof ApiPrintJobsIdRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
   '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
@@ -844,6 +884,7 @@ export interface FileRoutesById {
   '/_app/them/doi-mat-khau': typeof AppThemDoiMatKhauRoute
   '/_app/them/du-lieu-thu': typeof AppThemDuLieuThuRoute
   '/_app/them/luong': typeof AppThemLuongRoute
+  '/_app/them/may-in': typeof AppThemMayInRoute
   '/_app/them/nhan-vien': typeof AppThemNhanVienRoute
   '/_app/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
   '/_app/them/so-tien': typeof AppThemSoTienRoute
@@ -875,6 +916,7 @@ export interface FileRoutesById {
   '/api/orders/$id': typeof ApiOrdersIdRouteWithChildren
   '/api/payroll/$action': typeof ApiPayrollActionRoute
   '/api/people/$action': typeof ApiPeopleActionRoute
+  '/api/print/$action': typeof ApiPrintActionRoute
   '/api/push/config': typeof ApiPushConfigRoute
   '/api/push/subscriptions': typeof ApiPushSubscriptionsRouteWithChildren
   '/api/push/test': typeof ApiPushTestRoute
@@ -900,6 +942,7 @@ export interface FileRoutesById {
   '/api/orders/': typeof ApiOrdersIndexRoute
   '/api/payroll/': typeof ApiPayrollIndexRoute
   '/api/people/': typeof ApiPeopleIndexRoute
+  '/api/print/': typeof ApiPrintIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
   '/api/tips/': typeof ApiTipsIndexRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
@@ -916,6 +959,8 @@ export interface FileRoutesById {
   '/api/orders/$id/$action': typeof ApiOrdersIdActionRoute
   '/api/payments/$id/$action': typeof ApiPaymentsIdActionRoute
   '/api/payroll-adjustments/$id/$action': typeof ApiPayrollAdjustmentsIdActionRoute
+  '/api/print/agent/$action': typeof ApiPrintAgentActionRoute
+  '/api/print/jobs/$id': typeof ApiPrintJobsIdRoute
   '/api/push/subscriptions/$id': typeof ApiPushSubscriptionsIdRoute
   '/api/refunds/$id/$action': typeof ApiRefundsIdActionRoute
   '/api/tickets/$id/$action': typeof ApiTicketsIdActionRoute
@@ -947,6 +992,7 @@ export interface FileRouteTypes {
     | '/them/doi-mat-khau'
     | '/them/du-lieu-thu'
     | '/them/luong'
+    | '/them/may-in'
     | '/them/nhan-vien'
     | '/them/nhap-du-lieu-cu'
     | '/them/so-tien'
@@ -978,6 +1024,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id'
     | '/api/payroll/$action'
     | '/api/people/$action'
+    | '/api/print/$action'
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
@@ -1003,6 +1050,7 @@ export interface FileRouteTypes {
     | '/api/orders/'
     | '/api/payroll/'
     | '/api/people/'
+    | '/api/print/'
     | '/api/staff/'
     | '/api/tips/'
     | '/api/accounts/$id/$action'
@@ -1019,6 +1067,8 @@ export interface FileRouteTypes {
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
     | '/api/payroll-adjustments/$id/$action'
+    | '/api/print/agent/$action'
+    | '/api/print/jobs/$id'
     | '/api/push/subscriptions/$id'
     | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
@@ -1048,6 +1098,7 @@ export interface FileRouteTypes {
     | '/them/doi-mat-khau'
     | '/them/du-lieu-thu'
     | '/them/luong'
+    | '/them/may-in'
     | '/them/nhan-vien'
     | '/them/nhap-du-lieu-cu'
     | '/them/so-tien'
@@ -1079,6 +1130,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id'
     | '/api/payroll/$action'
     | '/api/people/$action'
+    | '/api/print/$action'
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
@@ -1104,6 +1156,7 @@ export interface FileRouteTypes {
     | '/api/orders'
     | '/api/payroll'
     | '/api/people'
+    | '/api/print'
     | '/api/staff'
     | '/api/tips'
     | '/api/accounts/$id/$action'
@@ -1120,6 +1173,8 @@ export interface FileRouteTypes {
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
     | '/api/payroll-adjustments/$id/$action'
+    | '/api/print/agent/$action'
+    | '/api/print/jobs/$id'
     | '/api/push/subscriptions/$id'
     | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
@@ -1150,6 +1205,7 @@ export interface FileRouteTypes {
     | '/_app/them/doi-mat-khau'
     | '/_app/them/du-lieu-thu'
     | '/_app/them/luong'
+    | '/_app/them/may-in'
     | '/_app/them/nhan-vien'
     | '/_app/them/nhap-du-lieu-cu'
     | '/_app/them/so-tien'
@@ -1181,6 +1237,7 @@ export interface FileRouteTypes {
     | '/api/orders/$id'
     | '/api/payroll/$action'
     | '/api/people/$action'
+    | '/api/print/$action'
     | '/api/push/config'
     | '/api/push/subscriptions'
     | '/api/push/test'
@@ -1206,6 +1263,7 @@ export interface FileRouteTypes {
     | '/api/orders/'
     | '/api/payroll/'
     | '/api/people/'
+    | '/api/print/'
     | '/api/staff/'
     | '/api/tips/'
     | '/api/accounts/$id/$action'
@@ -1222,6 +1280,8 @@ export interface FileRouteTypes {
     | '/api/orders/$id/$action'
     | '/api/payments/$id/$action'
     | '/api/payroll-adjustments/$id/$action'
+    | '/api/print/agent/$action'
+    | '/api/print/jobs/$id'
     | '/api/push/subscriptions/$id'
     | '/api/refunds/$id/$action'
     | '/api/tickets/$id/$action'
@@ -1262,6 +1322,7 @@ export interface RootRouteChildren {
   ApiOrdersIdRoute: typeof ApiOrdersIdRouteWithChildren
   ApiPayrollActionRoute: typeof ApiPayrollActionRoute
   ApiPeopleActionRoute: typeof ApiPeopleActionRoute
+  ApiPrintActionRoute: typeof ApiPrintActionRoute
   ApiPushConfigRoute: typeof ApiPushConfigRoute
   ApiPushSubscriptionsRoute: typeof ApiPushSubscriptionsRouteWithChildren
   ApiPushTestRoute: typeof ApiPushTestRoute
@@ -1283,6 +1344,7 @@ export interface RootRouteChildren {
   ApiOrdersIndexRoute: typeof ApiOrdersIndexRoute
   ApiPayrollIndexRoute: typeof ApiPayrollIndexRoute
   ApiPeopleIndexRoute: typeof ApiPeopleIndexRoute
+  ApiPrintIndexRoute: typeof ApiPrintIndexRoute
   ApiStaffIndexRoute: typeof ApiStaffIndexRoute
   ApiTipsIndexRoute: typeof ApiTipsIndexRoute
   ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
@@ -1295,6 +1357,8 @@ export interface RootRouteChildren {
   ApiNotificationsIdReadRoute: typeof ApiNotificationsIdReadRoute
   ApiPaymentsIdActionRoute: typeof ApiPaymentsIdActionRoute
   ApiPayrollAdjustmentsIdActionRoute: typeof ApiPayrollAdjustmentsIdActionRoute
+  ApiPrintAgentActionRoute: typeof ApiPrintAgentActionRoute
+  ApiPrintJobsIdRoute: typeof ApiPrintJobsIdRoute
   ApiRefundsIdActionRoute: typeof ApiRefundsIdActionRoute
   ApiTicketsIdActionRoute: typeof ApiTicketsIdActionRoute
 }
@@ -1502,6 +1566,13 @@ declare module '@tanstack/react-router' {
       path: '/them/luong'
       fullPath: '/them/luong'
       preLoaderRoute: typeof AppThemLuongRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/may-in': {
+      id: '/_app/them/may-in'
+      path: '/them/may-in'
+      fullPath: '/them/may-in'
+      preLoaderRoute: typeof AppThemMayInRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/them/nhan-vien': {
@@ -1840,6 +1911,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPeopleActionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/print/': {
+      id: '/api/print/'
+      path: '/api/print'
+      fullPath: '/api/print/'
+      preLoaderRoute: typeof ApiPrintIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/print/$action': {
+      id: '/api/print/$action'
+      path: '/api/print/$action'
+      fullPath: '/api/print/$action'
+      preLoaderRoute: typeof ApiPrintActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push/config': {
       id: '/api/push/config'
       path: '/api/push/config'
@@ -1980,6 +2065,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPayrollAdjustmentsIdActionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/print/agent/$action': {
+      id: '/api/print/agent/$action'
+      path: '/api/print/agent/$action'
+      fullPath: '/api/print/agent/$action'
+      preLoaderRoute: typeof ApiPrintAgentActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/print/jobs/$id': {
+      id: '/api/print/jobs/$id'
+      path: '/api/print/jobs/$id'
+      fullPath: '/api/print/jobs/$id'
+      preLoaderRoute: typeof ApiPrintJobsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push/subscriptions/$id': {
       id: '/api/push/subscriptions/$id'
       path: '/$id'
@@ -2019,6 +2118,7 @@ interface AppRouteChildren {
   AppThemDoiMatKhauRoute: typeof AppThemDoiMatKhauRoute
   AppThemDuLieuThuRoute: typeof AppThemDuLieuThuRoute
   AppThemLuongRoute: typeof AppThemLuongRoute
+  AppThemMayInRoute: typeof AppThemMayInRoute
   AppThemNhanVienRoute: typeof AppThemNhanVienRoute
   AppThemNhapDuLieuCuRoute: typeof AppThemNhapDuLieuCuRoute
   AppThemSoTienRoute: typeof AppThemSoTienRoute
@@ -2048,6 +2148,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppThemDoiMatKhauRoute: AppThemDoiMatKhauRoute,
   AppThemDuLieuThuRoute: AppThemDuLieuThuRoute,
   AppThemLuongRoute: AppThemLuongRoute,
+  AppThemMayInRoute: AppThemMayInRoute,
   AppThemNhanVienRoute: AppThemNhanVienRoute,
   AppThemNhapDuLieuCuRoute: AppThemNhapDuLieuCuRoute,
   AppThemSoTienRoute: AppThemSoTienRoute,
@@ -2156,6 +2257,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOrdersIdRoute: ApiOrdersIdRouteWithChildren,
   ApiPayrollActionRoute: ApiPayrollActionRoute,
   ApiPeopleActionRoute: ApiPeopleActionRoute,
+  ApiPrintActionRoute: ApiPrintActionRoute,
   ApiPushConfigRoute: ApiPushConfigRoute,
   ApiPushSubscriptionsRoute: ApiPushSubscriptionsRouteWithChildren,
   ApiPushTestRoute: ApiPushTestRoute,
@@ -2177,6 +2279,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOrdersIndexRoute: ApiOrdersIndexRoute,
   ApiPayrollIndexRoute: ApiPayrollIndexRoute,
   ApiPeopleIndexRoute: ApiPeopleIndexRoute,
+  ApiPrintIndexRoute: ApiPrintIndexRoute,
   ApiStaffIndexRoute: ApiStaffIndexRoute,
   ApiTipsIndexRoute: ApiTipsIndexRoute,
   ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
@@ -2189,6 +2292,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNotificationsIdReadRoute: ApiNotificationsIdReadRoute,
   ApiPaymentsIdActionRoute: ApiPaymentsIdActionRoute,
   ApiPayrollAdjustmentsIdActionRoute: ApiPayrollAdjustmentsIdActionRoute,
+  ApiPrintAgentActionRoute: ApiPrintAgentActionRoute,
+  ApiPrintJobsIdRoute: ApiPrintJobsIdRoute,
   ApiRefundsIdActionRoute: ApiRefundsIdActionRoute,
   ApiTicketsIdActionRoute: ApiTicketsIdActionRoute,
 }

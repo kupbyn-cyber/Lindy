@@ -1,0 +1,9 @@
+{
+  "name": "lindy-tram-in",
+  "private": true,
+  "type": "module",
+  "description": "Trạm in bill LINDY chạy trên MacBook ở quán",
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

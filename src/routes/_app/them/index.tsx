@@ -97,6 +97,9 @@ function MorePage() {
         {can('catalog.manage') ? (
           <Row to="/them/danh-muc" label="Danh mục dịch vụ" hint="Dịch vụ, combo, giá" />
         ) : null}
+        {can('print.manage') ? (
+          <Row to="/them/may-in" label="Máy in bill" hint="Thông tin trên bill, trạm in, in thử" />
+        ) : null}
         {can('booking_settings.manage') ? (
           <Row
             to="/them/cai-dat-lich"

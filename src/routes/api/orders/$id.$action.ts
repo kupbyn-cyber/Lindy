@@ -1,5 +1,5 @@
-// POST /api/orders/:id/done | confirm | cancel | approve-discounts | review | payments | tickets | refunds
-// (bỏ /tips từ S27: app không ghi tip)
+// POST /api/orders/:id/done | confirm | cancel | approve-discounts | review | payments | tickets | refunds | print-bill
+// (bỏ /tips từ S27: app không ghi tip; print-bill: Đợt 7 in bill qua trạm in)
 // GET  /api/orders/:id/audit
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '~/server/auth/context'
@@ -17,6 +17,8 @@ import {
   orderAudit,
 } from '~/server/orders/service'
 import { createTicket } from '~/server/orders/tickets'
+import { PrintKeyBody } from '~/server/print/schema'
+import { printBill } from '~/server/print/service'
 
 export const Route = createFileRoute('/api/orders/$id/$action')({
   server: {
@@ -59,6 +61,10 @@ export const Route = createFileRoute('/api/orders/$id/$action')({
               })
             case 'refunds':
               return Response.json(await refundOrder(auth, id, await readBody(request, RefundBody)), {
+                status: 201,
+              })
+            case 'print-bill':
+              return Response.json(await printBill(auth, id, await readBody(request, PrintKeyBody)), {
                 status: 201,
               })
             default:

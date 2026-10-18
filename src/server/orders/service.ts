@@ -427,6 +427,8 @@ export type OrderDetail = {
   can: OrderCan
   /** Tài khoản nhận chuyển khoản để vẽ QR (S23–S26): chỉ gửi cho người ghi được tiền thu; chưa nhập → null */
   transferQr: { bankBin: string; accountNo: string; accountName: string } | null
+  /** Lần in bill gần nhất đã in xong (Đợt 7); chưa in → null */
+  billPrintedAt: string | null
 }
 
 async function names(tx: Tx, ids: (string | null | undefined)[]) {
@@ -618,6 +620,8 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
         select bank_bin, bank_account_no, bank_account_name from money_accounts
         where branch_id = ${o.branchId} and type = 'bank' and is_active order by code limit 1`
     : []
+  const [bill] = await tx<{ at: Date | null }[]>`
+    select max(finished_at) as at from print_jobs where order_id = ${o.id} and status = 'printed'`
 
   return {
     id: o.id,
@@ -765,6 +769,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       bank?.bankBin && bank.bankAccountNo && bank.bankAccountName
         ? { bankBin: bank.bankBin, accountNo: bank.bankAccountNo, accountName: bank.bankAccountName }
         : null,
+    billPrintedAt: iso(bill?.at ?? null),
   }
 }
 
