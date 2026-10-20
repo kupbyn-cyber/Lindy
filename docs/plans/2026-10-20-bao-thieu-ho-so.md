@@ -1,6 +1,6 @@
 # Kế hoạch: báo rõ khi tài khoản thiếu hồ sơ nhân viên
 
-Ngày 20/10/2026. Trạng thái: **anh duyệt 20/10/2026, đang làm.**
+Ngày 20/10/2026. Trạng thái: **anh duyệt 20/10/2026, đã code xong (chưa triển khai).** `bun run check` 364 test qua; build, quét bundle qua. Phần hiện tên không khớp trên màn Dữ liệu dùng thử chỉ kiểm bằng test (DB local không nạp lại gói thử được).
 
 ## Bối cảnh
 
@@ -68,7 +68,7 @@ Cùng chữ với màn Nhân viên hiện nay. Chỉ người có `payroll.edit`
   Kiểm: test `myToday.hasProfile = false` với tài khoản mới (đã có sẵn dữ liệu trả về, chỉ đổi giao diện); local đăng nhập tài khoản thử → thấy dòng nhắc.
 - [x] **5. Gói dùng thử báo tên không khớp.** `summary.unmatched`, hiện trên màn Dữ liệu dùng thử sau khi nạp.
   Kiểm: test trong `demo.test.ts`: thêm tài khoản tên không có trong `staff.csv` → nằm trong `unmatched`, không có hồ sơ.
-- [ ] **6. Kiểm toàn bộ.** `bun run check`, `bun run build`, `bun scripts/scan-bundle.ts`; ghi S39 vào `docs/DECISIONS.md`; thêm mục thử vào `docs/CHAY_LOCAL.md`.
+- [x] **6. Kiểm toàn bộ.** `bun run check`, `bun run build`, `bun scripts/scan-bundle.ts`; ghi S39 vào `docs/DECISIONS.md`; thêm mục thử vào `docs/CHAY_LOCAL.md`.
 
 Commit sau mỗi bước, không push. Triển khai lên Vibe Host chỉ khi anh yêu cầu.
 

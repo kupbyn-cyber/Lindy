@@ -85,6 +85,7 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 3. `trang@lindy.test` → **Tổng quan → Vào ca** (giờ do máy chủ ghi), cuối ngày **Ra ca**. **Lịch → biểu tượng đồng hồ (Chấm công)**: công tháng của tôi, **Đăng ký nghỉ**.
 4. `nhung@lindy.test` → **Lịch → Chấm công → Duyệt công**: **Duyệt N người đã vào ca**; chạm từng người để ghi Đi làm / Nghỉ có phép / Không phép (bổ sung công không có giờ vào ca, đổi quyết định cần lý do); duyệt đơn nghỉ. **Bảng công**: lưới cả tháng, chạm một ngày để mở Duyệt công ngày đó.
 5. Tổng quan của Nhung, Linh có **Cần xử lý · chấm công**: ngày công chưa duyệt (trước hôm nay), đơn nghỉ chờ duyệt.
+6. Thiếu hồ sơ (S39): `linh@lindy.test` → **Thêm → Tài khoản → Thêm** một tài khoản thử → hộp mật khẩu tạm nhắc nhập hồ sơ, nút **Đã ghi lại, nhập hồ sơ ngay** mở thẳng hồ sơ ở Nhân viên. Danh sách tài khoản có nhãn **Thiếu hồ sơ**; Cần xử lý của Linh có dòng tên người đó. Đăng nhập tài khoản thử (email `@lindy.test` thì `bun scripts/dev-passwords.ts` đặt mật khẩu dev): Tổng quan hiện "Chưa có hồ sơ nhân viên…".
 
 ## Thử lương và tạm ứng (Đợt 4B)
 
