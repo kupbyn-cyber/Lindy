@@ -66,7 +66,14 @@ export async function createSession(tx: Tx, userId: string, userAgent: string | 
   return { token, sessionId: row!.id }
 }
 
-export type BranchAccess = { id: string; name: string; shortLabel: string; perms: string[] }
+/** roleName: tên vai trò để hiện (Thêm); quyền luôn đọc từ perms */
+export type BranchAccess = {
+  id: string
+  name: string
+  shortLabel: string
+  roleName?: string
+  perms: string[]
+}
 export type SessionInfo = {
   sessionId: string
   userId: string
@@ -107,10 +114,13 @@ export async function loadSession(token: string): Promise<SessionInfo | null> {
         where id = ${s.sessionId}`
     }
 
-    const rows = await tx<{ branchId: string; name: string; shortLabel: string; perm: string }[]>`
-      select b.id as branch_id, b.name, b.short_label, rp.permission_code as perm
+    const rows = await tx<
+      { branchId: string; name: string; shortLabel: string; roleName: string; perm: string }[]
+    >`
+      select b.id as branch_id, b.name, b.short_label, r.name as role_name, rp.permission_code as perm
       from user_branch_roles ubr
       join branches b on b.id = ubr.branch_id
+      join roles r on r.id = ubr.role_id
       join role_permissions rp on rp.role_id = ubr.role_id
       where ubr.user_id = ${s.userId} and ubr.revoked_at is null
       order by b.name`
@@ -118,7 +128,7 @@ export async function loadSession(token: string): Promise<SessionInfo | null> {
     for (const r of rows) {
       let b = map.get(r.branchId)
       if (!b) {
-        b = { id: r.branchId, name: r.name, shortLabel: r.shortLabel, perms: [] }
+        b = { id: r.branchId, name: r.name, shortLabel: r.shortLabel, roleName: r.roleName, perms: [] }
         map.set(r.branchId, b)
       }
       if (!b.perms.includes(r.perm)) b.perms.push(r.perm)

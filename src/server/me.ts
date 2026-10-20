@@ -7,7 +7,7 @@ export type Me = {
   userId: string
   displayName: string
   mustChangePassword: boolean
-  branches: { id: string; name: string; shortLabel: string; perms: string[] }[]
+  branches: { id: string; name: string; shortLabel: string; roleName?: string; perms: string[] }[]
 }
 
 export function toMe(auth: Auth): Me {

@@ -183,6 +183,8 @@ describe('Quản lý tài khoản', () => {
     })
     const self = (await loadSession(s.token))!
     expect((await myToday(self, branchId)).hasProfile).toBe(false)
+    // Tên vai trò trong phiên (màn Thêm, S40)
+    expect(self.branches[0]!.roleName).toBe('Thợ')
 
     const month = toLocalDate(new Date()).slice(0, 7)
     await saveProfile(auth('linh'), {
