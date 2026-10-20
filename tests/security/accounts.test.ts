@@ -15,6 +15,7 @@ import { login } from '../../src/server/auth/login'
 import { loadSession } from '../../src/server/auth/session'
 import { closeSql, withUser } from '../../src/server/db/client'
 import { AppError, fromDbError } from '../../src/server/http/errors'
+import { payrollAttention } from '../../src/server/payroll/service'
 import { savePolicy, saveProfile } from '../../src/server/staff/service'
 import { type SeedKey, sessionOf } from '../helpers/auth'
 import { expectPgError, ownerSql, seed } from '../helpers/db'
@@ -166,9 +167,14 @@ describe('Quản lý tài khoản', () => {
     const res = await createAccount(auth('linh'), { name: 'Thiếu 1', phone: '0912000501', role: 'staff' })
     const gap = async (id = res.id) => (await listAccounts(auth('linh'))).find((u) => u.id === id)?.staffGap
     expect(await gap()).toBe('profile')
+    // Cần xử lý: Linh (sửa được hồ sơ) thấy tên; Nhung (chỉ xem bảng lương) không
+    const branchId = seed().branchIds.HTK!
+    const missing = (k: SeedKey) =>
+      withUser(auth(k).userId, async (tx) => (await payrollAttention(tx, auth(k), branchId)).staffMissing)
+    expect(await missing('linh')).toContainEqual({ userId: res.id, name: 'Thiếu 1', gap: 'profile' })
+    expect(await missing('nhung')).toEqual([])
 
     const month = toLocalDate(new Date()).slice(0, 7)
-    const branchId = seed().branchIds.HTK!
     await saveProfile(auth('linh'), {
       branchId,
       userId: res.id,
@@ -198,6 +204,7 @@ describe('Quản lý tài khoản', () => {
       managerKpi: false,
     })
     expect(await gap()).toBeNull()
+    expect((await missing('linh')).some((m) => m.userId === res.id)).toBe(false)
 
     // Đã khoá hoặc đã thu quyền: không nhắc
     const locked = await createAccount(auth('linh'), { name: 'Thiếu 2', phone: '0912000502', role: 'staff' })

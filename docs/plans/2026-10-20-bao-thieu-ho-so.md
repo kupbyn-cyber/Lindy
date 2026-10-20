@@ -62,7 +62,7 @@ Cùng chữ với màn Nhân viên hiện nay. Chỉ người có `payroll.edit`
   Kiểm: test mới trong `accounts.test.ts`: tạo tài khoản → `profile`; lưu hồ sơ → `policy`; lưu chính sách tháng này → `null`; tài khoản bị khoá không tính. `bun run test tests/security/accounts.test.ts`.
 - [x] **2. Màn Tài khoản và Nhân viên (giao diện).** Nhãn, nút "Mở hồ sơ nhân viên", nhắc sau khi tạo, `?u=` mở sẵn hồ sơ.
   Kiểm: typecheck; local `linh@lindy.test` tạo tài khoản thử → thấy nhắc và nhãn "Thiếu hồ sơ" → bấm nút → mở đúng hồ sơ.
-- [ ] **3. Cần xử lý của Linh.** `staffMissing` trong `payrollAttention`, dòng mới trong thẻ Cần xử lý.
+- [x] **3. Cần xử lý của Linh.** `staffMissing` trong `payrollAttention`, dòng mới trong thẻ Cần xử lý.
   Kiểm: test: Linh thấy tên người thiếu, Nhung không thấy; local: Trang chủ Linh có dòng mới, bấm tới Nhân viên.
 - [ ] **4. Thẻ Chấm công ở Trang chủ.** Chưa có hồ sơ → "Chưa có hồ sơ nhân viên nên chưa vào ca, đăng ký nghỉ được. Báo Linh nhập ở Thêm → Nhân viên."
   Kiểm: test `myToday.hasProfile = false` với tài khoản mới (đã có sẵn dữ liệu trả về, chỉ đổi giao diện); local đăng nhập tài khoản thử → thấy dòng nhắc.

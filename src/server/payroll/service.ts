@@ -6,6 +6,7 @@ import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
 import { conflict, forbidden, notFound } from '../http/errors'
+import { type StaffGap, staffGaps } from '../staff/service'
 
 const n = (v: unknown) => Number(v ?? 0)
 const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s)
@@ -383,18 +384,24 @@ export async function myPayNow(tx: Tx, auth: Auth, branchId: string) {
     : null
 }
 
-/** Cần xử lý: tạm ứng chờ duyệt (Linh), chờ chi (Nhung, Linh); bảng lương chờ khoá (Linh, từ ngày nháp); lương chưa trả. */
+/**
+ * Cần xử lý: tạm ứng chờ duyệt (Linh), chờ chi (Nhung, Linh); bảng lương chờ khoá (Linh, từ ngày nháp); lương chưa trả;
+ * người thiếu hồ sơ / chính sách lương (Linh, người sửa được, S39).
+ */
 export async function payrollAttention(tx: Tx, auth: Auth, branchId: string) {
   const approve = hasPerm(auth, branchId, 'advance.approve')
   const manage = hasPerm(auth, branchId, 'cashbook.manage')
   const lock = hasPerm(auth, branchId, 'payroll.approve_lock')
   const pay = hasPerm(auth, branchId, 'payroll.pay')
+  const edit = hasPerm(auth, branchId, 'payroll.edit')
   const out = {
     advancesToApprove: 0,
     advancesToPay: 0,
     payrollToLock: null as string | null,
     payrollUnpaid: 0,
+    staffMissing: [] as { userId: string; name: string; gap: StaffGap }[],
   }
+  if (edit) out.staffMissing = await staffGaps(tx, branchId)
   if (!approve && !manage && !lock && !pay) return out
   const [c] = await tx<{ requested: string; approved: string; unpaid: string }[]>`
     select (select count(*) from employee_advances where branch_id = ${branchId} and status = 'requested') as requested,

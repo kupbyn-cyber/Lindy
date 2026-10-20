@@ -375,6 +375,18 @@ function AttentionCard(props: { d: Data; canManageBooking: boolean }) {
     a.advancesToPay
       ? { key: 'ap', to: '/them/tam-ung', text: `${a.advancesToPay} tạm ứng đã duyệt chờ chi` }
       : null,
+    // S39: có tài khoản nhưng chưa vào ca, đăng ký nghỉ, tính lương được
+    a.staffMissing.length
+      ? {
+          key: 'sm',
+          to: '/them/nhan-vien',
+          search: a.staffMissing.length === 1 ? { u: a.staffMissing[0]!.userId } : undefined,
+          text:
+            a.staffMissing.length === 1
+              ? `${a.staffMissing[0]!.name} ${a.staffMissing[0]!.gap === 'profile' ? 'chưa có hồ sơ nhân viên' : 'chưa có chính sách lương tháng này'}`
+              : `${a.staffMissing.length} người thiếu hồ sơ hoặc chính sách lương: ${a.staffMissing.map((s) => s.name).join(', ')}`,
+        }
+      : null,
   ].filter((x): x is NonNullable<typeof x> => !!x)
   const ad = props.canManageBooking ? appt.data : undefined
   const apptCount = ad
