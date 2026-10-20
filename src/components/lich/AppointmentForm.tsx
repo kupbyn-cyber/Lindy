@@ -16,7 +16,7 @@ import {
 import { ApiError, api } from '~/lib/api'
 import { addMinutes, type Detail, type ListItem, type Settings, type Warnings } from '~/lib/appointments'
 import { formatVND } from '~/lib/money'
-import { normalizePhone } from '~/lib/phone'
+import { movePhoneOutOfName, nameLooksMessy, normalizePhone } from '~/lib/phone'
 import { CustomerPicker } from '../don-hang/pickers'
 
 type Values = {
@@ -70,6 +70,8 @@ export function AppointmentForm(props: {
   const [conflict, setConflict] = useState<Detail | null>(null)
   const [warnings, setWarnings] = useState<Warnings | null>(null)
   const [picking, setPicking] = useState(false)
+  // SĐT vừa lấy ra khỏi ô tên khách (S40)
+  const [moved, setMoved] = useState<string | null>(null)
   const requestId = useRef<string>('')
   // Cọc ghi kèm khi tạo lịch (khách đã chuyển); mã riêng để bấm lại không ghi hai khoản
   const [depositOn, setDepositOn] = useState(false)
@@ -85,6 +87,7 @@ export function AppointmentForm(props: {
     setConflict(null)
     setWarnings(null)
     setEndTouched(false)
+    setMoved(null)
     if (props.editing) {
       setV(fromDetail(props.editing))
       setVersion(props.editing.version)
@@ -277,7 +280,24 @@ export function AppointmentForm(props: {
           maxLength={LIMITS.name}
           autoFocus={!isEdit}
           enterKeyHint="done"
-          onChange={(e) => set('customerDisplayName', e.target.value)}
+          hint={
+            moved
+              ? `Đã chuyển ${moved} sang ô SĐT.`
+              : nameLooksMessy(v.customerDisplayName)
+                ? 'Ô tên chỉ ghi tên khách; giờ, dịch vụ có ô riêng.'
+                : undefined
+          }
+          onChange={(e) => {
+            set('customerDisplayName', e.target.value)
+            setMoved(null)
+          }}
+          onBlur={() => {
+            // S40: dán cả tiêu đề lịch (tên - SĐT - dịch vụ - giờ) → SĐT sang ô SĐT
+            const r = movePhoneOutOfName(v.customerDisplayName, v.phone)
+            if (!r.moved) return
+            setV((old) => (old ? { ...old, customerDisplayName: r.name, phone: r.phone } : old))
+            setMoved(r.moved)
+          }}
         />
         <div className="-mt-2 flex items-center justify-between gap-2">
           <span className="caption text-ink-muted">

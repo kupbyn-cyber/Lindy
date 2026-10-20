@@ -85,8 +85,8 @@ Sáu nhóm, nhóm nào không có mục theo quyền thì ẩn:
 - [x] 1. Thêm: chia nhóm, rút gợi ý (A1, A2). Kiểm: local đăng nhập Linh, Nhung, Trang ở khổ 375px, đúng nhóm theo quyền, không chữ bị cắt.
 - [x] 2. Thêm: số việc chờ, đầu trang có vai trò (A3, A4). Kiểm: test phiên có tên vai trò; local số khớp thẻ Cần xử lý.
 - [x] 3. Khách: server số lần làm, che SĐT trong tên (B3, B5). Kiểm: test `customers.test.ts` (thợ chỉ đếm đơn trong phạm vi K09).
-- [ ] 4. Khách: ô tìm, nhóm theo ngày, dòng phụ, hồ sơ (B1, B2, B4, B6). Kiểm: local, sáng và tối.
-- [ ] 5. Phần C (nếu duyệt): tách SĐT khỏi tên ở form, nhãn Sửa tên. Kiểm: test hàm tách SĐT; local gõ "Tú - 0969038498 - tay 13h".
+- [x] 4. Khách: ô tìm, nhóm theo ngày, dòng phụ, hồ sơ (B1, B2, B4, B6). Kiểm: local, sáng và tối.
+- [x] 5. Phần C (nếu duyệt): tách SĐT khỏi tên ở form, nhãn Sửa tên. Kiểm: test hàm tách SĐT; local gõ "Tú - 0969038498 - tay 13h".
 - [ ] 6. `bun run check`, `bun run build`, quét bundle; ghi S40; commit từng bước, không push.
 
 ## Rủi ro và cách quay lại

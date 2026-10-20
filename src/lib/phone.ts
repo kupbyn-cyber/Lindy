@@ -48,6 +48,22 @@ export function splitPhoneFromName(text: string): { name: string; phone: string 
   return { name, phone: digitsOf(m[0]) }
 }
 
+/**
+ * Rời ô tên khách (S40): SĐT lẫn trong tên mà ô SĐT còn trống thì chuyển sang ô SĐT; trùng số đã có ở ô SĐT thì bỏ
+ * khỏi tên. Tên chỉ có mỗi SĐT thì để nguyên cho người nhập tự sửa. `moved` là số vừa lấy ra (để báo một dòng).
+ */
+export function movePhoneOutOfName(
+  name: string,
+  phone: string,
+): { name: string; phone: string; moved: string | null } {
+  const s = splitPhoneFromName(name)
+  if (!s.phone || !s.name) return { name, phone, moved: null }
+  if (phone.trim() === '') return { name: s.name, phone: s.phone, moved: s.phone }
+  const cur = normalizePhone(phone)
+  if (cur.ok && cur.value === s.phone) return { name: s.name, phone, moved: s.phone }
+  return { name, phone, moved: null }
+}
+
 /** Tên khách có lẫn SĐT, giờ, ngày hoặc quá dài: nên sửa lại cho gọn (S40). */
 export function nameLooksMessy(name: string) {
   return (

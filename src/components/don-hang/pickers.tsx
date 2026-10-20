@@ -7,7 +7,7 @@ import { searchCatalog } from '~/lib/catalog-search'
 import { formatVND } from '~/lib/money'
 import type { DiscountInput, DiscountKind } from '~/lib/order-math'
 import type { Catalog } from '~/lib/orders'
-import { normalizePhone } from '~/lib/phone'
+import { movePhoneOutOfName, nameLooksMessy, normalizePhone } from '~/lib/phone'
 
 // ---------------------------------------------------------------- Dịch vụ
 
@@ -179,6 +179,7 @@ export function CustomerPicker(props: {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [moved, setMoved] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
@@ -187,6 +188,7 @@ export function CustomerPicker(props: {
       setAdding(false)
       setName('')
       setPhone('')
+      setMoved(null)
       setError(null)
     }
   }, [props.open])
@@ -246,7 +248,25 @@ export function CustomerPicker(props: {
             value={name}
             maxLength={100}
             autoFocus
-            onChange={(e) => setName(e.target.value)}
+            hint={
+              moved
+                ? `Đã chuyển ${moved} sang ô SĐT.`
+                : nameLooksMessy(name)
+                  ? 'Ô tên chỉ ghi tên khách; giờ, dịch vụ có ô riêng.'
+                  : undefined
+            }
+            onChange={(e) => {
+              setName(e.target.value)
+              setMoved(null)
+            }}
+            onBlur={() => {
+              // S40: SĐT gõ lẫn vào ô tên → chuyển sang ô SĐT
+              const r = movePhoneOutOfName(name, phone)
+              if (!r.moved) return
+              setName(r.name)
+              setPhone(r.phone)
+              setMoved(r.moved)
+            }}
           />
           <TextField
             label="SĐT (không bắt buộc)"

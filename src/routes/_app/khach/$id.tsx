@@ -4,11 +4,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Phone } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
-import { Button, Money, Note, Sheet, StatusChip, TextField, useToast } from '~/components/ui'
+import { Button, cx, Icon, Money, Note, Sheet, StatusChip, TextField, useToast } from '~/components/ui'
 import { ApiError, api, errorText } from '~/lib/api'
 import { TICKETS_ENABLED } from '~/lib/features'
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, type OrderStatus } from '~/lib/orders'
-import { normalizePhone } from '~/lib/phone'
+import { movePhoneOutOfName, nameLooksMessy, normalizePhone } from '~/lib/phone'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import type { getCustomer } from '~/server/customers/service'
 
@@ -26,6 +26,7 @@ function CustomerPage() {
     queryFn: () => api<Customer>(`/api/customers/${id}`),
   })
   const [editing, setEditing] = useState(false)
+  const [showChanges, setShowChanges] = useState(false)
   // Ưu đãi bù khiếu nại còn dùng được (bước 2.18): thợ thấy để áp ở bill sau; tạm ẩn cùng phiếu xử lý (S28)
   const comp = useQuery({
     queryKey: ['customers', 'compensations', id, null],
@@ -75,6 +76,12 @@ function CustomerPage() {
           ) : null}
         </div>
       </div>
+
+      {c.canEdit && nameLooksMessy(c.name) ? (
+        <div className="px-4">
+          <Note tone="warning">Tên đang lẫn SĐT, giờ hoặc dịch vụ. Bấm Sửa để chỉ giữ tên khách.</Note>
+        </div>
+      ) : null}
 
       {(comp.data?.items ?? []).map((x) => (
         <div key={x.ticketId} className="px-4">
@@ -148,14 +155,26 @@ function CustomerPage() {
 
       {c.changes.length > 0 ? (
         <section>
-          <h2 className="overline m-0 px-4 pb-1 text-ink-muted">Thay đổi hồ sơ</h2>
-          <div className="border-t border-line">
+          <button
+            type="button"
+            className="lo-row lo-row-action border-y border-line"
+            aria-expanded={showChanges}
+            onClick={() => setShowChanges((x) => !x)}
+          >
+            <span className="body">Lịch sử sửa hồ sơ ({c.changes.length})</span>
+            <Icon
+              name="chevron-right"
+              size={20}
+              className={cx('text-ink-muted transition-transform', showChanges && 'rotate-90')}
+            />
+          </button>
+          <div className={showChanges ? undefined : 'hidden'}>
             {c.changes.map((x, i) => {
               const before = (x.beforeJson ?? {}) as { name?: string; phone?: string | null }
               const after = (x.afterJson ?? {}) as { name?: string; phone?: string | null }
               return (
                 // biome-ignore lint/suspicious/noArrayIndexKey: lịch sử chỉ đọc, không đổi thứ tự
-                <div key={i} className="border-b border-line bg-surface-raised px-4 py-2">
+                <div key={i} className="border-b border-line px-4 py-2">
                   <div className="flex justify-between gap-2">
                     <span className="body-strong">{x.action === 'created' ? 'Tạo hồ sơ' : 'Sửa hồ sơ'}</span>
                     <span className="caption text-ink-muted">{formatDateTimeShort(x.occurredAt)}</span>
@@ -199,6 +218,8 @@ function EditSheet(props: { open: boolean; customer: Customer; onClose: () => vo
   const toast = useToast()
   const [name, setName] = useState(props.customer.name)
   const [phone, setPhone] = useState(props.customer.phone ?? '')
+  // SĐT vừa lấy ra khỏi ô tên (S40)
+  const [moved, setMoved] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const check = normalizePhone(phone)
@@ -238,7 +259,29 @@ function EditSheet(props: { open: boolean; customer: Customer; onClose: () => vo
         </Button>
       }
     >
-      <TextField label="Tên khách" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
+      <TextField
+        label="Tên khách"
+        value={name}
+        maxLength={100}
+        hint={
+          moved
+            ? `Đã chuyển ${moved} sang ô SĐT.`
+            : nameLooksMessy(name)
+              ? 'Chỉ giữ tên khách; giờ, dịch vụ đã có trong đơn.'
+              : undefined
+        }
+        onChange={(e) => {
+          setName(e.target.value)
+          setMoved(null)
+        }}
+        onBlur={() => {
+          const r = movePhoneOutOfName(name, phone)
+          if (!r.moved) return
+          setName(r.name)
+          setPhone(r.phone)
+          setMoved(r.moved)
+        }}
+      />
       <TextField
         label="SĐT (không bắt buộc)"
         type="tel"

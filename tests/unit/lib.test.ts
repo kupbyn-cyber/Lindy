@@ -2,7 +2,13 @@
 import { describe, expect, it } from 'vitest'
 import { addMinutes, type ListItem, layoutDay } from '../../src/lib/appointments'
 import { formatVND, parseVND } from '../../src/lib/money'
-import { maskPhonesInText, nameLooksMessy, normalizePhone, splitPhoneFromName } from '../../src/lib/phone'
+import {
+  maskPhonesInText,
+  movePhoneOutOfName,
+  nameLooksMessy,
+  normalizePhone,
+  splitPhoneFromName,
+} from '../../src/lib/phone'
 import { escapeLike, foldVietnamese } from '../../src/lib/text'
 import { addDays, fromLocal, startOfWeek, toLocalDate, toLocalTime, weekdayShort } from '../../src/lib/time'
 import { runOneAtATime } from '../../src/server/auth/password'
@@ -170,6 +176,25 @@ describe('SĐT lẫn trong tên khách (S40)', () => {
       phone: null,
     })
     expect(splitPhoneFromName('Mã 12345678901234')).toEqual({ name: 'Mã 12345678901234', phone: null })
+  })
+  it('rời ô tên: chuyển SĐT sang ô SĐT trống; trùng số thì chỉ bỏ khỏi tên; khác số thì giữ nguyên', () => {
+    expect(movePhoneOutOfName('Tú - 0969038498 - tay', '')).toEqual({
+      name: 'Tú - tay',
+      phone: '0969038498',
+      moved: '0969038498',
+    })
+    expect(movePhoneOutOfName('Tú 0969038498', '0969 038 498')).toEqual({
+      name: 'Tú',
+      phone: '0969 038 498',
+      moved: '0969038498',
+    })
+    expect(movePhoneOutOfName('Tú 0969038498', '0912345678')).toEqual({
+      name: 'Tú 0969038498',
+      phone: '0912345678',
+      moved: null,
+    })
+    expect(movePhoneOutOfName('0969038498', '')).toEqual({ name: '0969038498', phone: '', moved: null })
+    expect(movePhoneOutOfName('Minh Hà', '')).toEqual({ name: 'Minh Hà', phone: '', moved: null })
   })
   it('che SĐT trong chữ để hiện trên danh sách', () => {
     expect(maskPhonesInText('Tú - 0969038498 - tay')).toBe('Tú - 0969•••498 - tay')
