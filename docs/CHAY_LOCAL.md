@@ -87,6 +87,12 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 5. Tổng quan của Nhung, Linh có **Cần xử lý · chấm công**: ngày công chưa duyệt (trước hôm nay), đơn nghỉ chờ duyệt.
 6. Thiếu hồ sơ (S39): `linh@lindy.test` → **Thêm → Tài khoản → Thêm** một tài khoản thử → hộp mật khẩu tạm nhắc nhập hồ sơ, nút **Đã ghi lại, nhập hồ sơ ngay** mở thẳng hồ sơ ở Nhân viên. Danh sách tài khoản có nhãn **Thiếu hồ sơ**; Cần xử lý của Linh có dòng tên người đó. Đăng nhập tài khoản thử (email `@lindy.test` thì `bun scripts/dev-passwords.ts` đặt mật khẩu dev): Tổng quan hiện "Chưa có hồ sơ nhân viên…".
 
+## Thử tab Khách và Thêm (S40)
+
+1. Đăng nhập lần lượt `linh@`, `nhung@`, `trang@lindy.test` → **Thêm**: mục chia nhóm Hằng ngày, Tiền và báo cáo, Nhân sự, Cài đặt quán, Dữ liệu, Cá nhân; nhóm không có mục theo quyền thì ẩn. Mục có việc chờ hiện số giống thẻ Cần xử lý.
+2. **Khách**: chưa gõ thì nhóm theo ngày (Hôm nay, Hôm qua, dd/mm); dòng phụ SĐT che · số lần làm (Linh, Nhung).
+3. Tạo khách tên "Tú - 0969038498 - tay 13h" (hoặc gõ vào ô Tên khách ở form lịch): rời ô tên thì SĐT chuyển sang ô SĐT. Khách cũ có tên như vậy: danh sách che SĐT trong tên, Linh, Nhung thấy nhãn **Sửa tên**.
+
 ## Thử lương và tạm ứng (Đợt 4B)
 
 Demo có tháng bắt đầu tính lương = tháng này và một đề nghị tạm ứng của Chin.
