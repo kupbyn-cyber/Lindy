@@ -4,7 +4,7 @@
 // tháng đã khoá (test 13).
 import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
-import { withUser } from '../db/client'
+import { type Tx, withUser } from '../db/client'
 import { forbidden } from '../http/errors'
 
 const n = (v: unknown) => Number(v ?? 0)
@@ -96,6 +96,27 @@ export async function listPeople(auth: Auth, branchId?: string) {
 }
 
 export type PeopleData = Awaited<ReturnType<typeof listPeople>>
+
+export type StaffGap = 'profile' | 'policy'
+
+/**
+ * Tài khoản đang dùng app nhưng thiếu hồ sơ nhân viên, hoặc có hồ sơ (chưa nghỉ việc) mà chưa có chính sách lương của
+ * tháng đang làm: chưa vào ca, đăng ký nghỉ, tính lương được. Để Linh thấy ở Tài khoản, Cần xử lý. Người gọi kiểm
+ * quyền; RLS chỉ cho người xem bảng lương toàn quán đọc hồ sơ, chính sách của người khác.
+ */
+export async function staffGaps(tx: Tx, branchId: string) {
+  return tx<{ userId: string; name: string; gap: StaffGap }[]>`
+    select p.user_id, p.display_name as name, case when sp.user_id is null then 'profile' else 'policy' end as gap
+    from app.staff_people(${branchId}) p
+    cross join (select app.branch_today(${branchId}) as today) t
+    left join staff_profiles sp on sp.user_id = p.user_id and sp.branch_id = ${branchId}
+    where p.is_active
+      and (sp.user_id is null
+           or ((sp.end_date is null or sp.end_date >= t.today)
+               and app._base_salary(${branchId}, p.user_id,
+                                    date_trunc('month', greatest(sp.start_date, t.today))::date) is null))
+    order by p.display_name`
+}
 
 function requireEdit(auth: Auth, branchId?: string) {
   const branch = requireBranch(auth, branchId)

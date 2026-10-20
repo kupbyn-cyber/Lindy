@@ -8,6 +8,7 @@ import { hasPerm, requireBranch } from '../auth/context'
 import { hashPassword } from '../auth/password'
 import { withUser } from '../db/client'
 import { forbidden, invalid, notFound } from '../http/errors'
+import { type StaffGap, staffGaps } from '../staff/service'
 import { tempPassword } from './users'
 
 export const ROLE_OPTIONS = [
@@ -29,6 +30,8 @@ export type AccountRow = {
   roleName: string | null
   lastLoginAt: string | null
   isMe: boolean
+  /** Thiếu hồ sơ nhân viên / chính sách lương tháng này (null: đủ, hoặc tài khoản đã khoá, đã thu quyền) */
+  staffGap: StaffGap | null
 }
 
 export const CreateAccountBody = z.strictObject({
@@ -50,12 +53,13 @@ function checkId(id: string) {
   if (!z.uuid().safeParse(id).success) throw notFound('Không tìm thấy tài khoản.')
 }
 
-export async function listAccounts(auth: Auth) {
+export async function listAccounts(auth: Auth): Promise<AccountRow[]> {
   const branch = branchFor(auth)
-  return withUser(
-    auth.userId,
-    (tx) => tx<AccountRow[]>`select * from app.admin_list_users(${branch.id}::uuid)`,
-  )
+  return withUser(auth.userId, async (tx) => {
+    const rows = await tx<Omit<AccountRow, 'staffGap'>[]>`select * from app.admin_list_users(${branch.id}::uuid)`
+    const gaps = new Map((await staffGaps(tx, branch.id)).map((g) => [g.userId, g.gap]))
+    return rows.map((r) => ({ ...r, staffGap: gaps.get(r.id) ?? null }))
+  })
 }
 
 export async function createAccount(auth: Auth, body: z.infer<typeof CreateAccountBody>) {

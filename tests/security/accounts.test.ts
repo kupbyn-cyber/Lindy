@@ -1,5 +1,6 @@
 // Quản lý tài khoản trên app (Thêm → Tài khoản): chỉ Chủ; không thao tác lên chính mình; thu hồi phiên khi đổi.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { addMonths, toLocalDate } from '../../src/lib/time'
 import {
   createAccount,
   deleteAccount,
@@ -14,6 +15,7 @@ import { login } from '../../src/server/auth/login'
 import { loadSession } from '../../src/server/auth/session'
 import { closeSql, withUser } from '../../src/server/db/client'
 import { AppError, fromDbError } from '../../src/server/http/errors'
+import { savePolicy, saveProfile } from '../../src/server/staff/service'
 import { type SeedKey, sessionOf } from '../helpers/auth'
 import { expectPgError, ownerSql, seed } from '../helpers/db'
 
@@ -158,6 +160,52 @@ describe('Quản lý tài khoản', () => {
       'admin.user_unlocked',
       'admin.branch_revoked',
     ])
+  })
+
+  it('Tài khoản thiếu hồ sơ / chính sách lương hiện nhãn ở danh sách; đủ, khoá hay thu quyền thì không', async () => {
+    const res = await createAccount(auth('linh'), { name: 'Thiếu 1', phone: '0912000501', role: 'staff' })
+    const gap = async (id = res.id) => (await listAccounts(auth('linh'))).find((u) => u.id === id)?.staffGap
+    expect(await gap()).toBe('profile')
+
+    const month = toLocalDate(new Date()).slice(0, 7)
+    const branchId = seed().branchIds.HTK!
+    await saveProfile(auth('linh'), {
+      branchId,
+      userId: res.id,
+      startDate: `${month}-01`,
+      endDate: null,
+      payMethod: 'transfer',
+    })
+    expect(await gap()).toBe('policy')
+    // Chính sách từ tháng sau chưa áp dụng tháng này
+    await savePolicy(auth('linh'), {
+      branchId,
+      userId: res.id,
+      effectiveMonth: `${addMonths(month, 1)}-01`,
+      baseSalary: 3_500_000,
+      commissionBps: 2500,
+      leaveDays: 3,
+      managerKpi: false,
+    })
+    expect(await gap()).toBe('policy')
+    await savePolicy(auth('linh'), {
+      branchId,
+      userId: res.id,
+      effectiveMonth: `${month}-01`,
+      baseSalary: 3_500_000,
+      commissionBps: 2500,
+      leaveDays: 3,
+      managerKpi: false,
+    })
+    expect(await gap()).toBeNull()
+
+    // Đã khoá hoặc đã thu quyền: không nhắc
+    const locked = await createAccount(auth('linh'), { name: 'Thiếu 2', phone: '0912000502', role: 'staff' })
+    await setAccountActive(auth('linh'), locked.id, false)
+    expect(await gap(locked.id)).toBeNull()
+    const revoked = await createAccount(auth('linh'), { name: 'Thiếu 3', phone: '0912000503', role: 'staff' })
+    await revokeAccount(auth('linh'), revoked.id)
+    expect(await gap(revoked.id)).toBeNull()
   })
 
   it('Chủ ở cơ sở này không thao tác được người chỉ thuộc cơ sở khác', async () => {
