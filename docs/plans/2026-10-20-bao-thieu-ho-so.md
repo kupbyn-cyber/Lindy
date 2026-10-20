@@ -66,7 +66,7 @@ Cùng chữ với màn Nhân viên hiện nay. Chỉ người có `payroll.edit`
   Kiểm: test: Linh thấy tên người thiếu, Nhung không thấy; local: Trang chủ Linh có dòng mới, bấm tới Nhân viên.
 - [x] **4. Thẻ Chấm công ở Trang chủ.** Chưa có hồ sơ → "Chưa có hồ sơ nhân viên nên chưa vào ca, đăng ký nghỉ được. Báo Linh nhập ở Thêm → Nhân viên."
   Kiểm: test `myToday.hasProfile = false` với tài khoản mới (đã có sẵn dữ liệu trả về, chỉ đổi giao diện); local đăng nhập tài khoản thử → thấy dòng nhắc.
-- [ ] **5. Gói dùng thử báo tên không khớp.** `summary.unmatched`, hiện trên màn Dữ liệu dùng thử sau khi nạp.
+- [x] **5. Gói dùng thử báo tên không khớp.** `summary.unmatched`, hiện trên màn Dữ liệu dùng thử sau khi nạp.
   Kiểm: test trong `demo.test.ts`: thêm tài khoản tên không có trong `staff.csv` → nằm trong `unmatched`, không có hồ sơ.
 - [ ] **6. Kiểm toàn bộ.** `bun run check`, `bun run build`, `bun scripts/scan-bundle.ts`; ghi S39 vào `docs/DECISIONS.md`; thêm mục thử vào `docs/CHAY_LOCAL.md`.
 

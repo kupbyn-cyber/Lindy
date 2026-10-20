@@ -2,6 +2,7 @@
 // vì nó xoá sạch dữ liệu nghiệp vụ của DB test.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { addDays, toLocalDate } from '../../src/lib/time'
+import { createAccount } from '../../src/server/admin/accounts'
 import { createAppointment } from '../../src/server/appointments/service'
 import { closeSql, withUser } from '../../src/server/db/client'
 import { AppError, fromDbError } from '../../src/server/http/errors'
@@ -96,8 +97,13 @@ describe('Dữ liệu dùng thử (S12)', () => {
 
   it('xoá dữ liệu hiện có rồi nạp gói thử: lịch 2 tuần, 40–60 đơn, sổ tiền, thu chi, công, lương; không phát thông báo', async () => {
     const events = await count('notification_events')
+    // Tên không có trong data/staff.csv (S39): không có hồ sơ thử, được báo lại thay vì bỏ qua im lặng
+    const extra = await createAccount(auth('linh'), { name: 'Nhung Hi', phone: '0912000601', role: 'staff' })
     const res = await loadDemo(auth('linh'), { replaceExisting: true, confirm: GOLIVE_CONFIRM })
     expect(res.state).toBe('loaded')
+    expect(res.summary!.unmatched).toContain('Nhung Hi')
+    expect(res.summary!.unmatched).not.toContain('Nhung')
+    expect(await owner`select 1 from staff_profiles where user_id = ${extra.id}`).toHaveLength(0)
     expect(res.summary!.orders).toBeGreaterThanOrEqual(40)
     expect(res.summary!.orders).toBeLessThanOrEqual(60)
     expect(res.counts.appointments).toBeGreaterThanOrEqual(50)

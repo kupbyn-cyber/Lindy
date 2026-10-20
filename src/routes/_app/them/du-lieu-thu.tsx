@@ -21,7 +21,7 @@ type Status = {
   loadedAt: string | null
   liveAt: string | null
   counts: { appointments: number; orders: number; customers: number }
-  summary?: { appointments: number; orders: number; profiles: number; expenses: number }
+  summary?: { appointments: number; orders: number; profiles: number; expenses: number; unmatched: string[] }
 }
 
 function DemoPage() {
@@ -38,6 +38,8 @@ function DemoPage() {
   // Hộp gõ chữ xác nhận: xoá để dùng thật, hoặc xoá dữ liệu cũ rồi nạp gói thử
   const [asking, setAsking] = useState<null | 'golive' | 'replace'>(null)
   const [typed, setTyped] = useState('')
+  // Tài khoản không có mức lương mẫu (tên không khớp data/staff.csv) sau lần nạp vừa rồi (S39)
+  const [unmatched, setUnmatched] = useState<string[]>([])
   const ask = (mode: 'golive' | 'replace') => {
     setTyped('')
     setError(null)
@@ -58,6 +60,7 @@ function DemoPage() {
       qc.setQueryData(['demo'], res)
       await qc.invalidateQueries()
       setAsking(null)
+      setUnmatched(res.summary?.unmatched ?? [])
       toast(
         res.summary
           ? `Đã nạp ${res.summary.appointments} lịch, ${res.summary.orders} đơn thử.`
@@ -106,6 +109,12 @@ function DemoPage() {
             {s.liveAt ? ` · dùng thật từ ${formatDateTimeShort(s.liveAt)}` : ''}
           </span>
         </div>
+      ) : null}
+      {unmatched.length ? (
+        <Note tone="warning">
+          Chưa có hồ sơ, mức lương thử cho: {unmatched.join(', ')} (tên không có trong danh sách mẫu). Nhập ở
+          Thêm → Nhân viên, không thì người này chưa vào ca, đăng ký nghỉ, tính lương được.
+        </Note>
       ) : null}
 
       {s && s.state === 'empty' ? (

@@ -184,15 +184,19 @@ async function build(owner: Auth, branchId: string) {
   const now = new Date()
   const today = toLocalDate(now, tz)
   const nowTime = toLocalTime(now, tz)
-  const summary = { appointments: 0, orders: 0, profiles: 0, expenses: 0 }
+  const summary = { appointments: 0, orders: 0, profiles: 0, expenses: 0, unmatched: [] as string[] }
 
-  // 1. Hồ sơ, mức lương (theo data/staff.csv), tháng bắt đầu tính lương
+  // 1. Hồ sơ, mức lương (theo data/staff.csv), tháng bắt đầu tính lương. Tên không có trong file thì báo lại cho Linh
+  // nhập tay (S39), không bỏ qua im lặng.
   const prevMonth = `${addMonths(today.slice(0, 7), -1)}-01`
   const rows = staffRows()
   const withProfile: Person[] = []
   for (const p of people) {
     const r = rows.find((x) => x.name === foldVietnamese(p.displayName))
-    if (!r) continue
+    if (!r) {
+      summary.unmatched.push(p.displayName)
+      continue
+    }
     await saveProfile(owner, {
       branchId,
       userId: p.userId,
