@@ -56,7 +56,9 @@ function checkId(id: string) {
 export async function listAccounts(auth: Auth): Promise<AccountRow[]> {
   const branch = branchFor(auth)
   return withUser(auth.userId, async (tx) => {
-    const rows = await tx<Omit<AccountRow, 'staffGap'>[]>`select * from app.admin_list_users(${branch.id}::uuid)`
+    const rows = await tx<
+      Omit<AccountRow, 'staffGap'>[]
+    >`select * from app.admin_list_users(${branch.id}::uuid)`
     const gaps = new Map((await staffGaps(tx, branch.id)).map((g) => [g.userId, g.gap]))
     return rows.map((r) => ({ ...r, staffGap: gaps.get(r.id) ?? null }))
   })

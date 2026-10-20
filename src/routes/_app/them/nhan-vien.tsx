@@ -20,7 +20,13 @@ import { formatVND } from '~/lib/money'
 import { addMonths, formatIsoDate, formatYearMonth } from '~/lib/time'
 import type { PeopleData, PolicyView } from '~/server/staff/service'
 
+// ?u=<id>: mở sẵn hồ sơ một người (từ Tài khoản, Cần xử lý)
+type Search = { u?: string }
+
 export const Route = createFileRoute('/_app/them/nhan-vien')({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    u: typeof s.u === 'string' && /^[0-9a-f-]{36}$/i.test(s.u) ? s.u : undefined,
+  }),
   head: () => ({ meta: [{ title: 'Nhân viên · LINDY OS' }] }),
   component: Page,
 })
@@ -42,7 +48,9 @@ function policyLine(p: PolicyView) {
 function Page() {
   const qc = useQueryClient()
   const q = useQuery({ queryKey: ['people'], queryFn: () => api<PeopleData>('/api/people') })
-  const [openId, setOpenId] = useState<string | null>(null)
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const [openId, setOpenId] = useState<string | null>(search.u ?? null)
   const [kpiOpen, setKpiOpen] = useState(false)
   const d = q.data
   const open = d?.people.find((p) => p.userId === openId) ?? null
@@ -124,7 +132,17 @@ function Page() {
               </Button>
             ) : null}
           </section>
-          {open ? <PersonSheet p={open} d={d} onSaved={set} onClose={() => setOpenId(null)} /> : null}
+          {open ? (
+            <PersonSheet
+              p={open}
+              d={d}
+              onSaved={set}
+              onClose={() => {
+                setOpenId(null)
+                if (search.u) void navigate({ search: {}, replace: true })
+              }}
+            />
+          ) : null}
           {kpiOpen ? <KpiSheet d={d} onSaved={set} onClose={() => setKpiOpen(false)} /> : null}
         </>
       ) : null}

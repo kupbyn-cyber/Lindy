@@ -1,7 +1,8 @@
 // Thêm → Tài khoản (chỉ Chủ): tạo tài khoản, đặt lại mật khẩu, đổi vai trò, khoá, thu quyền, xoá (S01).
 // Mật khẩu tạm hiện một lần để đưa cho nhân viên; người đó phải đổi khi đăng nhập lần đầu (K04).
+// Nhãn Thiếu hồ sơ / Thiếu chính sách: có quyền nhưng chưa vào ca, đăng ký nghỉ, tính lương được (S39).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
 import { Button, ConfirmDialog, Note, Sheet, StatusChip, TextField, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
@@ -61,10 +62,14 @@ const ACTION_TEXT: Record<
   },
 }
 
+const GAP_TEXT = { profile: 'Thiếu hồ sơ', policy: 'Thiếu chính sách' } as const
+
 function AccountsPage() {
   const can = useCan()
   const qc = useQueryClient()
   const toast = useToast()
+  const navigate = useNavigate()
+  const openProfile = (userId: string) => void navigate({ to: '/them/nhan-vien', search: { u: userId } })
   const list = useQuery({
     queryKey: ['accounts'],
     queryFn: () => api<{ items: AccountRow[] }>('/api/accounts'),
@@ -76,7 +81,8 @@ function AccountsPage() {
   const [role, setRole] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [temp, setTemp] = useState<{ name: string; password: string } | null>(null)
+  // createdId: vừa tạo tài khoản → nhắc nhập hồ sơ nhân viên
+  const [temp, setTemp] = useState<{ name: string; password: string; createdId?: string } | null>(null)
 
   if (!can('users.manage')) return <Note tone="warning">Chỉ chủ quán quản lý được tài khoản.</Note>
 
@@ -169,6 +175,7 @@ function AccountsPage() {
               {u.isActive && u.mustChangePassword ? (
                 <StatusChip tone="warning">Chưa đổi mật khẩu</StatusChip>
               ) : null}
+              {u.staffGap ? <StatusChip tone="warning">{GAP_TEXT[u.staffGap]}</StatusChip> : null}
             </span>
           </button>
         ))}
@@ -177,9 +184,9 @@ function AccountsPage() {
       <CreateSheet
         open={creating}
         onClose={() => setCreating(false)}
-        onCreated={(name, password) => {
+        onCreated={(name, password, id) => {
           setCreating(false)
-          setTemp({ name, password })
+          setTemp({ name, password, createdId: id })
           void refresh()
         }}
       />
@@ -191,6 +198,20 @@ function AccountsPage() {
       >
         {selected ? (
           <div className="flex flex-col gap-3">
+            {selected.staffGap ? (
+              <Note tone="warning">
+                {selected.staffGap === 'profile'
+                  ? 'Chưa có hồ sơ nhân viên: chưa vào ca, đăng ký nghỉ, tính lương được.'
+                  : 'Chưa có chính sách lương tháng này: chưa tính lương, tạm ứng được.'}
+              </Note>
+            ) : null}
+            <Button
+              block
+              variant={selected.staffGap ? 'primary' : undefined}
+              onClick={() => openProfile(selected.id)}
+            >
+              Hồ sơ nhân viên
+            </Button>
             <div className="lo-field">
               <label className="lo-field-label label" htmlFor="role">
                 Vai trò ở cơ sở này
@@ -271,6 +292,24 @@ function AccountsPage() {
         <p className="caption m-0 text-ink-muted">
           Chỉ hiện một lần. Đưa trực tiếp cho người dùng; họ phải đổi mật khẩu khi đăng nhập lần đầu.
         </p>
+        {temp?.createdId ? (
+          <>
+            <Note tone="warning">
+              Tiếp theo: nhập ngày vào làm và chính sách lương. Chưa có hồ sơ nhân viên thì người này chưa vào
+              ca, đăng ký nghỉ, tính lương được.
+            </Note>
+            <Button
+              block
+              onClick={() => {
+                const id = temp.createdId!
+                setTemp(null)
+                openProfile(id)
+              }}
+            >
+              Đã ghi lại, nhập hồ sơ ngay
+            </Button>
+          </>
+        ) : null}
       </ConfirmDialog>
     </section>
   )
@@ -279,7 +318,7 @@ function AccountsPage() {
 function CreateSheet(props: {
   open: boolean
   onClose: () => void
-  onCreated: (name: string, password: string) => void
+  onCreated: (name: string, password: string, id: string) => void
 }) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -288,11 +327,11 @@ function CreateSheet(props: {
   const [error, setError] = useState<string | null>(null)
   const create = useMutation({
     mutationFn: () =>
-      api<{ tempPassword: string }>('/api/accounts', {
+      api<{ id: string; tempPassword: string }>('/api/accounts', {
         body: { name, phone: phone || null, email: email || null, role },
       }),
     onSuccess: (res) => {
-      props.onCreated(name.trim(), res.tempPassword)
+      props.onCreated(name.trim(), res.tempPassword, res.id)
       setName('')
       setPhone('')
       setEmail('')

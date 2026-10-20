@@ -60,7 +60,7 @@ Cùng chữ với màn Nhân viên hiện nay. Chỉ người có `payroll.edit`
 
 - [x] **1. Hàm đếm người thiếu và màn Tài khoản (server).** `staffGaps`, `listAccounts.staffGap`.
   Kiểm: test mới trong `accounts.test.ts`: tạo tài khoản → `profile`; lưu hồ sơ → `policy`; lưu chính sách tháng này → `null`; tài khoản bị khoá không tính. `bun run test tests/security/accounts.test.ts`.
-- [ ] **2. Màn Tài khoản và Nhân viên (giao diện).** Nhãn, nút "Mở hồ sơ nhân viên", nhắc sau khi tạo, `?u=` mở sẵn hồ sơ.
+- [x] **2. Màn Tài khoản và Nhân viên (giao diện).** Nhãn, nút "Mở hồ sơ nhân viên", nhắc sau khi tạo, `?u=` mở sẵn hồ sơ.
   Kiểm: typecheck; local `linh@lindy.test` tạo tài khoản thử → thấy nhắc và nhãn "Thiếu hồ sơ" → bấm nút → mở đúng hồ sơ.
 - [ ] **3. Cần xử lý của Linh.** `staffMissing` trong `payrollAttention`, dòng mới trong thẻ Cần xử lý.
   Kiểm: test: Linh thấy tên người thiếu, Nhung không thấy; local: Trang chủ Linh có dòng mới, bấm tới Nhân viên.
