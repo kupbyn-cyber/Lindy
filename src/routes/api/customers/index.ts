@@ -3,7 +3,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '~/server/auth/context'
 import { CustomerBody } from '~/server/customers/schema'
-import { createCustomer, recentCustomers, searchCustomers } from '~/server/customers/service'
+import { createCustomer, recentCustomers, searchCustomerList } from '~/server/customers/service'
 import { handle, limitWrites, readBody } from '~/server/http/route'
 
 export const Route = createFileRoute('/api/customers/')({
@@ -15,7 +15,7 @@ export const Route = createFileRoute('/api/customers/')({
           const q = new URL(request.url).searchParams.get('q') ?? ''
           // Không có từ khoá: khách có đơn gần đây
           if (q.trim() === '') return Response.json({ items: await recentCustomers(auth) })
-          return Response.json({ items: await searchCustomers(auth, q.slice(0, 100)) })
+          return Response.json({ items: await searchCustomerList(auth, q.slice(0, 100)) })
         }),
       POST: ({ request }) =>
         handle(request, async () => {

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { addMinutes, type ListItem, layoutDay } from '../../src/lib/appointments'
 import { formatVND, parseVND } from '../../src/lib/money'
-import { normalizePhone } from '../../src/lib/phone'
+import { maskPhonesInText, nameLooksMessy, normalizePhone, splitPhoneFromName } from '../../src/lib/phone'
 import { escapeLike, foldVietnamese } from '../../src/lib/text'
 import { addDays, fromLocal, startOfWeek, toLocalDate, toLocalTime, weekdayShort } from '../../src/lib/time'
 import { runOneAtATime } from '../../src/server/auth/password'
@@ -148,6 +148,42 @@ describe('SĐT (K06)', () => {
     expect(normalizePhone('09abc')).toMatchObject({ ok: false })
     expect(normalizePhone('0912345678 gọi sau')).toMatchObject({ ok: false })
     expect(normalizePhone('123')).toMatchObject({ ok: false })
+  })
+})
+
+describe('SĐT lẫn trong tên khách (S40)', () => {
+  it('tách SĐT ra khỏi ô tên, dọn dấu ngăn thừa', () => {
+    expect(splitPhoneFromName('Tú - 0969038498 - tay móng thường - 19/10 1:30')).toEqual({
+      name: 'Tú - tay móng thường - 19/10 1:30',
+      phone: '0969038498',
+    })
+    expect(splitPhoneFromName('Quỳnh Anh - 0949033958')).toEqual({ name: 'Quỳnh Anh', phone: '0949033958' })
+    expect(splitPhoneFromName('anh thư-0386091107-tay úp móng-13h')).toEqual({
+      name: 'anh thư - tay úp móng-13h',
+      phone: '0386091107',
+    })
+    expect(splitPhoneFromName('Chị Hà 0912 345 678')).toEqual({ name: 'Chị Hà', phone: '0912345678' })
+    expect(splitPhoneFromName('+84912345678 Lan')).toEqual({ name: 'Lan', phone: '0912345678' })
+    // Không phải SĐT: giữ nguyên
+    expect(splitPhoneFromName('Nhóm 3 khách 19/10 9h30')).toEqual({
+      name: 'Nhóm 3 khách 19/10 9h30',
+      phone: null,
+    })
+    expect(splitPhoneFromName('Mã 12345678901234')).toEqual({ name: 'Mã 12345678901234', phone: null })
+  })
+  it('che SĐT trong chữ để hiện trên danh sách', () => {
+    expect(maskPhonesInText('Tú - 0969038498 - tay')).toBe('Tú - 0969•••498 - tay')
+    expect(maskPhonesInText('Minh Hà')).toBe('Minh Hà')
+  })
+  it('nhận ra tên cần sửa: có SĐT, giờ, ngày, hoặc dài quá 30 ký tự', () => {
+    expect(nameLooksMessy('Quỳnh Anh - 0949033958')).toBe(true)
+    expect(nameLooksMessy('huyền anh tay phá móng 9h30')).toBe(true)
+    expect(nameLooksMessy('Thư 13:30')).toBe(true)
+    expect(nameLooksMessy('PM- tay úp móng 19/10')).toBe(true)
+    expect(nameLooksMessy('Nguyễn Diễm Quỳnh - lm nail tay chân và mi')).toBe(true)
+    expect(nameLooksMessy('Nguyễn Diễm Quỳnh')).toBe(false)
+    expect(nameLooksMessy('Anh Thư 2')).toBe(false)
+    expect(nameLooksMessy('Nhóm 3 khách')).toBe(false)
   })
 })
 

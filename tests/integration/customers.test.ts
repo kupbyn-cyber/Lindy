@@ -9,6 +9,7 @@ import {
   getCustomer,
   maskPhone,
   recentCustomers,
+  searchCustomerList,
   searchCustomers,
   updateCustomer,
 } from '../../src/server/customers/service'
@@ -158,6 +159,11 @@ describe('2.17 Hồ sơ khách, lịch sử đơn', () => {
     expect(seenByNhung.orders.map((o) => o.id).sort()).toEqual([mine.id, other.id].sort())
     const recent = await recentCustomers(auth('trang'))
     expect(recent.map((r) => r.id)).toContain(c.id)
+    // Số lần làm trên danh sách (S40) theo đơn người xem thấy: Trang 1, Nhung 2
+    expect(recent.find((r) => r.id === c.id)?.visits).toBe(1)
+    expect((await recentCustomers(auth('nhung'))).find((r) => r.id === c.id)?.visits).toBe(2)
+    const found = await searchCustomerList(auth('nhung'), 'khanh vy')
+    expect(found.find((r) => r.id === c.id)).toMatchObject({ visits: 2, lastDate: toLocalDate(new Date()) })
   })
 
   it('sửa tên/SĐT: thợ 403; Nhung sửa được, lệch phiên bản → 409, nhắc SĐT trùng', async () => {

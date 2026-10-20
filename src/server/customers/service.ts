@@ -1,6 +1,6 @@
 // Khách hàng (PRD §10; D10-B; Q06). Hồ sơ chung cả tổ chức; chỉ tên, SĐT, lịch sử đơn.
 // Danh sách tìm kiếm chỉ trả SĐT đã che; chi tiết mới trả đủ số [P34].
-import { normalizePhone } from '~/lib/phone'
+import { maskPhone, normalizePhone } from '~/lib/phone'
 import { escapeLike, foldVietnamese } from '~/lib/text'
 import type { Auth } from '../auth/context'
 import { type Tx, withUser } from '../db/client'
@@ -19,12 +19,10 @@ export type CustomerRow = {
 
 export type CustomerHit = { id: string; name: string; phoneMasked: string | null }
 
-/** 0912345678 → 0912•••678 */
-export function maskPhone(phone: string | null) {
-  if (!phone) return null
-  if (phone.length <= 7) return `${phone.slice(0, 2)}•••${phone.slice(-2)}`
-  return `${phone.slice(0, 4)}•••${phone.slice(-3)}`
-}
+/** Một dòng ở tab Khách (S40): thêm ngày làm gần nhất và số lần làm (đơn chưa huỷ người xem thấy được, K09). */
+export type CustomerListItem = CustomerHit & { lastDate: string | null; visits: number }
+
+export { maskPhone }
 
 export function customerSearchNorm(name: string, phone: string | null) {
   return foldVietnamese(`${name} ${phone ?? ''}`).slice(0, 300)
@@ -106,17 +104,36 @@ const canEditCustomers = (auth: Auth) => auth.branches.some((b) => b.perms.inclu
 const readsAllOrders = (auth: Auth) => auth.branches.some((b) => b.perms.includes('order.read_all'))
 
 /** Khách có đơn gần đây (trong phạm vi đơn người xem thấy được, K09). Dùng khi chưa gõ từ khoá. */
-export async function recentCustomers(auth: Auth): Promise<(CustomerHit & { lastDate: string })[]> {
+export async function recentCustomers(auth: Auth): Promise<CustomerListItem[]> {
   if (!canCreate(auth)) throw forbidden()
   return withUser(auth.userId, async (tx) => {
-    const rows = await tx<(CustomerRow & { lastDate: string })[]>`
-      select c.id, c.name, c.phone, c.version, c.created_at, max(o.service_date)::text as last_date
+    const rows = await tx<(CustomerRow & { lastDate: string; visits: number })[]>`
+      select c.id, c.name, c.phone, c.version, c.created_at, max(o.service_date)::text as last_date,
+             count(*)::int as visits
       from customers c join orders o on o.customer_id = c.id
       where o.status <> 'cancelled'
       group by c.id
       order by max(o.service_date) desc, max(o.created_at) desc
       limit 30`
-    return rows.map((r) => ({ ...hit(r), lastDate: r.lastDate }))
+    return rows.map((r) => ({ ...hit(r), lastDate: r.lastDate, visits: r.visits }))
+  })
+}
+
+/** Kết quả tìm ở tab Khách: như ô chọn khách, thêm ngày gần nhất và số lần làm (RLS đơn: K09). */
+export async function searchCustomerList(auth: Auth, query: string): Promise<CustomerListItem[]> {
+  const hits = await searchCustomers(auth, query)
+  if (hits.length === 0) return []
+  return withUser(auth.userId, async (tx) => {
+    const stats = await tx<{ customerId: string; lastDate: string; visits: number }[]>`
+      select customer_id, max(service_date)::text as last_date, count(*)::int as visits
+      from orders where status <> 'cancelled' and customer_id = any(${hits.map((h) => h.id)}::uuid[])
+      group by customer_id`
+    const by = new Map(stats.map((s) => [s.customerId, s]))
+    return hits.map((h) => ({
+      ...h,
+      lastDate: by.get(h.id)?.lastDate ?? null,
+      visits: by.get(h.id)?.visits ?? 0,
+    }))
   })
 }
 
