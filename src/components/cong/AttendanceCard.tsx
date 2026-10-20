@@ -1,5 +1,5 @@
-// Thẻ Vào ca / Ra ca trên Tổng quan (Đợt 4A, bước 4.5): ≤ 2 lần chạm. Chỉ hiện cho người có hồ sơ nhân viên.
-// Giờ do server ghi; bấm lại giữ giờ đầu tiên. Ra ca hỏi lại vì không sửa được giờ đã ghi.
+// Thẻ Vào ca / Ra ca trên Tổng quan (Đợt 4A, bước 4.5): ≤ 2 lần chạm. Chưa có hồ sơ nhân viên thì thẻ báo rõ thay vì
+// ẩn (S39). Giờ do server ghi; bấm lại giữ giờ đầu tiên. Ra ca hỏi lại vì không sửa được giờ đã ghi.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -24,7 +24,18 @@ export function AttendanceCard() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!allowed || !q.data?.hasProfile || !q.data.day) return null
+  if (!allowed || !q.data) return null
+  if (!q.data.hasProfile) {
+    return (
+      <section className="lo-card flex flex-col gap-2">
+        <span className="overline text-ink-muted">Chấm công hôm nay</span>
+        <Note tone="warning">
+          Chưa có hồ sơ nhân viên nên chưa vào ca, đăng ký nghỉ được. Báo Linh nhập ở Thêm → Nhân viên.
+        </Note>
+      </section>
+    )
+  }
+  if (!q.data.day) return null
   const d = q.data.day
 
   async function run(action: 'check-in' | 'check-out') {

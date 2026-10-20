@@ -10,6 +10,7 @@ import {
   setAccountActive,
   setAccountRole,
 } from '../../src/server/admin/accounts'
+import { myToday } from '../../src/server/attendance/service'
 import { requireAuth } from '../../src/server/auth/context'
 import { login } from '../../src/server/auth/login'
 import { loadSession } from '../../src/server/auth/session'
@@ -173,6 +174,15 @@ describe('Quản lý tài khoản', () => {
       withUser(auth(k).userId, async (tx) => (await payrollAttention(tx, auth(k), branchId)).staffMissing)
     expect(await missing('linh')).toContainEqual({ userId: res.id, name: 'Thiếu 1', gap: 'profile' })
     expect(await missing('nhung')).toEqual([])
+    // Thẻ Chấm công của chính người đó: biết là chưa có hồ sơ để báo, không ẩn im lặng
+    const s = await login({
+      identifier: '0912000501',
+      password: res.tempPassword,
+      ip: `10.7.3.${ip++}`,
+      userAgent: null,
+    })
+    const self = (await loadSession(s.token))!
+    expect((await myToday(self, branchId)).hasProfile).toBe(false)
 
     const month = toLocalDate(new Date()).slice(0, 7)
     await saveProfile(auth('linh'), {
@@ -183,6 +193,7 @@ describe('Quản lý tài khoản', () => {
       payMethod: 'transfer',
     })
     expect(await gap()).toBe('policy')
+    expect((await myToday(self, branchId)).hasProfile).toBe(true)
     // Chính sách từ tháng sau chưa áp dụng tháng này
     await savePolicy(auth('linh'), {
       branchId,
