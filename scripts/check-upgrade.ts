@@ -256,10 +256,11 @@ try {
     log(`Thu chi: chi 50.000đ, chuyển 20.000đ → Tiền mặt ${bal2.cash}đ, Tài khoản ${bal2.bank}đ`)
     if (bal2.cash !== 1000000 || bal2.bank !== bankExpected + 20000) throw new Error('Thu chi sai số dư.')
 
-    // Hoàn tiền, chứng từ (0014, 0015): xác nhận đơn cọc ở trên, thu 300.000đ CK, hoàn 50.000đ TM (app bỏ tip từ S27)
+    // Hoàn tiền, chứng từ (0014, 0015): đơn cọc ở trên (Làm xong đã xác nhận luôn, S41), thu 300.000đ CK,
+    // hoàn 50.000đ TM (app bỏ tip từ S27)
     const { refundOrder } = await import('../src/server/orders/refunds')
     const { addAttachment } = await import('../src/server/attachments/service')
-    const c2 = await confirmOrder(auth, d2.id, d2.version)
+    const c2 = d2
     await recordPayment(auth, c2.id, {
       idempotencyKey: crypto.randomUUID(),
       amount: 300000,

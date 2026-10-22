@@ -180,7 +180,13 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       const next = await api<OrderDetail>(`/api/orders/${d.id}/done`, { body: { version: d.version } })
       qc.setQueryData(['orders', 'detail', d.id], next)
       await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
-      toast(`Đã bấm Làm xong đơn ${d.codeLabel}.`)
+      if (d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
+      // S41: Làm xong là xác nhận luôn; còn giảm giá chờ duyệt thì báo chờ ai
+      toast(
+        next.status === 'confirmed'
+          ? `Đã xong, đã xác nhận bill ${d.codeLabel}.`
+          : `Đã bấm Làm xong đơn ${d.codeLabel}.${next.can.confirmBlocked ? ` ${next.can.confirmBlocked}` : ''}`,
+      )
     } catch (e) {
       toast(errorText(e), 'error')
     } finally {
@@ -391,8 +397,8 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
         ) : null}
         {d.depositAvailable > 0 && d.status !== 'cancelled' ? (
           <Note>
-            Lịch có cọc {formatVND(d.depositAvailable)} chưa trừ. App tự trừ vào bill khi bấm Làm xong hoặc
-            xác nhận.
+            Lịch có cọc {formatVND(d.depositAvailable)} chưa trừ. App tự trừ vào bill khi bấm Làm xong, xác
+            nhận bill hoặc khi cọc được xác nhận.
           </Note>
         ) : null}
         {levelNote ? (

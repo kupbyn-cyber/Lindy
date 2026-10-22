@@ -1,9 +1,18 @@
 // POST /api/catalog/services — thêm (không có id) hoặc sửa dịch vụ (Linh)
 // POST /api/catalog/combos   — thêm hoặc sửa combo (Linh)
+// POST /api/catalog/delete   — xoá dịch vụ hoặc combo (Linh, S42)
 // GET  /api/catalog/history?id= — lịch sử giá
 import { createFileRoute } from '@tanstack/react-router'
 import { requireAuth } from '~/server/auth/context'
-import { ComboBody, priceHistory, ServiceBody, saveCombo, saveService } from '~/server/catalog/service'
+import {
+  ComboBody,
+  DeleteBody,
+  deleteItem,
+  priceHistory,
+  ServiceBody,
+  saveCombo,
+  saveService,
+} from '~/server/catalog/service'
 import { notFound } from '~/server/http/errors'
 import { handle, limitWrites, readBody } from '~/server/http/route'
 
@@ -25,6 +34,8 @@ export const Route = createFileRoute('/api/catalog/$kind')({
             return Response.json(await saveService(auth, await readBody(request, ServiceBody)))
           if (params.kind === 'combos')
             return Response.json(await saveCombo(auth, await readBody(request, ComboBody)))
+          if (params.kind === 'delete')
+            return Response.json(await deleteItem(auth, await readBody(request, DeleteBody)))
           throw notFound()
         }),
     },

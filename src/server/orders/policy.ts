@@ -46,7 +46,8 @@ export function orderCan(
   const open = o.status === 'in_progress' || o.status === 'awaiting_confirmation'
   const needsApproval = levelAtLeast(o.requiredLevel, 'manager') && !o.approvalValid
   const mine = levelOf(perms)
-  const canConfirmRole = has('order.confirm') && open
+  // S41: mọi tài khoản xác nhận được bill của đơn mình xem được (K09); giảm giá chờ duyệt vẫn chặn theo cấp
+  const canConfirmRole = (has('order.confirm') || has('order.confirm_bill')) && open
   const confirmBlocked =
     canConfirmRole && needsApproval && !levelAtLeast(mine, o.requiredLevel)
       ? o.requiredLevel === 'owner'
@@ -69,7 +70,10 @@ export function orderCan(
         (has('order.confirm') ||
           (o.status === 'in_progress' && o.createdBy === userId && has('order.create_draft')))) ||
       (o.status === 'confirmed' && has('order.refund')),
-    recordPayment: (o.status === 'awaiting_confirmation' || o.status === 'confirmed') && has('order.confirm'),
+    // S43: mọi tài khoản ghi tiền thu đơn mình xem được; huỷ khoản thu vẫn Nhung, Linh
+    recordPayment:
+      (o.status === 'awaiting_confirmation' || o.status === 'confirmed') &&
+      (has('order.confirm') || has('order.record_payment')),
     voidPayment: has('order.confirm'),
     markReviewed: o.needsOwnerReview && !o.reviewedAt && has('review_queue.read'),
     createTicket: o.status === 'confirmed' && has('order.confirm'),

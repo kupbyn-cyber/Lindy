@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { searchCatalog } from '../../src/lib/catalog-search'
 import { toLocalDate } from '../../src/lib/time'
-import { priceHistory, saveCombo, saveService } from '../../src/server/catalog/service'
+import { deleteItem, priceHistory, saveCombo, saveService } from '../../src/server/catalog/service'
 import { closeSql } from '../../src/server/db/client'
 import type { AppError } from '../../src/server/http/errors'
 import { createOrder, getCatalog, getOrder } from '../../src/server/orders/service'
@@ -140,5 +140,85 @@ describe('2.22 Cài đặt danh mục', () => {
     })
     const hist = await priceHistory(auth('linh'), c.id)
     expect(hist[0]).toMatchObject({ oldMin: 100000, newMin: 95000 })
+  })
+})
+
+describe('S42 Xoá món trong danh mục', () => {
+  const body = (name: string) => ({
+    category: 'Chăm sóc',
+    name,
+    priceMode: 'list' as const,
+    unit: 'lần' as const,
+    priceMin: 30000,
+    hasHardening: false,
+    isActive: true,
+  })
+
+  it('xoá dịch vụ đã bán: ẩn khỏi danh mục, ngừng bán; đơn cũ giữ tên, giá; không sửa được nữa', async () => {
+    const res = await saveService(auth('linh'), body('Đắp mặt nạ tay'))
+    const { order } = await createOrder(auth('trang'), {
+      createRequestId: rid(),
+      customerId: null,
+      serviceDate: toLocalDate(new Date()),
+      items: [
+        { type: 'service', serviceId: res.id, quantity: 1, staff: [{ userId: seed().users.trang!.id }] },
+      ],
+      discounts: [],
+    })
+    const del = await deleteItem(auth('linh'), { kind: 'service', id: res.id })
+    expect(del.catalog.services.find((s) => s.id === res.id)).toMatchObject({
+      isDeleted: true,
+      isActive: false,
+    })
+
+    const again = await getOrder(auth('trang'), order.id)
+    expect(again.items[0]).toMatchObject({ name: 'Đắp mặt nạ tay', unitPrice: 30000 })
+
+    await expect(saveService(auth('linh'), { ...body('Đắp mặt nạ tay'), id: res.id })).rejects.toMatchObject({
+      code: '22P02',
+    })
+    await expect(deleteItem(auth('linh'), { kind: 'service', id: res.id })).rejects.toMatchObject({
+      code: '22P02',
+    })
+    const [log] = await owner<{ action: string }[]>`
+      select action from audit_logs where entity_id = ${res.id} order by id desc limit 1`
+    expect(log?.action).toBe('catalog.service_deleted')
+  })
+
+  it('dịch vụ còn trong combo: phải xoá combo trước; combo mới không gồm dịch vụ đã xoá', async () => {
+    const a = await saveService(auth('linh'), body('Ủ tay thử A'))
+    const b = await saveService(auth('linh'), body('Ủ tay thử B'))
+    const c = await saveCombo(auth('linh'), {
+      name: 'Combo ủ tay',
+      groupName: 'Chăm sóc',
+      price: 50000,
+      isActive: true,
+      serviceIds: [a.id, b.id],
+    })
+    await expect(deleteItem(auth('linh'), { kind: 'service', id: a.id })).rejects.toMatchObject({
+      code: 'P0001',
+      message: 'Dịch vụ đang nằm trong combo Combo ủ tay. Xoá combo trước.',
+    })
+    const del = await deleteItem(auth('linh'), { kind: 'combo', id: c.id })
+    expect(del.catalog.combos.find((x) => x.id === c.id)).toMatchObject({ isDeleted: true, isActive: false })
+    await deleteItem(auth('linh'), { kind: 'service', id: a.id })
+
+    await expect(
+      saveCombo(auth('linh'), {
+        name: 'Combo ủ tay 2',
+        groupName: 'Chăm sóc',
+        price: 50000,
+        isActive: true,
+        serviceIds: [a.id, b.id],
+      }),
+    ).rejects.toMatchObject({ code: 'P0001' })
+  })
+
+  it('Nhung, thợ không xoá được', async () => {
+    const res = await saveService(auth('linh'), body('Xoá thử quyền'))
+    for (const k of ['nhung', 'trang'] as const) {
+      const e = await deleteItem(auth(k), { kind: 'service', id: res.id }).catch((x) => x)
+      expect((e as AppError).status).toBe(403)
+    }
   })
 })

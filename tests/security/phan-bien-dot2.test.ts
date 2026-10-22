@@ -20,7 +20,7 @@ import {
 import { createTicket, markTicketReviewed } from '../../src/server/orders/tickets'
 import { overview } from '../../src/server/reports/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
-import { expectPgError, ownerSql, seed } from '../helpers/db'
+import { expectPgError, ownerSql, seed, toAwaiting } from '../helpers/db'
 
 const owner = ownerSql()
 type S = Awaited<ReturnType<typeof sessionOf>>
@@ -114,7 +114,7 @@ describe('P39 (K14) — chỉ người tạo và Nhung, Linh sửa đơn Đang l
     })
     expect(byNhung.items).toHaveLength(2)
     const done = await markDone(auth('trang'), order.id, byNhung.version)
-    expect(done.status).toBe('awaiting_confirmation')
+    expect(done.status).toBe('confirmed') // S41: Làm xong là xác nhận luôn
   })
 })
 
@@ -174,7 +174,7 @@ describe('P41 — đơn chờ xác nhận ngày cũ không bị quên', () => {
       items: [svc('CB02', 'trang')],
       discounts: [],
     })
-    await markDone(auth('nhung'), order.id, order.version)
+    await toAwaiting(owner, order.id)
     const list = await listOrders(auth('nhung'), { filter: 'awaiting_confirmation' })
     expect(list.allDates).toBe(true)
     expect(list.items.map((i) => i.id)).toContain(order.id)

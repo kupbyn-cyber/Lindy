@@ -518,7 +518,7 @@ export function ExtraLineSheet(props: {
       <TextField label="Tên" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
       <MoneyInput label="Số tiền" value={amount} onValueChange={setAmount} />
       {props.type === 'custom' ? (
-        <Note>Dòng nhập tay có nhãn riêng để Nhung xem khi xác nhận bill.</Note>
+        <Note>Dòng nhập tay có nhãn riêng trên đơn để Nhung, Linh dễ thấy.</Note>
       ) : (
         <Note>Phụ thu tính như doanh thu dịch vụ: chia cho thợ, có hoa hồng.</Note>
       )}

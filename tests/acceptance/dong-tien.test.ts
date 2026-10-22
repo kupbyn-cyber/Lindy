@@ -14,7 +14,7 @@ import { AppError, fromDbError } from '../../src/server/http/errors'
 import { createTransfer, createVoucher, openBook } from '../../src/server/money/service'
 import { recordPayment } from '../../src/server/orders/payments'
 import { refundOrder } from '../../src/server/orders/refunds'
-import { confirmOrder, createOrder, markDone } from '../../src/server/orders/service'
+import { createOrder, markDone } from '../../src/server/orders/service'
 import { monthReport, overview } from '../../src/server/reports/service'
 import { reviewQueue } from '../../src/server/review/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
@@ -77,8 +77,8 @@ beforeAll(async () => {
     items: [{ type: 'custom', name: 'Dịch vụ', amount: 300_000, staff: [{ userId: uid('nhung') }] }] as never,
     discounts: [],
   })
-  const d = await markDone(auth('nhung'), order.id, order.version)
-  const c = await confirmOrder(auth('nhung'), d.id, d.version)
+  // S41: Làm xong là xác nhận luôn
+  const c = await markDone(auth('nhung'), order.id, order.version)
   await recordPayment(auth('nhung'), c.id, { idempotencyKey: rid(), amount: 200_000, method: 'transfer' })
   await recordPayment(auth('nhung'), c.id, { idempotencyKey: rid(), amount: 100_000, method: 'cash' })
   const r = await refundOrder(auth('nhung'), c.id, {

@@ -25,7 +25,6 @@ import { AppError, fromDbError } from '../../src/server/http/errors'
 import { voidPayment } from '../../src/server/orders/payments'
 import {
   cancelOrder,
-  confirmOrder,
   createOrderFromAppointment,
   getOrder,
   markDone,
@@ -462,9 +461,8 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
     expect(done.payments).toMatchObject([{ method: 'deposit', amount: 200_000, voided: false }])
     // Trừ cọc không ghi bút toán mới (tiền đã vào sổ lúc xác nhận cọc)
     expect((await ledgerOf(dep)).map((l) => l.entryType)).toEqual(['deposit_in'])
-    const c = await confirmOrder(auth('nhung'), o.id, done.version)
-    expect(c.dueAmount).toBe(300_000)
-    expect(c.payments.filter((p) => !p.voided)).toHaveLength(1)
+    // S41: Làm xong là xác nhận luôn
+    expect(done.status).toBe('confirmed')
     expect((await getAppointment(auth('nhung'), a.id)).deposit).toMatchObject({
       state: 'done',
       heldAmount: 0,
@@ -503,12 +501,26 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
     expect(x.paidAmount + y.paidAmount).toBe(200_000)
     expect((await getAppointment(auth('nhung'), a.id)).deposit!.heldAmount).toBe(0)
 
-    // Huỷ khoản trừ cọc trên đơn → cọc trả về; xác nhận đơn thì trừ lại
+    // Huỷ khoản trừ cọc trên đơn → cọc trả về lịch
     const pay = y.payments.find((p) => p.method === 'deposit' && !p.voided)!
     await voidPayment(auth('nhung'), pay.id, 'Trừ nhầm đơn')
     expect((await getAppointment(auth('nhung'), a.id)).deposit!.heldAmount).toBe(pay.amount)
-    const c = await confirmOrder(auth('nhung'), y.id, (await getOrder(auth('nhung'), y.id)).version)
-    expect(c.paidAmount).toBe(pay.amount)
+  })
+
+  it('S41: cọc Nhung xác nhận sau khi thợ đã bấm Làm xong (bill đã xác nhận) → app trừ ngay vào bill', async () => {
+    const a = await newAppt('trang', { guests: 1, date: today })
+    const d = await record('trang', a.id, 100_000)
+    const dep = d.deposit!.items.at(-1)!
+    const o = await orderFrom(a.id, 300_000)
+    const done = await markDone(auth('trang'), o.id, o.version)
+    expect([done.status, done.paidAmount]).toEqual(['confirmed', 0])
+    await confirmDeposit(auth('nhung'), dep.id, dep.version)
+    const after = await getOrder(auth('trang'), o.id)
+    expect([after.paidAmount, after.dueAmount]).toEqual([100_000, 200_000])
+    expect((await getAppointment(auth('nhung'), a.id)).deposit).toMatchObject({
+      state: 'done',
+      heldAmount: 0,
+    })
   })
 
   it('cọc dư sau khi lịch Hoàn thành (khách 2 không làm) → gợi ý hoàn phần còn lại', async () => {
@@ -516,8 +528,7 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
     const dep = await heldDeposit(a.id, 200_000)
     const { saved, orders } = await ordersFrom(a.id, [120_000])
     const o = saved[0]!
-    const done = await markDone(auth('trang'), o.id, o.version)
-    await confirmOrder(auth('nhung'), o.id, done.version)
+    await markDone(auth('trang'), o.id, o.version)
     await cancelOrder(auth('nhung'), orders[1]!.id, orders[1]!.version, 'Khách 2 không làm')
     const d = await getAppointment(auth('nhung'), a.id)
     expect(d.status).toBe('completed')

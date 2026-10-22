@@ -27,7 +27,7 @@ import {
   updateOrder,
 } from '../../src/server/orders/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
-import { expectPgError, ownerSql, seed } from '../helpers/db'
+import { expectPgError, ownerSql, seed, toAwaiting } from '../helpers/db'
 
 const owner = ownerSql()
 type S = Awaited<ReturnType<typeof sessionOf>>
@@ -107,16 +107,19 @@ describe('Tạo đơn, Làm xong, xác nhận', () => {
     expect(o.codeLabel).toMatch(/^#\d{4}$/)
   })
 
-  it('21 — thợ bấm Làm xong được, không xác nhận bill được', async () => {
+  it('21, S41 — thợ bấm Làm xong là xác nhận bill luôn, không chờ Nhung, Linh', async () => {
     const o = await newOrder('trang', { items: [svc('CB02', ['trang'])] })
+    expect(o.can.confirm).toBe(true)
+    // Chin (quyền lịch mở rộng) không thấy đơn không phải của mình (K09)
+    expect((await err(markDone(auth('chin'), o.id, o.version))).status).toBe(404)
+    expect((await err(confirmOrder(auth('chin'), o.id, o.version))).status).toBe(404)
     const done = await markDone(auth('trang'), o.id, o.version)
-    expect(done.status).toBe('awaiting_confirmation')
-    expect(done.can.confirm).toBe(false)
-    expect((await err(confirmOrder(auth('trang'), o.id, done.version))).status).toBe(403)
-    // Chin (quyền lịch mở rộng) không thấy đơn không phải của mình (K09) và không xác nhận được bill (D17)
-    expect((await err(confirmOrder(auth('chin'), o.id, done.version))).status).toBe(404)
-    const ok = await confirmOrder(auth('nhung'), o.id, done.version)
-    expect(ok.status).toBe('confirmed')
+    expect(done.status).toBe('confirmed')
+    expect(done.confirmedAt).not.toBeNull()
+    expect(done.warrantyUntil).toBe(addDays(today, 3))
+    const [hist] = await owner<{ actions: string[] }[]>`
+      select array_agg(action order by id) as actions from order_audit_events where order_id = ${o.id}`
+    expect(hist!.actions.slice(-2)).toEqual(['done', 'confirmed'])
   })
 
   it('Làm xong bị chặn khi đơn trống hoặc còn dòng chưa chọn thợ', async () => {
@@ -126,17 +129,25 @@ describe('Tạo đơn, Làm xong, xác nhận', () => {
     expect((await err(markDone(auth('trang'), o.id, o.version))).message).toMatch(/chưa chọn thợ/)
   })
 
-  it('30 — Làm xong → Chờ xác nhận, chưa vào doanh thu; xác nhận → vào doanh thu ngày làm dịch vụ', async () => {
+  it('30, S41 — Làm xong là xác nhận luôn → vào doanh thu ngày làm dịch vụ; đơn Chờ xác nhận chưa vào', async () => {
     const day = pastDay()
     const o = await newOrder('nhung', { serviceDate: day, items: [svc('MG03', ['chin'])] })
-    const done = await markDone(auth('nhung'), o.id, o.version)
+    // Đơn Chờ xác nhận (có từ trước S41, hoặc chờ duyệt giảm giá) chưa vào doanh thu
+    await toAwaiting(owner, o.id)
     let s = await revenue('linh', day)
     expect(s.netAmount).toBe(0)
     expect(s.awaitingCount).toBe(1)
-    await confirmOrder(auth('nhung'), o.id, done.version)
+    const waiting = await getOrder(auth('nhung'), o.id)
+    await confirmOrder(auth('nhung'), o.id, waiting.version)
     s = await revenue('linh', day)
     expect(s.netAmount).toBe(220000)
     expect(s.byStaff).toEqual([{ userId: uid('chin'), name: 'Chin', amount: 220000 }])
+
+    const day2 = pastDay()
+    const o2 = await newOrder('nhung', { serviceDate: day2, items: [svc('MG03', ['chin'])] })
+    expect((await markDone(auth('nhung'), o2.id, o2.version)).status).toBe('confirmed')
+    s = await revenue('linh', day2)
+    expect([s.netAmount, s.awaitingCount]).toEqual([220000, 0])
   })
 
   it('31 — đơn làm ngày trước, xác nhận hôm nay → doanh thu ghi ngày làm dịch vụ', async () => {
@@ -280,6 +291,31 @@ describe('Giảm giá và duyệt (C15, K12)', () => {
     expect(o.netAmount).toBe(59500)
   })
 
+  it('S41 — giảm giá chờ duyệt: Làm xong sang Chờ xác nhận, không tự duyệt; duyệt xong thợ tự xác nhận được', async () => {
+    const fifteen = () =>
+      newOrder('trang', {
+        items: [svc('CB02', ['trang'])],
+        discounts: [{ scope: 'order', kind: 'manual', percent: 15, reason: 'Khách quen' }],
+      })
+    const o = await fifteen()
+    const done = await markDone(auth('trang'), o.id, o.version)
+    expect(done.status).toBe('awaiting_confirmation')
+    expect(done.can.confirm).toBe(false)
+    expect(done.can.confirmBlocked).toMatch(/Nhung/)
+    expect((await err(confirmOrder(auth('trang'), o.id, done.version))).status).toBe(403)
+    const approved = await approveDiscounts(auth('nhung'), o.id, done.version)
+    const c = await confirmOrder(auth('trang'), o.id, approved.version)
+    expect(c.status).toBe('confirmed')
+    expect(c.approval).toMatchObject({ byName: 'Nhung', valid: true })
+
+    // Nhung bấm Làm xong đơn cần Nhung duyệt: vẫn sang Chờ xác nhận, Nhung bấm Xác nhận bill là duyệt
+    const o2 = await fifteen()
+    const d2 = await markDone(auth('nhung'), o2.id, o2.version)
+    expect(d2.status).toBe('awaiting_confirmation')
+    expect(d2.approval).toBeNull()
+    expect(d2.can.confirm).toBe(true)
+  })
+
   it('46 — Phá móng cũ: 15.000đ thành giảm cần lý do và Nhung duyệt; 60.000đ có nhãn vượt khoảng', async () => {
     const noReason = await err(newOrder('trang', { items: [svc('CB07', ['trang'], { unitPrice: 15000 })] }))
     expect(noReason.status).toBe(422)
@@ -394,21 +430,55 @@ describe('Thu tiền', () => {
     })
     expect((await err(cancelOrder(auth('nhung'), o2.id, p2.version, 'Thử'))).status).toBe(422)
   })
+
+  it('S43 — thợ ghi tiền thu đơn của mình; không huỷ khoản thu; không ghi được đơn không thấy (API, SQL)', async () => {
+    const o = await newOrder('trang', { items: [svc('CB02', ['trang'])] })
+    const done = await markDone(auth('trang'), o.id, o.version)
+    expect(done.can).toMatchObject({ recordPayment: true, voidPayment: false })
+    const paid = await recordPayment(auth('trang'), o.id, {
+      idempotencyKey: rid(),
+      amount: 70000,
+      method: 'cash',
+    })
+    expect(paid.paymentStatus).toBe('paid')
+    expect(paid.payments[0]).toMatchObject({
+      amount: 70000,
+      recordedByName: 'Trang',
+      accountName: 'Tiền mặt cs HTK',
+    })
+    const { voidPayment } = await import('../../src/server/orders/payments')
+    expect((await err(voidPayment(auth('trang'), paid.payments[0]!.id, 'Nhầm'))).status).toBe(403)
+
+    // Đơn của Nhung, Trang không có phần: không thấy (K09) nên không ghi được
+    const n = await newOrder('nhung', { items: [svc('CB02', ['nhung'])] })
+    const nd = await markDone(auth('nhung'), n.id, n.version)
+    const body = { idempotencyKey: rid(), amount: 70000, method: 'cash' as const }
+    expect((await err(recordPayment(auth('trang'), nd.id, body))).status).toBe(404)
+    const [cash] = await owner<{ id: string }[]>`
+      select id from money_accounts where branch_id = ${nd.branchId} and type = 'cash' order by code limit 1`
+    await expectPgError(
+      withUser(
+        uid('trang'),
+        (tx) => tx`
+          insert into payments (order_id, branch_id, amount, method, money_account_id, recorded_by, idempotency_key)
+          values (${nd.id}, ${nd.branchId}, 70000, 'cash', ${cash!.id}, ${uid('trang')}, ${rid()})`,
+      ),
+      ['42501', 'P0001'], // trigger không thấy đơn (RLS) nên chặn trước cả RLS của khoản thu
+    )
+  })
 })
 
-describe('Cần xem lại (Q04)', () => {
-  it('45 — đơn có phần của Nhung do Nhung tự xác nhận → vào danh sách Cần xem lại của Linh', async () => {
+describe('Cần xem lại (S43 bỏ Q04)', () => {
+  it('45, S43 — tự xác nhận đơn có phần mình (Nhung, thợ bấm Làm xong) không vào Cần xem lại', async () => {
     const o = await newOrder('nhung', { items: [svc('CB02', ['nhung'])] })
-    const c = await confirmOrder(auth('nhung'), o.id, o.version)
-    expect(c.needsOwnerReview).toBe(true)
+    expect((await confirmOrder(auth('nhung'), o.id, o.version)).needsOwnerReview).toBe(false)
+    const t = await newOrder('trang', { items: [svc('CB02', ['trang'])] })
+    expect((await markDone(auth('trang'), t.id, t.version)).needsOwnerReview).toBe(false)
     const list = await listOrders(auth('linh'), { from: today, to: today, review: true })
-    expect(list.items.map((i) => i.id)).toContain(o.id)
-    const r = await markReviewed(auth('linh'), o.id)
-    expect(r.reviewedByName).toBe('Linh')
-    expect((await err(markReviewed(auth('nhung'), o.id))).status).toBe(403)
-    // Nhung xác nhận đơn không có phần mình → không vào danh sách
-    const other = await newOrder('trang', { items: [svc('CB02', ['trang'])] })
-    expect((await confirmOrder(auth('nhung'), other.id, other.version)).needsOwnerReview).toBe(false)
+    expect(list.items.map((i) => i.id)).not.toContain(o.id)
+    expect(list.items.map((i) => i.id)).not.toContain(t.id)
+    // Không có gì để xem lại thì không bấm "Đã xem lại" được
+    expect((await err(markReviewed(auth('linh'), o.id))).status).toBeGreaterThanOrEqual(400)
   })
 })
 
@@ -460,7 +530,7 @@ describe('Tạo đơn từ lịch (module §13 test 26–28)', () => {
     expect(a.can.complete).toBe(false)
   })
 
-  it('27 — đơn tạo từ lịch được Nhung xác nhận → lịch Hoàn thành', async () => {
+  it('27, S41 — đơn tạo từ lịch, thợ bấm Làm xong (xác nhận luôn) → lịch Hoàn thành', async () => {
     const { appointment } = await createAppointment(auth('trang'), apptInput())
     const { order } = await createOrderFromAppointment(auth('trang'), appointment.id, {
       createRequestId: rid(),
@@ -473,7 +543,7 @@ describe('Tạo đơn từ lịch (module §13 test 26–28)', () => {
       discounts: [],
     })
     const done = await markDone(auth('trang'), saved.id, saved.version)
-    await confirmOrder(auth('nhung'), done.id, done.version)
+    expect(done.status).toBe('confirmed')
     expect((await getAppointment(auth('trang'), appointment.id)).status).toBe('completed')
   })
 

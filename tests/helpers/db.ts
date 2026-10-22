@@ -17,6 +17,14 @@ export function ownerSql() {
   })
 }
 
+/**
+ * Đưa đơn Đang làm sang Chờ xác nhận như đơn có từ trước S41 (nay Làm xong là xác nhận luôn; chỉ đơn còn giảm giá
+ * chờ duyệt mới dừng ở Chờ xác nhận). Dùng cho test cần đơn Chờ xác nhận mà không muốn đổi số tiền.
+ */
+export async function toAwaiting(owner: postgres.Sql, orderId: string) {
+  await owner`update orders set status = 'awaiting_confirmation' where id = ${orderId} and status = 'in_progress'`
+}
+
 export async function expectPgError(p: Promise<unknown>, code: string | string[]) {
   const codes = Array.isArray(code) ? code : [code]
   try {

@@ -1,10 +1,11 @@
-// UI14 — Cài đặt danh mục (Linh, bước 2.22; PRD §6.8, C09). Thêm, sửa, ngừng bán dịch vụ và combo; đổi giá có lịch sử.
-// Đổi giá không đổi đơn cũ (dòng đơn lưu tên, giá lúc bán). Không xoá: ngừng bán.
+// UI14 — Cài đặt danh mục (Linh, bước 2.22; PRD §6.8, C09). Thêm, sửa, ngừng bán, xoá dịch vụ và combo; đổi giá có lịch sử.
+// Đổi giá không đổi đơn cũ (dòng đơn lưu tên, giá lúc bán). Xoá (S42): món biến mất khỏi menu và màn này, đơn cũ giữ nguyên.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import {
   Button,
+  ConfirmDialog,
   cx,
   Icon,
   MoneyInput,
@@ -37,7 +38,8 @@ function CatalogPage() {
   const catalog = useCatalog()
   const [editService, setEditService] = useState<CatalogService | 'new' | null>(null)
   const [editCombo, setEditCombo] = useState<Combo | 'new' | null>(null)
-  const services = catalog.data?.services ?? []
+  const services = useMemo(() => (catalog.data?.services ?? []).filter((s) => !s.isDeleted), [catalog.data])
+  const combos = (catalog.data?.combos ?? []).filter((c) => !c.isDeleted)
   const categories = useMemo(() => [...new Set(services.map((s) => s.category))], [services])
 
   if (!can('catalog.manage')) {
@@ -63,7 +65,7 @@ function CatalogPage() {
             Combo
           </Button>
         </div>
-        <Note>Đổi giá chỉ áp cho đơn mới; đơn cũ giữ giá lúc bán. Không xoá được, chỉ ngừng bán.</Note>
+        <Note>Đổi giá, xoá món chỉ áp cho đơn mới; đơn cũ giữ tên, giá lúc bán.</Note>
       </div>
       {catalog.isError ? <Note tone="danger">{errorText(catalog.error)}</Note> : null}
       {categories.map((cat) => (
@@ -100,7 +102,7 @@ function CatalogPage() {
       <div>
         <h2 className="overline m-0 px-4 pb-1 text-ink-muted">Combo</h2>
         <div className="border-t border-line">
-          {(catalog.data?.combos ?? []).map((c) => (
+          {combos.map((c) => (
             <button key={c.id} type="button" className="lo-row lo-row-action" onClick={() => setEditCombo(c)}>
               <span className="lo-row-main">
                 <span className={cx('body lo-row-title', !c.isActive && 'text-ink-muted line-through')}>
@@ -182,6 +184,7 @@ function ServiceSheet(props: {
   const [active, setActive] = useState(cur?.isActive ?? true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   async function save() {
     if (!category.trim() || !name.trim()) return setError('Nhập nhóm và tên dịch vụ.')
@@ -216,61 +219,83 @@ function ServiceSheet(props: {
   }
 
   return (
-    <Sheet
-      open={!!props.value}
-      title={cur ? `Sửa ${cur.name}` : 'Dịch vụ mới'}
-      onClose={props.onClose}
-      footer={
-        <Button block variant="primary" loading={busy} onClick={() => void save()}>
-          Lưu
-        </Button>
-      }
-    >
-      <TextField
-        label="Nhóm"
-        list="catalog-categories"
-        value={category}
-        maxLength={40}
-        onChange={(e) => setCategory(e.target.value)}
+    <>
+      <Sheet
+        open={!!props.value && !deleting}
+        title={cur ? `Sửa ${cur.name}` : 'Dịch vụ mới'}
+        onClose={props.onClose}
+        footer={
+          <Button block variant="primary" loading={busy} onClick={() => void save()}>
+            Lưu
+          </Button>
+        }
+      >
+        <TextField
+          label="Nhóm"
+          list="catalog-categories"
+          value={category}
+          maxLength={40}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+        <datalist id="catalog-categories">
+          {props.categories.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
+        <TextField
+          label="Tên dịch vụ"
+          value={name}
+          maxLength={100}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <div className="lo-field">
+          <span className="lo-field-label label">Kiểu giá</span>
+          <SegmentedControl
+            ariaLabel="Kiểu giá"
+            className="w-full"
+            options={[
+              { value: 'list', label: 'Giá cố định' },
+              { value: 'custom', label: 'Giá khoảng' },
+            ]}
+            value={mode}
+            onChange={(v) => setMode(v as 'list' | 'custom')}
+          />
+        </div>
+        <div className="lo-field">
+          <span className="lo-field-label label">Tính theo</span>
+          <SegmentedControl
+            ariaLabel="Đơn vị"
+            className="w-full"
+            options={['lần', 'ngón', 'hình', 'cái']}
+            value={unit}
+            onChange={setUnit}
+          />
+        </div>
+        <div className={cx('grid gap-2', mode === 'custom' ? 'grid-cols-2' : 'grid-cols-1')}>
+          <MoneyInput
+            label={mode === 'custom' ? 'Giá thấp nhất' : 'Giá'}
+            value={min}
+            onValueChange={setMin}
+          />
+          {mode === 'custom' ? <MoneyInput label="Giá cao nhất" value={max} onValueChange={setMax} /> : null}
+        </div>
+        <Toggle on={hard} onChange={setHard} label="Có cứng móng (bảo hành 7 ngày)" />
+        <Toggle on={active} onChange={setActive} label="Đang bán" />
+        {cur ? <History id={cur.id} /> : null}
+        {error ? <Note tone="danger">{error}</Note> : null}
+        {cur ? (
+          <Button block variant="danger" onClick={() => setDeleting(true)}>
+            Xoá dịch vụ
+          </Button>
+        ) : null}
+      </Sheet>
+      <DeleteDialog
+        kind="service"
+        item={deleting ? cur : null}
+        onCancel={() => setDeleting(false)}
+        onDeleted={props.onClose}
       />
-      <datalist id="catalog-categories">
-        {props.categories.map((c) => (
-          <option key={c} value={c} />
-        ))}
-      </datalist>
-      <TextField label="Tên dịch vụ" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
-      <div className="lo-field">
-        <span className="lo-field-label label">Kiểu giá</span>
-        <SegmentedControl
-          ariaLabel="Kiểu giá"
-          className="w-full"
-          options={[
-            { value: 'list', label: 'Giá cố định' },
-            { value: 'custom', label: 'Giá khoảng' },
-          ]}
-          value={mode}
-          onChange={(v) => setMode(v as 'list' | 'custom')}
-        />
-      </div>
-      <div className="lo-field">
-        <span className="lo-field-label label">Tính theo</span>
-        <SegmentedControl
-          ariaLabel="Đơn vị"
-          className="w-full"
-          options={['lần', 'ngón', 'hình', 'cái']}
-          value={unit}
-          onChange={setUnit}
-        />
-      </div>
-      <div className={cx('grid gap-2', mode === 'custom' ? 'grid-cols-2' : 'grid-cols-1')}>
-        <MoneyInput label={mode === 'custom' ? 'Giá thấp nhất' : 'Giá'} value={min} onValueChange={setMin} />
-        {mode === 'custom' ? <MoneyInput label="Giá cao nhất" value={max} onValueChange={setMax} /> : null}
-      </div>
-      <Toggle on={hard} onChange={setHard} label="Có cứng móng (bảo hành 7 ngày)" />
-      <Toggle on={active} onChange={setActive} label="Đang bán" />
-      {cur ? <History id={cur.id} /> : null}
-      {error ? <Note tone="danger">{error}</Note> : null}
-    </Sheet>
+    </>
   )
 }
 
@@ -285,6 +310,7 @@ function ComboSheet(props: { value: Combo | 'new' | null; services: CatalogServi
   const [picked, setPicked] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   async function save() {
     if (!name.trim() || !group.trim()) return setError('Nhập tên và nhóm combo.')
@@ -315,52 +341,116 @@ function ComboSheet(props: { value: Combo | 'new' | null; services: CatalogServi
   }
 
   return (
-    <Sheet
-      open={!!props.value}
-      title={cur ? `Sửa ${cur.name}` : 'Combo mới'}
-      onClose={props.onClose}
-      footer={
-        <Button block variant="primary" loading={busy} onClick={() => void save()}>
-          Lưu
-        </Button>
-      }
+    <>
+      <Sheet
+        open={!!props.value && !deleting}
+        title={cur ? `Sửa ${cur.name}` : 'Combo mới'}
+        onClose={props.onClose}
+        footer={
+          <Button block variant="primary" loading={busy} onClick={() => void save()}>
+            Lưu
+          </Button>
+        }
+      >
+        <TextField label="Tên combo" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
+        <TextField label="Nhóm" value={group} maxLength={40} onChange={(e) => setGroup(e.target.value)} />
+        <MoneyInput label="Giá combo (bán đúng giá niêm yết)" value={price} onValueChange={setPrice} />
+        <Toggle on={active} onChange={setActive} label="Đang bán" />
+        {cur ? (
+          <p className="caption m-0 text-ink-muted">
+            Gồm: {cur.itemNames.join(' + ')} (không đổi được thành phần).
+          </p>
+        ) : (
+          <div className="-mx-4">
+            <span className="label px-4">Dịch vụ trong combo</span>
+            {props.services
+              .filter((s) => s.isActive)
+              .map((s) => {
+                const on = picked.includes(s.id)
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="lo-row lo-row-action"
+                    aria-pressed={on}
+                    onClick={() => setPicked((p) => (on ? p.filter((x) => x !== s.id) : [...p, s.id]))}
+                  >
+                    <span className={cx('lo-check', on && 'is-on')} aria-hidden="true">
+                      {on ? <Icon name="check" size={16} /> : null}
+                    </span>
+                    <span className="body flex-1">{s.name}</span>
+                    <span className="label text-ink-muted">{priceText(s)}</span>
+                  </button>
+                )
+              })}
+          </div>
+        )}
+        {cur ? <History id={cur.id} /> : null}
+        {error ? <Note tone="danger">{error}</Note> : null}
+        {cur ? (
+          <Button block variant="danger" onClick={() => setDeleting(true)}>
+            Xoá combo
+          </Button>
+        ) : null}
+      </Sheet>
+      <DeleteDialog
+        kind="combo"
+        item={deleting ? cur : null}
+        onCancel={() => setDeleting(false)}
+        onDeleted={props.onClose}
+      />
+    </>
+  )
+}
+
+// S42: hỏi lại trước khi xoá; lỗi (ví dụ dịch vụ còn trong combo) hiện ngay trong hộp.
+function DeleteDialog(props: {
+  kind: 'service' | 'combo'
+  item: { id: string; name: string } | null
+  onCancel: () => void
+  onDeleted: () => void
+}) {
+  const qc = useQueryClient()
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function run() {
+    if (!props.item) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await api<{ catalog: Catalog }>('/api/catalog/delete', {
+        body: { kind: props.kind, id: props.item.id },
+      })
+      qc.setQueryData(['catalog'], res.catalog)
+      toast(`Đã xoá ${props.item.name}.`)
+      props.onDeleted()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <ConfirmDialog
+      open={!!props.item}
+      title={`Xoá ${props.kind === 'service' ? 'dịch vụ' : 'combo'} ${props.item?.name ?? ''}?`}
+      confirmLabel="Xoá"
+      danger
+      busy={busy}
+      onConfirm={() => void run()}
+      onCancel={() => {
+        setError(null)
+        props.onCancel()
+      }}
     >
-      <TextField label="Tên combo" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
-      <TextField label="Nhóm" value={group} maxLength={40} onChange={(e) => setGroup(e.target.value)} />
-      <MoneyInput label="Giá combo (bán đúng giá niêm yết)" value={price} onValueChange={setPrice} />
-      <Toggle on={active} onChange={setActive} label="Đang bán" />
-      {cur ? (
-        <p className="caption m-0 text-ink-muted">
-          Gồm: {cur.itemNames.join(' + ')} (không đổi được thành phần).
-        </p>
-      ) : (
-        <div className="-mx-4">
-          <span className="label px-4">Dịch vụ trong combo</span>
-          {props.services
-            .filter((s) => s.isActive)
-            .map((s) => {
-              const on = picked.includes(s.id)
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  className="lo-row lo-row-action"
-                  aria-pressed={on}
-                  onClick={() => setPicked((p) => (on ? p.filter((x) => x !== s.id) : [...p, s.id]))}
-                >
-                  <span className={cx('lo-check', on && 'is-on')} aria-hidden="true">
-                    {on ? <Icon name="check" size={16} /> : null}
-                  </span>
-                  <span className="body flex-1">{s.name}</span>
-                  <span className="label text-ink-muted">{priceText(s)}</span>
-                </button>
-              )
-            })}
-        </div>
-      )}
-      {cur ? <History id={cur.id} /> : null}
+      <p className="caption m-0 text-ink-muted">
+        Món biến mất khỏi menu tạo đơn và danh mục, không lấy lại được. Đơn cũ vẫn giữ tên, giá lúc bán.
+      </p>
       {error ? <Note tone="danger">{error}</Note> : null}
-    </Sheet>
+    </ConfirmDialog>
   )
 }
 

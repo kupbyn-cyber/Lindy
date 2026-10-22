@@ -24,7 +24,7 @@ import {
 import { monthReport, overview } from '../../src/server/reports/service'
 import { savePolicy, saveProfile } from '../../src/server/staff/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
-import { expectPgError, ownerSql, seed } from '../helpers/db'
+import { expectPgError, ownerSql, seed, toAwaiting } from '../helpers/db'
 
 const owner = ownerSql()
 type S = Awaited<ReturnType<typeof sessionOf>>
@@ -90,8 +90,8 @@ async function confirmedOrder(serviceDate: string, lines: [SeedKey, number, ('cu
     })) as never,
     discounts: [],
   })
-  const d = await markDone(auth('nhung'), order.id, order.version)
-  return confirmOrder(auth('nhung'), d.id, d.version)
+  // S41: Làm xong là xác nhận luôn
+  return markDone(auth('nhung'), order.id, order.version)
 }
 
 beforeAll(async () => {
@@ -466,7 +466,8 @@ describe('4.16–4.17 — khoá bảng lương, trả lương', () => {
       ] as never,
       discounts: [],
     })
-    const d = await markDone(auth('nhung'), order.id, order.version)
+    await toAwaiting(owner, order.id)
+    const d = await getOrder(auth('nhung'), order.id)
     chinOrder = { id: d.id, version: d.version }
     const t = await confirmedOrder(`${M}-15`, [['trang', 400_000]])
     await recordPayment(auth('nhung'), t.id, { idempotencyKey: rid(), amount: 400_000, method: 'cash' })

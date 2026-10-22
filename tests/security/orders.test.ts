@@ -13,11 +13,10 @@ import {
   createOrder,
   getOrder,
   listOrders,
-  markDone,
   updateOrder,
 } from '../../src/server/orders/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
-import { expectPgError, ownerSql, seed } from '../helpers/db'
+import { expectPgError, ownerSql, seed, toAwaiting } from '../helpers/db'
 
 const owner = ownerSql()
 type S = Awaited<ReturnType<typeof sessionOf>>
@@ -184,7 +183,7 @@ describe('S20 — máy gửi số tiền, cột hệ thống hoặc trường l�
     )
   })
 
-  it('SQL: không đổi mã đơn, người tạo, cơ sở; không tự đặt trạng thái Đã xác nhận', async () => {
+  it('SQL: không đổi mã đơn, người tạo, cơ sở; đơn còn giảm giá chờ duyệt không tự đặt Đã xác nhận', async () => {
     const o = await newOrder('trang', [svc('CB02', ['trang'])])
     await expectPgError(
       withUser(uid('nhung'), (tx) => tx`update orders set created_by = ${uid('nhung')} where id = ${o.id}`),
@@ -194,8 +193,12 @@ describe('S20 — máy gửi số tiền, cột hệ thống hoặc trường l�
       withUser(uid('nhung'), (tx) => tx`update orders set code = 9999 where id = ${o.id}`),
       '42501',
     )
+    // S41: thợ xác nhận được bill, nhưng đơn giảm 15% chưa có Nhung duyệt thì DB chặn khi commit
+    const disc = await newOrder('trang', [svc('CB02', ['trang'])], {
+      discounts: [{ scope: 'order', kind: 'manual', percent: 15, reason: 'Quen' }],
+    })
     await expectPgError(
-      withUser(uid('trang'), (tx) => tx`update orders set status = 'confirmed' where id = ${o.id}`),
+      withUser(uid('trang'), (tx) => tx`update orders set status = 'confirmed' where id = ${disc.id}`),
       '42501',
     )
     // Cột người xác nhận do server đặt: giá trị máy gửi lên bị bỏ
@@ -212,7 +215,9 @@ describe('S20 — máy gửi số tiền, cột hệ thống hoặc trường l�
 describe('S21 — thợ không sửa đơn sau Làm xong (K10)', () => {
   it('API 403; SQL lỗi; Nhung sửa được', async () => {
     const o = await newOrder('trang', [svc('CB02', ['trang'])])
-    const done = await markDone(auth('trang'), o.id, o.version)
+    // Đơn Chờ xác nhận (S41: chỉ còn khi chờ duyệt giảm giá hoặc có từ trước)
+    await toAwaiting(owner, o.id)
+    const done = await getOrder(auth('trang'), o.id)
     const body = {
       version: done.version,
       customerId: null,
@@ -278,7 +283,9 @@ describe('S22, S23 — duyệt giảm giá đúng cấp, gắn với nội dung'
     })
     const ok = await approveDiscounts(auth('linh'), o.id, o.version)
     expect(ok.approval?.valid).toBe(true)
-    const done = await markDone(auth('nhung'), o.id, ok.version)
+    // Đơn Chờ xác nhận để Nhung sửa (S41: Làm xong khi đã duyệt là xác nhận luôn)
+    await toAwaiting(owner, o.id)
+    const done = await getOrder(auth('nhung'), o.id)
     // Nhung đổi sang giảm 30% (K10 cho Nhung sửa sau Làm xong)
     const edited = await updateOrder(auth('nhung'), o.id, {
       version: done.version,
@@ -320,13 +327,13 @@ describe('S24, S25 — thu tiền', () => {
     expect(p!.s).toBe(150000)
   })
 
-  it('S25 — thợ ghi tiền thu → 403; SQL chèn khoản thu → lỗi', async () => {
-    const o = await newOrder('nhung', [svc('CB02', ['trang'])])
+  it('S25, S43 — thợ ghi tiền thu đơn không thấy (không tạo, không có phần) → 404; SQL chèn khoản thu → lỗi', async () => {
+    const o = await newOrder('nhung', [svc('CB02', ['nhung'])])
     const c = await confirmOrder(auth('nhung'), o.id, o.version)
     expect(
       (await err(recordPayment(auth('trang'), c.id, { idempotencyKey: rid(), amount: 1000, method: 'cash' })))
         .status,
-    ).toBe(403)
+    ).toBe(404)
     const [acc] = await owner<{ id: string }[]>`
       select id from money_accounts where branch_id = ${seed().branchIds.HTK!} and type = 'cash'`
     await expectPgError(
@@ -337,7 +344,7 @@ describe('S24, S25 — thu tiền', () => {
         ) => tx`insert into payments (order_id, branch_id, amount, method, money_account_id, recorded_by, idempotency_key)
                    values (${c.id}, ${seed().branchIds.HTK!}, 1000, 'cash', ${acc!.id}, ${uid('trang')}, ${rid()})`,
       ),
-      '42501',
+      ['42501', 'P0001'], // trigger không thấy đơn (RLS) nên chặn trước cả RLS của khoản thu
     )
   })
 

@@ -1,5 +1,5 @@
 // QR chuyển khoản (S23–S26): Linh nhập tài khoản nhận tiền; chỉ chủ sửa được (server và DB), có nhật ký trước / sau;
-// chi tiết đơn gửi thông tin QR cho người ghi được tiền thu (Linh, Nhung), không gửi cho thợ.
+// chi tiết đơn gửi thông tin QR cho người ghi được tiền thu (Linh, Nhung, thợ trên đơn từ S43).
 // Chạy trên cơ sở thử riêng "CS9" để không đổi tài khoản ngân hàng của HTK mà file test khác dùng.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { toLocalDate } from '../../src/lib/time'
@@ -148,7 +148,7 @@ describe('S26 — tài khoản nhận chuyển khoản', () => {
 })
 
 describe('S23, S24 — chi tiết đơn gửi thông tin QR', () => {
-  it('Linh, Nhung (ghi được tiền thu) nhận tài khoản; thợ trên đơn không nhận', async () => {
+  it('người ghi được tiền thu nhận tài khoản: Linh, Nhung và thợ trên đơn (S43)', async () => {
     const { order } = await createOrder(auth('nhung'), {
       branchId: cs9,
       createRequestId: rid(),
@@ -163,7 +163,7 @@ describe('S23, S24 — chi tiết đơn gửi thông tin QR', () => {
     expect(d.transferQr).toEqual(want)
     expect((await getOrder(auth('linh'), order.id)).transferQr).toEqual(want)
     const t = await getOrder(auth('trang'), order.id)
-    expect(t.can.recordPayment).toBe(false)
-    expect(t.transferQr).toBeNull()
+    expect(t.can.recordPayment).toBe(true)
+    expect(t.transferQr).toEqual(want)
   })
 })

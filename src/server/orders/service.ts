@@ -196,18 +196,20 @@ export function toInput(c: Content): { items: ItemInput[]; discounts: DiscountIn
 
 // ---------------------------------------------------------------- Danh mục, thợ
 
+// Món đã xoá (S42) vẫn trả về, có cờ isDeleted, để đơn cũ còn tra được; menu tạo đơn và màn Danh mục ẩn đi.
 export type Catalog = {
-  services: CatalogService[]
-  combos: (CatalogCombo & { itemNames: string[] })[]
+  services: (CatalogService & { isDeleted: boolean })[]
+  combos: (CatalogCombo & { itemNames: string[]; isDeleted: boolean })[]
 }
 
 export async function loadCatalog(tx: Tx): Promise<Catalog> {
-  const services = await tx<CatalogService[]>`
+  const services = await tx<Catalog['services']>`
     select id, code, name, category, price_mode, unit, price_min::int as price_min, price_max::int as price_max,
-           has_hardening, is_active
+           has_hardening, is_active, deleted_at is not null as is_deleted
     from services order by sort_order, code`
-  const combos = await tx<(CatalogCombo & { itemNames: string[] })[]>`
+  const combos = await tx<Catalog['combos']>`
     select c.id, c.code, c.name, c.group_name, c.price::int as price, h.has_hardening, c.is_active,
+           c.deleted_at is not null as is_deleted,
            coalesce((select array_agg(s.name order by ci.position) from combo_items ci
                      join services s on s.id = ci.service_id where ci.combo_id = c.id), '{}') as item_names
     from combos c join combo_hardening h on h.combo_id = c.id
@@ -1081,7 +1083,8 @@ async function afterUpdate(tx: Tx, auth: Auth, id: string, updated: unknown) {
 export async function markDone(auth: Auth, id: string, version: number) {
   return withUser(auth.userId, async (tx) => {
     const row = await loadRow(tx, id, true)
-    if (!canFor(auth, row).done) {
+    const can = canFor(auth, row)
+    if (!can.done) {
       throw forbidden(
         row.status === 'in_progress'
           ? 'Không có quyền bấm Làm xong.'
@@ -1091,12 +1094,20 @@ export async function markDone(auth: Auth, id: string, version: number) {
     await checkVersion(tx, auth, row, version)
     const problems = problemsOf(await loadContent(tx, row))
     if (problems.length > 0) throw invalid(problems[0]!, { problems })
+    // S41: Làm xong là xác nhận luôn khi người bấm xác nhận được và không còn giảm giá chờ duyệt;
+    // giảm giá cần Nhung, Linh duyệt thì sang Chờ xác nhận (C15, K12), không tự duyệt khi chỉ bấm Làm xong.
+    const confirmNow = can.confirm && !(levelAtLeast(row.requiredLevel, 'manager') && !approvalValid(row))
     const [u] = await tx`
-      update orders set status = 'awaiting_confirmation' where id = ${id} and version = ${version} returning id`
+      update orders set status = ${confirmNow ? 'confirmed' : 'awaiting_confirmation'}
+      where id = ${id} and version = ${version} returning id`
     await afterUpdate(tx, auth, id, u)
     await audit(tx, auth, row, 'done')
-    // Cọc của lịch trừ vào bill (test 35, 54)
-    if (row.appointmentId) await tx`select app.apply_deposits(${id})`
+    if (confirmNow) await audit(tx, auth, row, 'confirmed')
+    if (row.appointmentId) {
+      if (confirmNow) await tx`select app.sync_appointment(${row.appointmentId})`
+      // Cọc của lịch trừ vào bill (test 35, 54)
+      await tx`select app.apply_deposits(${id})`
+    }
     return detailOf(tx, auth, await loadRow(tx, id))
   })
 }
@@ -1110,7 +1121,7 @@ export async function confirmOrder(auth: Auth, id: string, version: number) {
         can.confirmBlocked ??
           (['confirmed', 'cancelled'].includes(row.status)
             ? 'Đơn đã xác nhận hoặc đã huỷ.'
-            : 'Chỉ Nhung, Linh xác nhận được bill.'),
+            : 'Không có quyền xác nhận bill.'),
       )
     }
     await checkVersion(tx, auth, row, version)
@@ -1337,8 +1348,9 @@ export async function createOrderFromAppointment(
 
 // ---------------------------------------------------------------- Danh sách (UI03)
 
-/** Đơn cần Linh xem lại: Nhung tự xác nhận/sửa đơn có phần mình (Q04, P31), hoặc có phiếu ưu đãi bù khiếu nại
- *  do người không phải chủ lập (K15). Dùng chung cho danh sách và Tổng quan. */
+/** Đơn cần Linh xem lại: Nhung sửa đơn đã xác nhận có phần mình (P31), huỷ đơn đã xác nhận (K18), đơn tự xác nhận
+ *  từ trước S43 (Q04, đã bỏ), hoặc có phiếu ưu đãi bù khiếu nại do người không phải chủ lập (K15).
+ *  Dùng chung cho danh sách và Tổng quan. */
 export const reviewPending = (tx: Tx) => tx`(
   (o.needs_owner_review and o.reviewed_at is null)
   or exists (select 1 from order_service_tickets t where t.order_id = o.id and t.needs_owner_review

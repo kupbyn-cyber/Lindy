@@ -1,4 +1,4 @@
-// Cài đặt danh mục (UI14, bước 2.22). Linh (catalog.manage) thêm, sửa, ngừng bán dịch vụ và combo.
+// Cài đặt danh mục (UI14, bước 2.22). Linh (catalog.manage) thêm, sửa, ngừng bán, xoá (S42) dịch vụ và combo.
 // Ghi qua hàm SQL kiểm quyền, có lịch sử giá; đơn cũ không đổi vì dòng đơn lưu tên, giá lúc bán (P35).
 import { z } from 'zod'
 import type { Auth } from '../auth/context'
@@ -58,6 +58,20 @@ export async function saveCombo(auth: Auth, input: z.infer<typeof ComboBody>) {
       select app.catalog_save_combo(${input.id ?? null}, ${input.name}, ${input.groupName}, ${input.price},
         ${input.isActive}, ${input.serviceIds ?? []}::uuid[]) as id`
     return { id: r!.id, catalog: await loadCatalog(tx) }
+  })
+}
+
+export const DeleteBody = z.strictObject({
+  kind: z.enum(['service', 'combo']),
+  id: z.uuid(),
+})
+
+// S42: xoá là đánh dấu đã xoá và ngừng bán (không xoá dòng); món biến mất khỏi menu và màn Danh mục, đơn cũ giữ nguyên.
+export async function deleteItem(auth: Auth, input: z.infer<typeof DeleteBody>) {
+  if (!canManage(auth)) throw forbidden('Chỉ chủ quán sửa được danh mục.')
+  return withUser(auth.userId, async (tx) => {
+    await tx`select app.catalog_delete(${input.kind}, ${input.id})`
+    return { catalog: await loadCatalog(tx) }
   })
 }
 

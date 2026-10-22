@@ -7,7 +7,7 @@ import { AppError, fromDbError } from '../../src/server/http/errors'
 import { OpenBookBody } from '../../src/server/money/schema'
 import { getBook, listEntries, openBook } from '../../src/server/money/service'
 import { recordPayment, voidPayment } from '../../src/server/orders/payments'
-import { confirmOrder, createOrder, markDone } from '../../src/server/orders/service'
+import { createOrder, markDone } from '../../src/server/orders/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
 import { expectPgError, ownerSql, seed } from '../helpers/db'
 
@@ -68,8 +68,9 @@ describe('3.2 — bút toán từ khoản thu', () => {
   it('PRD test 2: 200.000đ chuyển khoản + 148.000đ tiền mặt → hai tài khoản tăng đúng, công nợ 0', async () => {
     const cash0 = await sumOf(acc.cash)
     const bank0 = await sumOf(acc.bank)
-    const o = await doneOrder(348_000)
-    const c = await confirmOrder(auth('nhung'), o.id, o.version)
+    // S41: Làm xong là xác nhận luôn
+    const c = await doneOrder(348_000)
+    expect(c.status).toBe('confirmed')
     await recordPayment(auth('nhung'), c.id, { idempotencyKey: rid(), amount: 200_000, method: 'transfer' })
     const d = await recordPayment(auth('nhung'), c.id, {
       idempotencyKey: rid(),

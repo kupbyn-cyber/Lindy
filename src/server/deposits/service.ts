@@ -129,6 +129,13 @@ export async function confirmDeposit(auth: Auth, id: string, version: number) {
     if (d.status !== 'recorded') throw invalid('Khoản cọc không còn chờ xác nhận.')
     checkVersion(d, version)
     await tx`update appointment_deposits set status = 'confirmed' where id = ${id} and version = ${version}`
+    // S41: Làm xong là xác nhận bill luôn, nên cọc xác nhận sau khi đơn của lịch đã xong được trừ ngay vào bill
+    // (trước đây trừ lúc Nhung xác nhận bill; test 35, 54)
+    const done = await tx<{ id: string }[]>`
+      select id from orders where appointment_id = ${d.appointmentId}
+        and status in ('awaiting_confirmation', 'confirmed')
+      order by guest_no nulls first, created_at`
+    for (const o of done) await tx`select app.apply_deposits(${o.id})`
     return appointmentDetail(tx, auth, d.appointmentId)
   })
 }

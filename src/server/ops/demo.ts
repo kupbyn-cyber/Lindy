@@ -18,7 +18,7 @@ import { forbidden, invalid } from '../http/errors'
 import { openBook } from '../money/service'
 import { quietNotifications } from '../notifications/emit'
 import { recordPayment } from '../orders/payments'
-import { confirmOrder, createOrderFromAppointment, markDone, updateOrder } from '../orders/service'
+import { createOrderFromAppointment, markDone, updateOrder } from '../orders/service'
 import { createAdvance } from '../payroll/advances'
 import { savePolicy, saveProfile, saveSettings } from '../staff/service'
 
@@ -174,7 +174,7 @@ async function build(owner: Auth, branchId: string) {
   const mgr = authOf(confirmer)
   const workers = people.filter((p) => has(p, 'order.create_draft') && has(p, 'appointments.create_order'))
   if (workers.length === 0) throw invalid('Cơ sở chưa có tài khoản nào tạo được đơn.')
-  // Thợ làm: tránh người xác nhận để đơn không vào Cần xem lại (Q04), trừ khi quán chỉ có một người
+  // Thợ làm: ưu tiên người khác người xác nhận cho giống quán, trừ khi quán chỉ có một người
   const stylists = workers.filter((p) => p.userId !== confirmer.userId)
   const doers = stylists.length ? stylists : workers
   const svc = new Map(services.map((s) => [s.code, s.id]))
@@ -289,13 +289,12 @@ async function build(owner: Auth, branchId: string) {
           discounts: [],
         })
         summary.orders++
-        // Hôm nay: đơn đầu chờ xác nhận, các đơn sau còn đang làm
+        // Hôm nay: đơn đầu đã Làm xong (S41: xác nhận luôn) mà chưa thu tiền, các đơn sau còn đang làm
         if (d === 0) {
           if (si === 0) await markDone(mgr, saved.id, saved.version)
           continue
         }
-        const done = await markDone(mgr, saved.id, saved.version)
-        const ok = await confirmOrder(mgr, done.id, done.version)
+        const ok = await markDone(mgr, saved.id, saved.version)
         if (ok.dueAmount > 0) {
           // Vài đơn mới thu một phần để có "khách còn nợ"
           const partial = d === -1 && si === 0

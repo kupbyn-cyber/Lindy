@@ -1,4 +1,5 @@
-// Ghi tiền thu của đơn (bước 2.11). Chỉ Nhung, Linh (order.confirm). Tiền mặt → Tiền mặt cs …; chuyển khoản →
+// Ghi tiền thu của đơn (bước 2.11). Mọi tài khoản, đơn mình xem được (S43, order.record_payment); huỷ khoản thu chỉ
+// Nhung, Linh (order.confirm). Tiền mặt → Tiền mặt cs …; chuyển khoản →
 // Tài khoản cs …. Chống bấm hai lần bằng mã thu tiền; khoá dòng đơn khi kiểm tổng thu ≤ phải thu [P30].
 // Không sửa khoản thu; nhập nhầm thì huỷ (có lý do) rồi ghi lại. Trả lại tiền cho khách: phiếu hoàn (refunds.ts).
 // App không ghi tip (S27): khách tip chuyển riêng cho nhân viên.
@@ -22,7 +23,8 @@ export async function recordPayment(
     const [o] = await tx<{ id: string; branchId: string; status: string; netAmount: number }[]>`
       select id, branch_id, status, net_amount::int as net_amount from orders where id = ${orderId} for update`
     if (!o) throw notFound('Không tìm thấy đơn.')
-    if (!hasPerm(auth, o.branchId, 'order.confirm')) throw forbidden('Chỉ Nhung, Linh ghi được tiền thu.')
+    if (!hasPerm(auth, o.branchId, 'order.confirm') && !hasPerm(auth, o.branchId, 'order.record_payment'))
+      throw forbidden('Không có quyền ghi tiền thu.')
 
     const [dup] = await tx<{ orderId: string; amount: number; method: string }[]>`
       select order_id, amount::int as amount, method from payments where idempotency_key = ${input.idempotencyKey}`

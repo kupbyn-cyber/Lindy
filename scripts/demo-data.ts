@@ -244,7 +244,7 @@ async function demoOrders(users: Map<string, string>, branchId: string, today: s
     ).order
 
   const nhung = await auth('nhung')
-  // 1. Trang: sơn gel + mắt mèo 10 ngón, chờ xác nhận
+  // 1. Trang: sơn gel + mắt mèo 10 ngón, bấm Làm xong (S41: xác nhận luôn), chưa thu tiền
   const a = await create('trang', today, [line('CB02', ['trang']), line('DS01', ['trang'], { quantity: 10 })])
   await markDone(await auth('trang'), a.id, a.version)
   // 2. Combo 139k Chin + Trang chia tay 80k/59k, đã xác nhận, thu đủ tiền mặt

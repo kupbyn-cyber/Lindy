@@ -11,13 +11,13 @@ import { crc32, toXlsx } from '../../src/server/export/xlsx'
 import { AppError, fromDbError } from '../../src/server/http/errors'
 import { createVoucher, openBook } from '../../src/server/money/service'
 import { recordPayment } from '../../src/server/orders/payments'
-import { confirmOrder, createOrder, markDone } from '../../src/server/orders/service'
+import { confirmOrder, createOrder, getOrder, markDone } from '../../src/server/orders/service'
 import { actOnAdvance, createAdvance } from '../../src/server/payroll/advances'
 import { lockMonth, payslip } from '../../src/server/payroll/service'
 import { monthReport, overview } from '../../src/server/reports/service'
 import { savePolicy, saveProfile } from '../../src/server/staff/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
-import { expectPgError, ownerSql, seed } from '../helpers/db'
+import { expectPgError, ownerSql, seed, toAwaiting } from '../helpers/db'
 
 const owner = ownerSql()
 type S = Awaited<ReturnType<typeof sessionOf>>
@@ -52,8 +52,10 @@ async function order(serviceDate: string, amount: number, confirm = true, custom
     items: [{ type: 'custom', name: 'Dịch vụ', amount, staff: [{ userId: uid('trang') }] }] as never,
     discounts: [],
   })
-  const d = await markDone(auth('nhung'), order.id, order.version)
-  return confirm ? confirmOrder(auth('nhung'), d.id, d.version) : d
+  // S41: Làm xong là xác nhận luôn; confirm = false → đơn Chờ xác nhận (như đơn có từ trước S41)
+  if (confirm) return markDone(auth('nhung'), order.id, order.version)
+  await toAwaiting(owner, order.id)
+  return getOrder(auth('nhung'), order.id)
 }
 
 beforeAll(async () => {

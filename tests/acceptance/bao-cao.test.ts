@@ -7,10 +7,10 @@ import { createCustomer } from '../../src/server/customers/service'
 import { closeSql } from '../../src/server/db/client'
 import type { AppError } from '../../src/server/http/errors'
 import { recordPayment } from '../../src/server/orders/payments'
-import { confirmOrder, createOrder, markDone } from '../../src/server/orders/service'
+import { confirmOrder, createOrder, updateOrder } from '../../src/server/orders/service'
 import { dayReport, monthReport, overview } from '../../src/server/reports/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
-import { ownerSql, seed } from '../helpers/db'
+import { ownerSql, seed, toAwaiting } from '../helpers/db'
 
 const owner = ownerSql()
 type S = Awaited<ReturnType<typeof sessionOf>>
@@ -54,7 +54,7 @@ describe('Báo cáo ngày (PRD §11)', () => {
     const ac = await confirmOrder(auth('nhung'), a.id, a.version)
     await recordPayment(auth('nhung'), ac.id, { idempotencyKey: rid(), amount: 200000, method: 'transfer' })
     const b = await order(day, [svc('CB02', 'nhung')])
-    await markDone(auth('nhung'), b.id, b.version) // chờ xác nhận: chưa vào doanh thu
+    await toAwaiting(owner, b.id) // chờ xác nhận: chưa vào doanh thu
     const r = await dayReport(auth('linh'), { date: day })
     expect(r.revenue).toMatchObject({
       orders: 1,
@@ -147,7 +147,7 @@ describe('Tổng quan (UI02)', () => {
     expect(to.revenue).toBeNull()
     expect(to.byStaff.every((s) => s.userId === uid('trang'))).toBe(true)
     expect(to.attention).toMatchObject({ awaiting: 0, ownerApproval: 0, review: 0 })
-    // Đơn giảm 25% chờ Linh duyệt; đơn Nhung tự xác nhận có phần mình → Cần xem lại
+    // Đơn giảm 25% chờ Linh duyệt; Nhung sửa đơn đã xác nhận, thêm phần mình → Cần xem lại (P31; Q04 đã bỏ, S43)
     const before = await overview(auth('linh'), { period: 'day' })
     const { order: big } = await createOrder(auth('nhung'), {
       createRequestId: rid(),
@@ -156,8 +156,17 @@ describe('Tổng quan (UI02)', () => {
       items: [svc('MG03', 'nhung')],
       discounts: [{ scope: 'order', kind: 'manual', percent: 25, reason: 'Quen' }],
     })
-    const own = await order(today, [svc('CB02', 'nhung')])
-    await confirmOrder(auth('nhung'), own.id, own.version)
+    const own = await order(today, [svc('CB02', 'trang')])
+    const c = await confirmOrder(auth('nhung'), own.id, own.version)
+    expect(c.needsOwnerReview).toBe(false)
+    await updateOrder(auth('nhung'), own.id, {
+      version: c.version,
+      customerId: null,
+      serviceDate: today,
+      items: [svc('CB02', 'trang'), svc('CB01', 'nhung')],
+      discounts: [],
+      adjustReason: 'Thêm cắt sửa',
+    })
     const after = await overview(auth('linh'), { period: 'day' })
     expect(after.attention.ownerApproval).toBe(before.attention.ownerApproval + 1)
     expect(after.attention.review).toBe(before.attention.review + 1)

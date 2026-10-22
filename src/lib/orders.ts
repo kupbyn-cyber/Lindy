@@ -80,7 +80,7 @@ export function useOrders(params: {
   to: string
   filter: OrderFilterValue
   q?: string
-  /** Chỉ đơn cần Linh xem lại (Q04) */
+  /** Chỉ đơn cần Linh xem lại (P31, K18, K15) */
   review?: boolean
 }) {
   const qs = new URLSearchParams({ from: params.from, to: params.to, filter: params.filter })

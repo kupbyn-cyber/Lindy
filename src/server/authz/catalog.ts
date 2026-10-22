@@ -18,6 +18,8 @@ export const PERMISSIONS = {
   'booking_settings.manage': 'Cài đặt lịch: giờ mở cửa, thời lượng, mùa cọc',
   'order.create_draft': 'Tạo đơn, sửa đơn Đang làm (K11)',
   'order.confirm': 'Xác nhận bill, sửa đơn sau Làm xong (K10), ghi tiền thu',
+  'order.confirm_bill': 'Xác nhận bill đơn mình xem được; Làm xong là xác nhận luôn (S41)',
+  'order.record_payment': 'Ghi tiền thu đơn mình xem được (S43)',
   'order.read_all': 'Xem mọi đơn trong cơ sở (K09)',
   'revenue.read_branch': 'Xem doanh thu toàn quán, theo thợ, báo cáo',
   'customers.edit': 'Sửa tên, SĐT khách',
@@ -80,6 +82,8 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       'deposits.resolve',
       'order.create_draft',
       'order.confirm',
+      'order.confirm_bill',
+      'order.record_payment',
       'order.read_all',
       'revenue.read_branch',
       'customers.edit',
@@ -97,7 +101,8 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       'advance.request',
     ],
   },
-  // Quyền lịch mở rộng không kéo theo quyền lương, thu chi, lợi nhuận, xác nhận bill hay xác nhận cọc (D17).
+  // Quyền lịch mở rộng không kéo theo quyền lương, thu chi, lợi nhuận hay xác nhận cọc (D17).
+  // Xác nhận bill, ghi tiền thu: mọi tài khoản, đơn mình xem được (S41, S43).
   staff_booking_plus: {
     name: 'Thợ (quyền lịch mở rộng)',
     permissions: [
@@ -105,6 +110,8 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       'deposits.record',
       'deposits.resolve',
       'order.create_draft',
+      'order.confirm_bill',
+      'order.record_payment',
       'discount.apply_up_to_10pct',
       'payroll.read_own',
       'expense.request',
@@ -118,6 +125,8 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       ...APPOINTMENTS_BASIC,
       'deposits.record',
       'order.create_draft',
+      'order.confirm_bill',
+      'order.record_payment',
       'discount.apply_up_to_10pct',
       'payroll.read_own',
       'expense.request',

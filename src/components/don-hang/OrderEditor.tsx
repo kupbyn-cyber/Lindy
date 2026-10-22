@@ -206,7 +206,15 @@ export function OrderEditor(props: {
       }
       qc.setQueryData(['orders', 'detail', d.id], d)
       await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
-      toast(markDone ? `Đã bấm Làm xong đơn ${d.codeLabel}.` : `Đã lưu đơn ${d.codeLabel}.`)
+      if (markDone && d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
+      // S41: Làm xong là xác nhận luôn; còn giảm giá chờ duyệt thì báo chờ ai
+      toast(
+        !markDone
+          ? `Đã lưu đơn ${d.codeLabel}.`
+          : d.status === 'confirmed'
+            ? `Đã xong, đã xác nhận bill ${d.codeLabel}.`
+            : `Đã bấm Làm xong đơn ${d.codeLabel}.${d.can.confirmBlocked ? ` ${d.can.confirmBlocked}` : ''}`,
+      )
       if (isEdit) {
         setVersion(d.version)
         props.onSaved?.(d)

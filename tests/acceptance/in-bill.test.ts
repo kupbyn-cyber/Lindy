@@ -11,7 +11,7 @@ import { closeSql, withUser } from '../../src/server/db/client'
 import { AppError } from '../../src/server/http/errors'
 import { handleStation } from '../../src/server/http/route'
 import { recordPayment } from '../../src/server/orders/payments'
-import { confirmOrder, createOrder, getOrder, markDone } from '../../src/server/orders/service'
+import { createOrder, getOrder, markDone } from '../../src/server/orders/service'
 import {
   agentFinish,
   agentNext,
@@ -273,9 +273,9 @@ describe('S36, S37 — in bill đơn', () => {
   })
 
   it('đơn đã xác nhận vẫn in được; khách lẻ in "Khách lẻ"', async () => {
+    // S41: Làm xong là xác nhận luôn
     const d = await doneOrder()
-    const c = await confirmOrder(auth('nhung'), d.id, d.version)
-    expect(c.status).toBe('confirmed')
+    expect(d.status).toBe('confirmed')
     const j = await printBill(auth('nhung'), d.id, { idempotencyKey: key() })
     const next = await agentNext(token)
     expect(next.job?.id).toBe(j.id)

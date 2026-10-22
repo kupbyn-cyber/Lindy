@@ -8,14 +8,7 @@ import { AppError, fromDbError } from '../../src/server/http/errors'
 import { recordPayment, voidPayment } from '../../src/server/orders/payments'
 import { refundOrder, reviewRefund } from '../../src/server/orders/refunds'
 import { PaymentBody } from '../../src/server/orders/schema'
-import {
-  cancelOrder,
-  confirmOrder,
-  createOrder,
-  getOrder,
-  listOrders,
-  markDone,
-} from '../../src/server/orders/service'
+import { cancelOrder, createOrder, getOrder, listOrders, markDone } from '../../src/server/orders/service'
 import { payTips, tipSummary } from '../../src/server/orders/tips'
 import { overview } from '../../src/server/reports/service'
 import { rid, type SeedKey, sessionOf } from '../helpers/auth'
@@ -74,8 +67,8 @@ async function confirmed(lines: [SeedKey, number][]) {
     })) as never,
     discounts: [],
   })
-  const d = await markDone(auth('nhung'), order.id, order.version)
-  return confirmOrder(auth('nhung'), d.id, d.version)
+  // S41: Làm xong là xác nhận luôn
+  return markDone(auth('nhung'), order.id, order.version)
 }
 
 const revenue = async () => (await overview(auth('linh'), { period: 'day' })).revenue!.net

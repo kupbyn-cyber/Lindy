@@ -16,7 +16,7 @@ import {
 } from '~/lib/orders'
 import { addDays, formatIsoDate, isIsoDate, toLocalDate } from '~/lib/time'
 
-// xl: chỉ đơn cần Linh xem lại (Q04), trong 31 ngày gần nhất
+// xl: chỉ đơn cần Linh xem lại (P31, K18, K15), trong 31 ngày gần nhất
 type Search = { d?: string; loc?: OrderFilterValue; xl?: boolean }
 
 export const Route = createFileRoute('/_app/don-hang/')({
@@ -108,8 +108,8 @@ function OrdersPage() {
       {review ? (
         <div className="px-4">
           <Note>
-            Đơn Nhung tự xác nhận hoặc sửa có phần của mình, đơn có phiếu ưu đãi do Nhung lập (mọi ngày). Mở
-            đơn rồi bấm “Đã xem lại” hoặc “Đã xem” trên phiếu.{' '}
+            Đơn đã xác nhận Nhung sửa có phần của mình hoặc Nhung huỷ, đơn có phiếu ưu đãi do Nhung lập (mọi
+            ngày). Mở đơn rồi bấm “Đã xem lại” hoặc “Đã xem” trên phiếu.{' '}
             <button
               type="button"
               className="border-0 bg-transparent p-0 text-accent underline"

@@ -1,5 +1,5 @@
-// Cần xem lại của Linh (PRD §5.2, UI02; Q04, K15, K17, K18, P31, P49; Đợt 3B-2 bước 3.21). Gom mọi việc Linh cần
-// xem lại vào một trang: đơn Nhung tự xác nhận / sửa / huỷ, phiếu ưu đãi do người khác lập, phiếu hoàn do Nhung lập,
+// Cần xem lại của Linh (PRD §5.2, UI02; K15, K17, K18, P31, P49; Đợt 3B-2 bước 3.21; S43 bỏ Q04). Gom mọi việc Linh
+// cần xem lại vào một trang: đơn Nhung sửa / huỷ, phiếu ưu đãi do người khác lập, phiếu hoàn do Nhung lập,
 // cọc xử lý khác gợi ý, phiếu chi Nhung tự duyệt, lần chốt quỹ lệch tiền. Chỉ người có review_queue.read.
 import { formatIsoDate, toLocalDate, toLocalTime } from '~/lib/time'
 import type { Auth } from '../auth/context'
