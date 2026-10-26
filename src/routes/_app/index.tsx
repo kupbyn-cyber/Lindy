@@ -1,13 +1,14 @@
 // UI02 — Tổng quan, làm lại ở Đợt 6E (S14) cho mọi người. Đầu trang là các chỉ số chữ to: Linh, Nhung thấy số toàn
 // quán (doanh thu hôm nay, số khách hôm nay, đã thu / còn nợ, tiền mặt và tài khoản, doanh thu tháng); thợ thấy số
 // của chính mình (K09). Biểu đồ doanh thu 30 ngày. "Cần xử lý" gộp thành một thẻ đếm số việc, bấm vào mới xem.
+// S44: Linh, Nhung cũng làm khách nên có ô chuyển Toàn quán · Cá nhân; Cá nhân hiện chỉ số và biểu đồ như màn của thợ.
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { type CSSProperties, type ReactNode, useState } from 'react'
 import { AttendanceCard } from '~/components/cong/AttendanceCard'
 import { AttentionPanel, useAttention } from '~/components/lich/AttentionPanel'
 import { TodaySummary } from '~/components/lich/TodaySummary'
-import { cx, Icon, Money } from '~/components/ui'
+import { cx, Icon, Money, SegmentedControl } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useCan, useMe } from '~/lib/me'
 import { formatVND } from '~/lib/money'
@@ -31,7 +32,10 @@ function Overview() {
     placeholderData: (prev) => prev,
   })
   const d = q.data
-  const h = d?.home
+  // S44: người xem số toàn quán chuyển được sang số của chính mình
+  const both = can('revenue.read_branch')
+  const [view, setView] = useState<HomeBlock['scope']>('branch')
+  const h = view === 'mine' && d?.homeMine ? d.homeMine : d?.home
   const month = d ? d.to.slice(5, 7) : ''
 
   return (
@@ -43,15 +47,27 @@ function Overview() {
         </p>
       </div>
 
+      {both ? (
+        <SegmentedControl
+          ariaLabel="Xem doanh thu"
+          options={[
+            { value: 'branch', label: 'Toàn quán' },
+            { value: 'mine', label: 'Cá nhân' },
+          ]}
+          value={view}
+          onChange={(v) => setView(v as HomeBlock['scope'])}
+        />
+      ) : null}
+
       {q.isError ? (
         <p className="body m-0 text-danger">Không tải được số liệu. Kéo xuống để thử lại.</p>
       ) : null}
 
-      {h ? <Tiles h={h} money={d.money} myPay={d.myPay} month={month} /> : <TilesSkeleton />}
+      {d && h ? <Tiles h={h} money={d.money} myPay={d.myPay} month={month} /> : <TilesSkeleton />}
 
       <AttendanceCard />
 
-      {h ? <RevenueChart series={h.series} mine={h.scope === 'mine'} /> : null}
+      {h ? <RevenueChart key={h.scope} series={h.series} mine={h.scope === 'mine'} /> : null}
 
       {d ? <AttentionCard d={d} canManageBooking={can('appointments.manage_all')} /> : null}
 

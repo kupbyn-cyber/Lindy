@@ -100,7 +100,7 @@ async function byStaff(tx: Tx, branchId: string, from: string, to: string, onlyU
 // ---------------------------------------------------------------- Trang chủ (S14, Đợt 6E)
 
 export type HomeBlock = {
-  /** branch: số toàn quán (Linh, Nhung); mine: số của chính người xem (thợ, K09) */
+  /** branch: số toàn quán (Linh, Nhung); mine: số của chính người xem (thợ, K09; Linh, Nhung chọn Cá nhân, S44) */
   scope: 'branch' | 'mine'
   today: { net: number; guests: number; paid: number | null; due: number | null; open: number }
   month: { net: number; guests: number }
@@ -114,21 +114,26 @@ function addDaysIso(d: string, n: number) {
   return t.toISOString().slice(0, 10)
 }
 
+/** `all`: người xem thấy mọi đơn (Linh, Nhung) — xem số của mình (S44) thì phải tự lọc phần mình làm. */
 async function homeBlock(
   tx: Tx,
   auth: Auth,
   branchId: string,
+  scope: HomeBlock['scope'],
   all: boolean,
   today: string,
 ): Promise<HomeBlock> {
   const monthFrom = `${today.slice(0, 8)}01`
   const from30 = addDaysIso(today, -29)
-  // Đơn hôm nay chưa xác nhận (Đang làm, Chờ xác nhận): chưa vào doanh thu, đếm riêng. RLS: thợ chỉ thấy đơn của mình.
+  // Đơn hôm nay chưa xác nhận (Đang làm, Chờ xác nhận): chưa vào doanh thu, đếm riêng. RLS: thợ chỉ thấy đơn của mình;
+  // Linh, Nhung xem số của mình thì chỉ đếm đơn có phần mình làm (không đếm đơn mình tạo hộ thợ khác).
+  const mineOfAll = scope === 'mine' && all
   const [o] = await tx<{ open: string }[]>`
     select count(*) as open from orders
-    where branch_id = ${branchId} and service_date = ${today}::date and status in ('in_progress', 'awaiting_confirmation')`
+    where branch_id = ${branchId} and service_date = ${today}::date and status in ('in_progress', 'awaiting_confirmation')
+      and (${!mineOfAll} or app.order_has_staff(id, content_rev))`
   const open = n(o?.open)
-  if (all) {
+  if (scope === 'branch') {
     const t = await totals(tx, branchId, today, today)
     const m = await totals(tx, branchId, monthFrom, today)
     const rows = await tx<{ date: string; net: string }[]>`
@@ -270,7 +275,9 @@ export async function overview(auth: Auth, input: { branchId?: string; period: '
       /** Lương tạm tính tháng này của chính mình (Q39) */
       myPay: await myPayNow(tx, auth, branch.id),
       /** Trang chủ (S14): số hôm nay, tháng này, doanh thu 30 ngày — không phụ thuộc period */
-      home: await homeBlock(tx, auth, branch.id, all, today),
+      home: await homeBlock(tx, auth, branch.id, all ? 'branch' : 'mine', all, today),
+      /** S44: Linh, Nhung cũng làm khách — số của chính mình để chuyển qua ở trang chủ; thợ đã có ở `home` */
+      homeMine: all ? await homeBlock(tx, auth, branch.id, 'mine', all, today) : null,
     }
   })
 }

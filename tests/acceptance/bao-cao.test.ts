@@ -136,6 +136,26 @@ describe('Trang chủ (S14)', () => {
     expect(mineDay).toBeGreaterThanOrEqual(70000)
     expect(mineDay).toBeLessThanOrEqual(n.series.find((s) => s.date === day)!.net)
   })
+
+  it('S44 — Linh, Nhung có thêm số của chính mình (chỉ phần mình làm, không tính đơn tạo hộ); thợ không có', async () => {
+    const day = addDays(today, -7)
+    const a = await order(day, [svc('CB02', 'nhung')])
+    await confirmOrder(auth('nhung'), a.id, a.version)
+    const b = await order(day, [svc('MG03', 'trang')]) // Nhung tạo hộ, Trang làm
+    await confirmOrder(auth('nhung'), b.id, b.version)
+    const o = await overview(auth('nhung'), { period: 'month' })
+    expect(o.home.scope).toBe('branch')
+    const m = o.homeMine!
+    expect(m.scope).toBe('mine')
+    expect(m.series).toHaveLength(30)
+    expect(m.today.paid).toBeNull()
+    expect(m.today.due).toBeNull()
+    const mineDay = m.series.find((s) => s.date === day)!.net
+    const r = await dayReport(auth('linh'), { date: day })
+    expect(mineDay).toBe(r.byStaff.find((s) => s.userId === uid('nhung'))!.amount)
+    expect(mineDay).toBeLessThan(o.home.series.find((s) => s.date === day)!.net)
+    expect((await overview(auth('trang'), { period: 'day' })).homeMine).toBeNull()
+  })
 })
 
 describe('Tổng quan (UI02)', () => {
