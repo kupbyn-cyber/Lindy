@@ -8,6 +8,7 @@ import { Icon, Note, StatusChip } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { maskPhonesInText, nameLooksMessy } from '~/lib/phone'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { addDays, formatIsoDate, toLocalDate } from '~/lib/time'
 import type { CustomerListItem } from '~/server/customers/service'
 
@@ -120,7 +121,9 @@ function CustomersPage() {
                   <span className="lo-row-meta caption">{meta(c)}</span>
                 </span>
                 <span className="flex flex-none items-center gap-2">
-                  {canEdit && nameLooksMessy(c.name) ? <StatusChip tone="warning">Sửa tên</StatusChip> : null}
+                  {canEdit && nameLooksMessy(c.name) ? (
+                    <StatusChip tone={LABEL_TONE.renameCustomer}>Sửa tên</StatusChip>
+                  ) : null}
                   <Icon name="chevron-right" size={20} className="text-ink-muted" />
                 </span>
               </Link>

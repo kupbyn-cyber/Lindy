@@ -18,6 +18,7 @@ import {
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { formatVND } from '~/lib/money'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { addDays, formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import type { dayClosePreview } from '~/server/money/service'
 import type { tipSummary } from '~/server/orders/tips'
@@ -356,7 +357,7 @@ function History(props: { d: Data }) {
                     Đã xem
                   </Button>
                 ) : (
-                  <StatusChip tone="warning">Chờ Linh xem</StatusChip>
+                  <StatusChip tone={LABEL_TONE.needsReview}>Chờ Linh xem</StatusChip>
                 )
               ) : null}
             </span>

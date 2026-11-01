@@ -68,7 +68,7 @@ function NotificationsPage() {
             </span>
             <span className="lo-row-side">
               <span className="caption text-ink-muted">{formatDateTimeShort(n.createdAt)}</span>
-              {!n.readAt ? <span className="lo-chip lo-chip-accent caption">Mới</span> : null}
+              {!n.readAt ? <span className="lo-chip lo-chip-waiting caption">Mới</span> : null}
             </span>
           </button>
         ))}

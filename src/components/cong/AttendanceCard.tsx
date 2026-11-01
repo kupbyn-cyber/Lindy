@@ -7,6 +7,7 @@ import { Button, ConfirmDialog, Note, StatusChip, useToast } from '~/components/
 import { api, errorText } from '~/lib/api'
 import { DAY_LABEL, DAY_TONE } from '~/lib/attendance'
 import { useCan } from '~/lib/me'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { toLocalTime } from '~/lib/time'
 import type { MyToday } from '~/server/attendance/service'
 
@@ -74,7 +75,9 @@ export function AttendanceCard() {
                 : 'Chưa vào ca'}
             </span>
             {d.decided ? <StatusChip tone={DAY_TONE[d.decided]}>{DAY_LABEL[d.decided]}</StatusChip> : null}
-            {d.hasLeave && !d.checkIn ? <StatusChip tone="accent">Nghỉ đã duyệt</StatusChip> : null}
+            {d.hasLeave && !d.checkIn ? (
+              <StatusChip tone={LABEL_TONE.leaveApproved}>Nghỉ đã duyệt</StatusChip>
+            ) : null}
           </div>
           {!d.checkIn && q.data.canCheckIn ? (
             <Button

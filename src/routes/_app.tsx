@@ -8,6 +8,7 @@ import { api } from '~/lib/api'
 import { useLiveEvents } from '~/lib/live'
 import { useBranch } from '~/lib/me'
 import { registerServiceWorker } from '~/lib/push-client'
+import { useKeyboardInset } from '~/lib/use-keyboard-inset'
 import { getMeFn } from '~/server/me'
 
 export const Route = createFileRoute('/_app')({
@@ -33,6 +34,7 @@ function AppLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   // Không còn nút tròn "+ Tạo đơn" (S16): mọi đơn tạo từ lịch
   useLiveEvents(branch?.id ?? null)
+  useKeyboardInset()
   useEffect(() => {
     void registerServiceWorker()
   }, [])
@@ -61,7 +63,7 @@ function AppLayout() {
           </Link>
         }
       />
-      <main className="pb-[calc(var(--nav-h)+env(safe-area-inset-bottom)+var(--space-8))]">
+      <main className="pb-[calc(var(--lo-bottom-offset)+var(--space-8))]">
         {branch ? (
           <Outlet />
         ) : (
@@ -80,7 +82,9 @@ function AppLayout() {
               className={cx('lo-nav-item', on && 'is-active')}
               aria-current={on ? 'page' : undefined}
             >
-              <Icon name={it.icon} size={24} />
+              <span className="lo-nav-icon">
+                <Icon name={it.icon} size={24} />
+              </span>
               <span className="lo-nav-label nav-label">{it.label}</span>
             </Link>
           )

@@ -5,20 +5,11 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { MonthNav } from '~/components/cong/parts'
 import { Payslip } from '~/components/luong/Payslip'
-import {
-  Button,
-  type ChipTone,
-  ConfirmDialog,
-  Money,
-  Note,
-  Sheet,
-  StatusChip,
-  SummaryCard,
-  useToast,
-} from '~/components/ui'
+import { Button, ConfirmDialog, Money, Note, Sheet, StatusChip, SummaryCard, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useMe } from '~/lib/me'
 import { formatVND } from '~/lib/money'
+import { type ChipTone, LABEL_TONE, PAYROLL_TONE } from '~/lib/status-tone'
 import { formatIsoDate, formatYearMonth, isYearMonth, toLocalDate } from '~/lib/time'
 import type { PayrollMonth, PayrollStatus } from '~/server/payroll/service'
 
@@ -33,11 +24,11 @@ export const Route = createFileRoute('/_app/them/luong')({
 })
 
 const STATUS: Record<PayrollStatus, { label: string; tone: ChipTone }> = {
-  before_start: { label: 'Làm trên Sheets', tone: 'neutral' },
-  provisional: { label: 'Tạm tính', tone: 'accent' },
-  closing: { label: 'Chờ ngày nháp', tone: 'neutral' },
-  draft: { label: 'Bản nháp, chờ khoá', tone: 'warning' },
-  locked: { label: 'Đã khoá', tone: 'success' },
+  before_start: { label: 'Làm trên Sheets', tone: PAYROLL_TONE.before_start },
+  provisional: { label: 'Tạm tính', tone: PAYROLL_TONE.provisional },
+  closing: { label: 'Chờ ngày nháp', tone: PAYROLL_TONE.closing },
+  draft: { label: 'Bản nháp, chờ khoá', tone: PAYROLL_TONE.draft },
+  locked: { label: 'Đã khoá', tone: PAYROLL_TONE.locked },
 }
 
 function Page() {
@@ -178,9 +169,9 @@ function Page() {
                       <Money value={l.grossPay} tone={l.grossPay < 0 ? 'negative' : undefined} />
                       {d.status === 'locked' ? (
                         l.remaining > 0 ? (
-                          <StatusChip tone="warning">Còn {formatVND(l.remaining)}</StatusChip>
+                          <StatusChip tone={LABEL_TONE.payRemaining}>Còn {formatVND(l.remaining)}</StatusChip>
                         ) : (
-                          <StatusChip tone="success">Đã trả đủ</StatusChip>
+                          <StatusChip tone={LABEL_TONE.payDone}>Đã trả đủ</StatusChip>
                         )
                       ) : null}
                     </span>

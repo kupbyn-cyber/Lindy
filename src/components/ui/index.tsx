@@ -1,4 +1,6 @@
 // Thành phần giao diện viết lại từ design/design-system/components (bundle.js) cho React 19 + SSR.
+
+import { Link } from '@tanstack/react-router'
 import {
   type ButtonHTMLAttributes,
   createContext,
@@ -13,8 +15,10 @@ import {
   useState,
 } from 'react'
 import { formatVND } from '~/lib/money'
+import type { ChipTone } from '~/lib/status-tone'
 import { Icon, type IconName } from './Icon'
 
+export type { ChipTone }
 export { Icon, type IconName }
 
 export const cx = (...xs: (string | false | null | undefined)[]) => xs.filter(Boolean).join(' ')
@@ -30,6 +34,35 @@ export function AppBar(props: { name?: string; branch?: string; right?: ReactNod
         <span className={cx('lo-appbar-right', !props.branch && 'ml-auto')}>{props.right}</span>
       ) : null}
     </header>
+  )
+}
+
+// ---------------------------------------------------------------- ScreenHeader
+
+/** Đầu màn một kiểu cho mọi màn: nút quay lại 44px (màn con), tiêu đề, nút biểu tượng bên phải. */
+export function ScreenHeader(props: {
+  title: ReactNode
+  back?: { to: string; search?: Record<string, unknown>; label: string }
+  actions?: ReactNode
+  className?: string
+}) {
+  const b = props.back
+  return (
+    <div className={cx('lo-screen-head', b && 'has-back', props.className)}>
+      {b ? (
+        <Link
+          to={b.to}
+          search={b.search as never}
+          className="lo-icon-btn no-print"
+          aria-label={b.label}
+          title={b.label}
+        >
+          <Icon name="chevron-left" size={24} />
+        </Link>
+      ) : null}
+      <h1 className={cx('lo-screen-title', b ? 'heading' : 'screen-title')}>{props.title}</h1>
+      {props.actions ? <div className="lo-screen-actions">{props.actions}</div> : null}
+    </div>
   )
 }
 
@@ -62,7 +95,11 @@ export function Button({
       aria-busy={loading ? true : undefined}
     >
       {icon ? <Icon name={icon} size={20} /> : null}
-      <span>{loading ? (loadingText ?? 'Đang lưu…') : children}</span>
+      {/* Đang xử lý: giữ nguyên kích thước nút, vòng quay đè lên; chữ cho trình đọc màn hình */}
+      <span className="lo-btn-text">{children}</span>
+      {loading ? (
+        <span className="lo-btn-spin" role="status" aria-label={loadingText ?? 'Đang lưu…'} />
+      ) : null}
     </button>
   )
 }
@@ -177,8 +214,7 @@ export function SummaryCard(props: {
 
 // ---------------------------------------------------------------- StatusChip
 
-export type ChipTone = 'success' | 'warning' | 'danger' | 'accent' | 'neutral'
-
+/** Chỉ trình bày: nhãn và tone do nơi gọi truyền, tone lấy từ ~/lib/status-tone. */
 export function StatusChip(props: { tone?: ChipTone; children: ReactNode; className?: string }) {
   return (
     <span className={cx('lo-chip', 'caption', `lo-chip-${props.tone ?? 'neutral'}`, props.className)}>
@@ -364,7 +400,8 @@ export function ConfirmDialog(props: {
   if (!props.open) return null
   return (
     <>
-      <div className="lo-backdrop" onClick={props.onCancel} aria-hidden="true" />
+      {/* Đang xử lý thì chạm nền không đóng, để không mất phản hồi của thao tác đang chạy */}
+      <div className="lo-backdrop" onClick={props.busy ? undefined : props.onCancel} aria-hidden="true" />
       <div className="lo-dialog" role="alertdialog" aria-modal="true" aria-label={props.title}>
         <div className="lo-dialog-head">
           <h2 className="body-strong m-0 flex-1">{props.title}</h2>
@@ -407,7 +444,7 @@ export function ToastProvider(props: { children: ReactNode }) {
   }, [])
   useEffect(() => {
     if (!item) return
-    const t = setTimeout(() => setItem(null), item.tone === 'error' ? 5000 : 2500)
+    const t = setTimeout(() => setItem(null), item.tone === 'error' ? 6000 : 2500)
     return () => clearTimeout(t)
   }, [item])
   return (
@@ -422,6 +459,11 @@ export function ToastProvider(props: { children: ReactNode }) {
           >
             <Icon name={item.tone === 'error' ? 'alert' : 'check'} size={20} />
             <span>{item.text}</span>
+            {item.tone === 'error' ? (
+              <button type="button" className="lo-icon-btn" aria-label="Đóng" onClick={() => setItem(null)}>
+                <Icon name="x" size={18} />
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}

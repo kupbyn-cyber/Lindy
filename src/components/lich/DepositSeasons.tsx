@@ -14,6 +14,7 @@ import {
 } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { formatVND } from '~/lib/money'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatIsoDate } from '~/lib/time'
 import type { listSeasons, Season } from '~/server/deposits/service'
 
@@ -107,7 +108,7 @@ export function DepositSeasons() {
           <div key={s.id} className="flex items-center gap-2 border-t border-line py-2">
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="body-strong">
-                {s.name} {s.isActive ? null : <StatusChip tone="neutral">Đã tắt</StatusChip>}
+                {s.name} {s.isActive ? null : <StatusChip tone={LABEL_TONE.seasonOff}>Đã tắt</StatusChip>}
               </span>
               <span className="caption text-ink-muted">
                 {formatIsoDate(s.startDate)}–{formatIsoDate(s.endDate)} · {formatVND(s.amountPerGuest)}/khách

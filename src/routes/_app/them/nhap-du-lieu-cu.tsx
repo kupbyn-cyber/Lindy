@@ -17,6 +17,7 @@ import {
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { formatVND } from '~/lib/money'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import type { Mapping } from '~/server/legacy/schema'
 import type { analyzeLegacy, listImports } from '~/server/legacy/service'
@@ -471,7 +472,7 @@ function ImportList(props: { data: Imports | undefined }) {
             {i.cancelledAt ? <span className="caption text-ink-muted">Đã huỷ: {i.cancelReason}</span> : null}
           </span>
           {i.cancelledAt ? (
-            <StatusChip tone="neutral">Đã huỷ</StatusChip>
+            <StatusChip tone={LABEL_TONE.voided}>Đã huỷ</StatusChip>
           ) : (
             <Button variant="quiet" onClick={() => setCancel(i)}>
               Huỷ

@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { Button, Money, Note, StatusChip, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
+import { LABEL_TONE } from '~/lib/status-tone'
 import type { ReviewItem, reviewQueue } from '~/server/review/service'
 
 export const Route = createFileRoute('/_app/them/can-xem-lai')({
@@ -108,7 +109,8 @@ function Row(props: { i: ReviewItem }) {
   }
   const title = (
     <>
-      <StatusChip tone="accent">{KIND[i.kind]}</StatusChip> <span className="body">{i.title}</span>
+      <StatusChip tone={LABEL_TONE.reviewKind}>{KIND[i.kind]}</StatusChip>{' '}
+      <span className="body">{i.title}</span>
     </>
   )
   return (

@@ -16,6 +16,7 @@ import {
 } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { formatVND } from '~/lib/money'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort, formatIsoDate, formatYearMonth } from '~/lib/time'
 import type { Payslip as Slip } from '~/server/payroll/service'
 
@@ -236,7 +237,7 @@ function Adjustments(props: { d: Slip; onDone: (s: Slip) => void }) {
             <span className="caption text-ink-muted">{a.createdByName}</span>
           </span>
           {a.voided ? (
-            <StatusChip tone="neutral">Đã huỷ</StatusChip>
+            <StatusChip tone={LABEL_TONE.voided}>Đã huỷ</StatusChip>
           ) : (
             <Money value={a.kind === 'bonus' ? a.amount : -a.amount} size="sm" sign />
           )}

@@ -2,20 +2,11 @@
 // tháng. Số liệu và quyền do server tính; ở đây chỉ hiện.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import {
-  Button,
-  type ChipTone,
-  cx,
-  Note,
-  SegmentedControl,
-  Sheet,
-  StatusChip,
-  TextArea,
-  useToast,
-} from '~/components/ui'
+import { Button, cx, Note, SegmentedControl, Sheet, StatusChip, TextArea, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { DAY_LABEL, DAY_SHORT, DAY_TONE, type DayCounts, type DayStatus } from '~/lib/attendance'
 import { useCan } from '~/lib/me'
+import type { ChipTone } from '~/lib/status-tone'
 import { formatIsoDate, toLocalTime, weekdayOf, weekdayShort } from '~/lib/time'
 import type { DayBoard, DayView, MonthSheet, myMonth } from '~/server/attendance/service'
 import { DateNav, LeaveList, LeaveSheet, MonthNav } from './parts'
@@ -304,7 +295,8 @@ const CELL: Record<ChipTone, string> = {
   success: 'bg-success-soft text-success',
   warning: 'bg-warning-soft text-warning',
   danger: 'bg-danger-soft text-danger',
-  accent: 'bg-accent-soft text-accent',
+  progress: 'bg-progress-soft text-progress',
+  waiting: 'bg-waiting-soft text-waiting',
   neutral: 'bg-surface-sunken text-ink-muted',
 }
 const WEEK = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']

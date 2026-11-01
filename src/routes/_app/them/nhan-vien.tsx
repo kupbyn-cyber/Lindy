@@ -17,6 +17,7 @@ import {
 } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { formatVND } from '~/lib/money'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { addMonths, formatIsoDate, formatYearMonth } from '~/lib/time'
 import type { PeopleData, PolicyView } from '~/server/staff/service'
 
@@ -98,9 +99,11 @@ function Page() {
                 <span className="lo-row-side">
                   {p.current ? <Money value={p.current.baseSalary} size="sm" /> : null}
                   {!p.profile || !p.current ? (
-                    <StatusChip tone="warning">{!p.profile ? 'Thiếu hồ sơ' : 'Thiếu chính sách'}</StatusChip>
+                    <StatusChip tone={LABEL_TONE.staffGap}>
+                      {!p.profile ? 'Thiếu hồ sơ' : 'Thiếu chính sách'}
+                    </StatusChip>
                   ) : !p.active ? (
-                    <StatusChip tone="neutral">Đã khoá</StatusChip>
+                    <StatusChip tone={LABEL_TONE.staffLocked}>Đã khoá</StatusChip>
                   ) : (
                     <span className="caption text-ink-muted">HH {pct(p.current.commissionBps)}</span>
                   )}

@@ -27,6 +27,7 @@ import {
   PAYMENT_LABEL,
   PAYMENT_TONE,
 } from '~/lib/orders'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import type { PrintJobView } from '~/server/print/service'
 import { Attachments } from '../tien/Attachments'
@@ -258,13 +259,13 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
           {d.status === 'confirmed' || d.status === 'awaiting_confirmation' ? (
             <StatusChip tone={PAYMENT_TONE[d.paymentStatus]}>{PAYMENT_LABEL[d.paymentStatus]}</StatusChip>
           ) : null}
-          {d.hasOutOfRange ? <StatusChip tone="warning">Vượt khoảng giá</StatusChip> : null}
-          {d.hasCustomLines ? <StatusChip tone="warning">Có dòng nhập tay</StatusChip> : null}
+          {d.hasOutOfRange ? <StatusChip tone={LABEL_TONE.outOfRange}>Vượt khoảng giá</StatusChip> : null}
+          {d.hasCustomLines ? <StatusChip tone={LABEL_TONE.customLine}>Có dòng nhập tay</StatusChip> : null}
           {levelNote && !d.approval?.valid && d.status !== 'cancelled' ? (
-            <StatusChip tone="warning">Giảm chờ duyệt</StatusChip>
+            <StatusChip tone={LABEL_TONE.discountPending}>Giảm chờ duyệt</StatusChip>
           ) : null}
           {d.needsOwnerReview && !d.reviewedByName ? (
-            <StatusChip tone="accent">Cần xem lại</StatusChip>
+            <StatusChip tone={LABEL_TONE.needsReview}>Cần xem lại</StatusChip>
           ) : null}
         </div>
       </div>
@@ -475,7 +476,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                 ) : null}
                 {r.needsOwnerReview ? (
                   <span className="flex items-center gap-2">
-                    <StatusChip tone="accent">Cần Linh xem lại</StatusChip>
+                    <StatusChip tone={LABEL_TONE.needsReview}>Cần Linh xem lại</StatusChip>
                     {c.reviewTicket ? (
                       <button
                         type="button"
@@ -525,7 +526,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                 {t.voided ? <span className="caption text-ink-muted">Đã huỷ: {t.voidReason}</span> : null}
                 {t.needsOwnerReview ? (
                   <span className="flex items-center gap-2">
-                    <StatusChip tone="accent">Cần Linh xem lại</StatusChip>
+                    <StatusChip tone={LABEL_TONE.needsReview}>Cần Linh xem lại</StatusChip>
                     {c.reviewTicket ? (
                       <button
                         type="button"

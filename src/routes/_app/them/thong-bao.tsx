@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Button, Note, StatusChip, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { disableThisDevice, enablePush, isIos, type PushSupport, pushSupport } from '~/lib/push-client'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort } from '~/lib/time'
 
 export const Route = createFileRoute('/_app/them/thong-bao')({
@@ -198,7 +199,7 @@ function NotificationSettings() {
               <span className="lo-row-main">
                 <span className="body">
                   {deviceName(d.userAgent)}{' '}
-                  {d.thisDevice ? <StatusChip tone="accent">Máy này</StatusChip> : null}
+                  {d.thisDevice ? <StatusChip tone={LABEL_TONE.thisDevice}>Máy này</StatusChip> : null}
                 </span>
                 <span className="lo-row-meta caption">
                   Bật lúc {formatDateTimeShort(d.createdAt)}

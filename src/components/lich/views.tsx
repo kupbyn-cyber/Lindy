@@ -5,6 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { cx, StatusChip } from '~/components/ui'
 import { DEPOSIT_STATE_CHIP, type ListItem, layoutDay, STATUS_LABEL, STATUS_TONE } from '~/lib/appointments'
+import { LABEL_TONE } from '~/lib/status-tone'
 import {
   addDays,
   formatIsoDate,
@@ -314,7 +315,9 @@ function Badges(props: { it: ListItem }) {
   const dep = it.depositState ? DEPOSIT_STATE_CHIP[it.depositState] : undefined
   return (
     <>
-      {it.customerCancelReported ? <StatusChip tone="warning">Yêu cầu huỷ</StatusChip> : null}
+      {it.customerCancelReported ? (
+        <StatusChip tone={LABEL_TONE.cancelRequested}>Yêu cầu huỷ</StatusChip>
+      ) : null}
       {dep ? <StatusChip tone={dep.tone}>{dep.label}</StatusChip> : null}
       {/* Lịch nào cũng đã chốt (S02): chỉ hiện trạng thái khác */}
       {it.status !== 'confirmed' && it.status !== 'pending' ? (

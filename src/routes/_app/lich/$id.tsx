@@ -28,6 +28,7 @@ import {
   useBookingSettings,
 } from '~/lib/appointments'
 import { ORDER_STATUS_LABEL, type OrderStatus } from '~/lib/orders'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort, formatIsoDate, weekdayLong } from '~/lib/time'
 
 export const Route = createFileRoute('/_app/lich/$id')({
@@ -252,13 +253,15 @@ function DetailPage() {
           {d.status !== 'confirmed' ? (
             <StatusChip tone={STATUS_TONE[d.status]}>{STATUS_LABEL[d.status]}</StatusChip>
           ) : null}
-          {d.customerCancelReported ? <StatusChip tone="warning">Yêu cầu huỷ</StatusChip> : null}
+          {d.customerCancelReported ? (
+            <StatusChip tone={LABEL_TONE.cancelRequested}>Yêu cầu huỷ</StatusChip>
+          ) : null}
           {d.depositState && DEPOSIT_STATE_CHIP[d.depositState] ? (
             <StatusChip tone={DEPOSIT_STATE_CHIP[d.depositState]!.tone}>
               {DEPOSIT_STATE_CHIP[d.depositState]!.label}
             </StatusChip>
           ) : null}
-          {d.outsideHours ? <StatusChip tone="warning">Ngoài giờ mở cửa</StatusChip> : null}
+          {d.outsideHours ? <StatusChip tone={LABEL_TONE.outsideHours}>Ngoài giờ mở cửa</StatusChip> : null}
         </div>
       </div>
 

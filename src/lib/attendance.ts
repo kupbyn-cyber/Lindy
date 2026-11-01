@@ -1,6 +1,5 @@
 // Trạng thái ngày công (Đợt 4A; PRD §8, Q28, Q29, Q35). Ngày vắng = nghỉ có phép + nghỉ không phép + ngoài thời gian
 // làm việc. Ngày quán đóng cửa không phải ngày vắng. Ngày chưa duyệt chưa phải ngày vắng (test 23, K20).
-import type { ChipTone } from '~/components/ui'
 
 export type DayStatus = 'out' | 'closed' | 'worked' | 'leave' | 'unexcused' | 'pending' | 'future'
 
@@ -25,16 +24,6 @@ export const DAY_SHORT: Record<DayStatus, string> = {
   future: '·',
 }
 
-export const DAY_TONE: Record<DayStatus, ChipTone> = {
-  out: 'neutral',
-  closed: 'neutral',
-  worked: 'success',
-  leave: 'accent',
-  unexcused: 'danger',
-  pending: 'warning',
-  future: 'neutral',
-}
-
 export type DayCounts = Record<DayStatus, number> & { absent: number }
 
 export function countDays(days: { status: DayStatus }[]): DayCounts {
@@ -52,9 +41,4 @@ export const LEAVE_LABEL: Record<LeaveStatus, string> = {
   cancelled: 'Đã huỷ',
 }
 
-export const LEAVE_TONE: Record<LeaveStatus, ChipTone> = {
-  requested: 'warning',
-  approved: 'success',
-  rejected: 'danger',
-  cancelled: 'neutral',
-}
+export { DAY_TONE, LEAVE_TONE } from './status-tone'

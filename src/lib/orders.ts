@@ -1,10 +1,11 @@
 // Dữ liệu đơn hàng phía trình duyệt: truy vấn, nhãn trạng thái, tra danh mục.
 import { useQuery } from '@tanstack/react-query'
-import type { ChipTone } from '~/components/ui'
 import type { OrderStatus } from '~/server/orders/policy'
 import type { Catalog, OrderDetail, OrderListItem } from '~/server/orders/service'
 import { api } from './api'
 import type { CatalogLookup, Level, PaymentStatus } from './order-math'
+
+export { ORDER_STATUS_TONE, PAYMENT_TONE } from './status-tone'
 
 export type { Catalog, OrderDetail, OrderListItem, OrderStatus }
 
@@ -15,27 +16,12 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   cancelled: 'Đã huỷ',
 }
 
-export const ORDER_STATUS_TONE: Record<OrderStatus, ChipTone> = {
-  in_progress: 'accent',
-  awaiting_confirmation: 'warning',
-  confirmed: 'neutral',
-  cancelled: 'danger',
-}
-
 export const PAYMENT_LABEL: Record<PaymentStatus, string> = {
   unpaid: 'Chưa thu',
   partial: 'Thu một phần',
   paid: 'Đã thu đủ',
   refund_partial: 'Hoàn một phần',
   refund_full: 'Hoàn toàn bộ',
-}
-
-export const PAYMENT_TONE: Record<PaymentStatus, ChipTone> = {
-  unpaid: 'danger',
-  partial: 'warning',
-  paid: 'success',
-  refund_partial: 'warning',
-  refund_full: 'neutral',
 }
 
 export const LEVEL_NOTE: Record<Level, string | null> = {

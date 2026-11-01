@@ -7,6 +7,7 @@ import { Button, ConfirmDialog, Icon, StatusChip } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useBranch, useCan, useMe } from '~/lib/me'
 import { disableThisDevice } from '~/lib/push-client'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatIsoDate } from '~/lib/time'
 import type { overview } from '~/server/reports/service'
 
@@ -26,7 +27,7 @@ function Row(props: Item) {
         {props.hint ? <span className="lo-row-meta caption">{props.hint}</span> : null}
       </span>
       <span className="flex flex-none items-center gap-2">
-        {props.badge ? <StatusChip tone="warning">{props.badge}</StatusChip> : null}
+        {props.badge ? <StatusChip tone={LABEL_TONE.pendingCount}>{props.badge}</StatusChip> : null}
         <Icon name="chevron-right" size={20} className="text-ink-muted" />
       </span>
     </Link>

@@ -16,6 +16,7 @@ import {
 } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort } from '~/lib/time'
 import type { createStation, PrintJobView, printSetup } from '~/server/print/service'
 
@@ -155,7 +156,7 @@ function Stations(props: { s: Setup }) {
           </span>
           {st.revokedAt ? null : (
             <span className="flex items-center gap-2">
-              <StatusChip tone={online(st.lastSeenAt) ? 'success' : 'warning'}>
+              <StatusChip tone={online(st.lastSeenAt) ? LABEL_TONE.stationOnline : LABEL_TONE.stationOffline}>
                 {online(st.lastSeenAt) ? 'Đang kết nối' : 'Mất kết nối'}
               </StatusChip>
               <button

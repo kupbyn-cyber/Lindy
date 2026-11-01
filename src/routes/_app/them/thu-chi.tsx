@@ -7,7 +7,6 @@ import { useRef, useState } from 'react'
 import { Attachments } from '~/components/tien/Attachments'
 import {
   Button,
-  type ChipTone,
   ConfirmDialog,
   Money,
   MoneyInput,
@@ -22,6 +21,7 @@ import {
 import { ApiError, api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { formatVND } from '~/lib/money'
+import { type ChipTone, LABEL_TONE, REQUEST_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort } from '~/lib/time'
 import type { ExpenseView, listExpenses } from '~/server/expenses/service'
 
@@ -34,11 +34,11 @@ type Data = Awaited<ReturnType<typeof listExpenses>>
 type Filter = 'pending' | 'approved' | 'paid' | 'all'
 
 const STATUS: Record<ExpenseView['status'], { label: string; tone: ChipTone }> = {
-  requested: { label: 'Chờ duyệt', tone: 'warning' },
-  approved: { label: 'Đã duyệt, chờ chi', tone: 'accent' },
-  paid: { label: 'Đã chi', tone: 'success' },
-  rejected: { label: 'Từ chối', tone: 'danger' },
-  cancelled: { label: 'Đã huỷ', tone: 'neutral' },
+  requested: { label: 'Chờ duyệt', tone: REQUEST_TONE.requested },
+  approved: { label: 'Đã duyệt, chờ chi', tone: REQUEST_TONE.approved },
+  paid: { label: 'Đã chi', tone: REQUEST_TONE.paid },
+  rejected: { label: 'Từ chối', tone: REQUEST_TONE.rejected },
+  cancelled: { label: 'Đã huỷ', tone: REQUEST_TONE.cancelled },
 }
 
 const LIMIT = 1_000_000
@@ -260,8 +260,10 @@ function DetailSheet(props: { e: ExpenseView; onClose: () => void }) {
     <Sheet open title={`${e.categoryName} · ${formatVND(e.amount)}`} onClose={props.onClose}>
       <div className="flex flex-wrap gap-1">
         <StatusChip tone={STATUS[e.status].tone}>{STATUS[e.status].label}</StatusChip>
-        {e.requiredLevel === 'owner' ? <StatusChip tone="neutral">Linh duyệt</StatusChip> : null}
-        {e.needsOwnerReview ? <StatusChip tone="warning">Cần Linh xem lại</StatusChip> : null}
+        {e.requiredLevel === 'owner' ? (
+          <StatusChip tone={LABEL_TONE.ownerApproves}>Linh duyệt</StatusChip>
+        ) : null}
+        {e.needsOwnerReview ? <StatusChip tone={LABEL_TONE.needsReview}>Cần Linh xem lại</StatusChip> : null}
       </div>
       <p className="body m-0">{e.note}</p>
       <div className="caption flex flex-col gap-0.5 text-ink-muted">

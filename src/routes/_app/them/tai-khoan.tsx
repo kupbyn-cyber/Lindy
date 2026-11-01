@@ -7,6 +7,7 @@ import { type FormEvent, useState } from 'react'
 import { Button, ConfirmDialog, Note, Sheet, StatusChip, TextField, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort } from '~/lib/time'
 import type { AccountRow } from '~/server/admin/accounts'
 
@@ -169,13 +170,13 @@ function AccountsPage() {
               {u.roleName ? (
                 <StatusChip>{u.roleName}</StatusChip>
               ) : (
-                <StatusChip tone="danger">Đã thu quyền</StatusChip>
+                <StatusChip tone={LABEL_TONE.accessRevoked}>Đã thu quyền</StatusChip>
               )}
-              {!u.isActive ? <StatusChip tone="danger">Đã khoá</StatusChip> : null}
+              {!u.isActive ? <StatusChip tone={LABEL_TONE.accountLocked}>Đã khoá</StatusChip> : null}
               {u.isActive && u.mustChangePassword ? (
-                <StatusChip tone="warning">Chưa đổi mật khẩu</StatusChip>
+                <StatusChip tone={LABEL_TONE.mustChangePassword}>Chưa đổi mật khẩu</StatusChip>
               ) : null}
-              {u.staffGap ? <StatusChip tone="warning">{GAP_TEXT[u.staffGap]}</StatusChip> : null}
+              {u.staffGap ? <StatusChip tone={LABEL_TONE.staffGap}>{GAP_TEXT[u.staffGap]}</StatusChip> : null}
             </span>
           </button>
         ))}

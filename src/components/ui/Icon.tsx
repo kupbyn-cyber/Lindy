@@ -10,6 +10,7 @@ export type IconName =
   | 'plus'
   | 'check'
   | 'chevron-right'
+  | 'chevron-left'
   | 'search'
   | 'wallet'
   | 'alert'
@@ -38,6 +39,7 @@ const ICONS: Record<IconName, ReactElement[]> = {
   plus: [<path key="a" d="M12 5v14M5 12h14" />],
   check: [<path key="a" d="M5 12.5l4.5 4.5L19 7.5" />],
   'chevron-right': [<path key="a" d="M9 5l7 7-7 7" />],
+  'chevron-left': [<path key="a" d="M15 5l-7 7 7 7" />],
   search: [<circle key="a" cx={11} cy={11} r={6.5} />, <path key="b" d="M16 16l4.5 4.5" />],
   wallet: [
     <rect key="a" x={3.5} y={6} width={17} height={13} rx={2} />,

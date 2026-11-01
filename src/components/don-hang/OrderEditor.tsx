@@ -34,6 +34,7 @@ import {
   splitProportional,
 } from '~/lib/order-math'
 import { LEVEL_NOTE, lookupOf, type OrderDetail, useCatalog, useStaff } from '~/lib/orders'
+import { LABEL_TONE } from '~/lib/status-tone'
 import { addDays, formatIsoDate, toLocalDate } from '~/lib/time'
 import {
   CustomerPicker,
@@ -655,7 +656,7 @@ function LineCard(props: {
       ) : null}
       {c.outOfRange ? (
         <span>
-          <StatusChip tone="warning">Vượt khoảng giá</StatusChip>
+          <StatusChip tone={LABEL_TONE.outOfRange}>Vượt khoảng giá</StatusChip>
         </span>
       ) : null}
 

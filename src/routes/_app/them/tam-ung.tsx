@@ -6,7 +6,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import {
   Button,
-  type ChipTone,
   ConfirmDialog,
   Money,
   MoneyInput,
@@ -20,6 +19,7 @@ import {
 } from '~/components/ui'
 import { ApiError, api, errorText } from '~/lib/api'
 import { formatVND } from '~/lib/money'
+import { type ChipTone, REQUEST_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort, formatYearMonth } from '~/lib/time'
 import type { AdvancesData, AdvanceView } from '~/server/payroll/advances'
 
@@ -31,11 +31,11 @@ export const Route = createFileRoute('/_app/them/tam-ung')({
 type Filter = 'pending' | 'approved' | 'paid' | 'all'
 
 const STATUS: Record<AdvanceView['status'], { label: string; tone: ChipTone }> = {
-  requested: { label: 'Chờ Linh duyệt', tone: 'warning' },
-  approved: { label: 'Đã duyệt, chờ chi', tone: 'accent' },
-  paid: { label: 'Đã chi', tone: 'success' },
-  rejected: { label: 'Từ chối', tone: 'danger' },
-  cancelled: { label: 'Đã huỷ', tone: 'neutral' },
+  requested: { label: 'Chờ Linh duyệt', tone: REQUEST_TONE.requested },
+  approved: { label: 'Đã duyệt, chờ chi', tone: REQUEST_TONE.approved },
+  paid: { label: 'Đã chi', tone: REQUEST_TONE.paid },
+  rejected: { label: 'Từ chối', tone: REQUEST_TONE.rejected },
+  cancelled: { label: 'Đã huỷ', tone: REQUEST_TONE.cancelled },
 }
 
 function Page() {

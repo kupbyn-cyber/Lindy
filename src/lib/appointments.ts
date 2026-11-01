@@ -1,11 +1,12 @@
 // Dữ liệu lịch hẹn phía trình duyệt: truy vấn, nhãn trạng thái, xếp cột lịch chồng giờ.
 import { useQuery } from '@tanstack/react-query'
-import type { ChipTone } from '~/components/ui'
+import type { ChipTone } from '~/lib/status-tone'
 import type { ApptStatus } from '~/server/appointments/policy'
 import type { Detail, ListItem, Warnings } from '~/server/appointments/service'
 import type { DepositStatus } from '~/server/deposits/policy'
 import type { DepositState } from '~/server/deposits/view'
 import { api } from './api'
+import { APPOINTMENT_TONE, DEPOSIT_STATE_TONE, DEPOSIT_TONE } from './status-tone'
 
 export type { ApptStatus, DepositState, Detail, ListItem, Warnings }
 
@@ -19,15 +20,7 @@ export const STATUS_LABEL: Record<ApptStatus, string> = {
   no_show: 'Khách không đến',
 }
 
-export const STATUS_TONE: Record<ApptStatus, ChipTone> = {
-  pending: 'accent',
-  confirmed: 'neutral',
-  arrived: 'success',
-  in_progress: 'success',
-  completed: 'neutral',
-  cancelled: 'danger',
-  no_show: 'danger',
-}
+export const STATUS_TONE: Record<ApptStatus, ChipTone> = APPOINTMENT_TONE
 
 export const FILTERS = [
   { value: 'active', label: 'Tất cả' },
@@ -47,18 +40,18 @@ export type Settings = {
 }
 
 export const DEPOSIT_STATUS: Record<DepositStatus, { label: string; tone: ChipTone }> = {
-  recorded: { label: 'Chờ xác nhận', tone: 'warning' },
-  confirmed: { label: 'Đã nhận cọc', tone: 'success' },
-  refunded: { label: 'Đã hoàn cọc', tone: 'neutral' },
-  forfeited: { label: 'Quán giữ cọc', tone: 'accent' },
-  voided: { label: 'Đã huỷ', tone: 'neutral' },
+  recorded: { label: 'Chờ xác nhận', tone: DEPOSIT_TONE.recorded },
+  confirmed: { label: 'Đã nhận cọc', tone: DEPOSIT_TONE.confirmed },
+  refunded: { label: 'Đã hoàn cọc', tone: DEPOSIT_TONE.refunded },
+  forfeited: { label: 'Quán giữ cọc', tone: DEPOSIT_TONE.forfeited },
+  voided: { label: 'Đã huỷ', tone: DEPOSIT_TONE.voided },
 }
 
 /** Nhãn cọc trên lịch (K16). done: đã trừ, hoàn, giữ hết — không hiện nhãn. */
 export const DEPOSIT_STATE_CHIP: Partial<Record<DepositState, { label: string; tone: ChipTone }>> = {
-  missing: { label: 'Chưa cọc', tone: 'warning' },
-  pending: { label: 'Cọc chờ xác nhận', tone: 'accent' },
-  held: { label: 'Đã cọc', tone: 'success' },
+  missing: { label: 'Chưa cọc', tone: DEPOSIT_STATE_TONE.missing },
+  pending: { label: 'Cọc chờ xác nhận', tone: DEPOSIT_STATE_TONE.pending },
+  held: { label: 'Đã cọc', tone: DEPOSIT_STATE_TONE.held },
 }
 
 export function useAppointments(params: { from: string; to: string; filter: Filter; q?: string }) {

@@ -1,22 +1,60 @@
-/* Thành phần giao diện LINDY OS — chép từ design/design-system/components/bundle.css, thêm Sheet, Dialog, ô chọn. */
+/* Thành phần giao diện LINDY OS. Màu theo CEN WORK (S51), mọi màu đi qua token. */
+
+:root {
+  /* Khoảng trống đáy một nguồn (học từ CEN): thanh dưới, cộng thanh nút khi màn có thanh nút. --kb do hook bàn phím ghi. */
+  --kb: 0px;
+  --lo-actionbar-h: 0px;
+  --lo-bottom-offset: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + var(--lo-actionbar-h));
+}
+body:has(.lo-actionbar) {
+  --lo-actionbar-h: 68px;
+}
 
 html {
   -webkit-text-size-adjust: 100%;
+  background: var(--surface);
 }
+/* Nền ở html, body trong suốt: lớp ánh sáng z-index −1 nằm trên nền trang, dưới mọi nội dung (như CEN). */
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: var(--surface);
+  background: transparent;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--page-glow);
+}
+@media (prefers-reduced-transparency: reduce) {
+  body::before {
+    display: none;
+  }
 }
 .lo-icon {
   display: block;
   flex: none;
 }
 
-/* AppBar */
+/* Link: màu nhấn trùng màu chữ nên phải gạch chân (S51) */
+.lo-link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* AppBar: nền đặc, viền dưới; kính chỉ dùng ở thanh dưới vì nội dung dài cuộn qua thanh trên liên tục */
 .lo-appbar {
   position: sticky;
   top: 0;
@@ -26,7 +64,8 @@ body {
   gap: var(--space-3);
   min-height: var(--control-h);
   padding: env(safe-area-inset-top, 0px) var(--space-4) 0;
-  background: var(--surface);
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--line);
   color: var(--ink);
 }
 .lo-appbar-brand {
@@ -47,7 +86,31 @@ body {
   gap: var(--space-2);
 }
 
-/* BottomNav */
+/* Tiêu đề màn: nút quay lại 44px, tiêu đề, nút biểu tượng bên phải (một kiểu cho mọi màn, học từ CEN) */
+.lo-screen-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: var(--space-1) var(--space-4) 0;
+}
+.lo-screen-head.has-back {
+  padding-left: var(--space-1);
+}
+.lo-screen-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.lo-screen-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* BottomNav: nền đặc mặc định, kính khi máy hỗ trợ */
 .lo-nav {
   position: fixed;
   left: 0;
@@ -58,6 +121,20 @@ body {
   background: var(--surface-raised);
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .lo-nav {
+    background: var(--nav-fill);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .lo-nav {
+    background: var(--surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 .lo-nav-item {
   position: relative;
@@ -77,8 +154,18 @@ body {
   cursor: pointer;
   text-decoration: none;
 }
+.lo-nav-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 28px;
+  border-radius: var(--radius-full);
+}
 .lo-nav-item.is-active {
-  color: var(--accent);
+  color: var(--ink);
+}
+.lo-nav-item.is-active .lo-nav-icon {
+  background: var(--accent-soft);
 }
 .lo-nav-label {
   white-space: nowrap;
@@ -93,6 +180,7 @@ body {
   border-radius: var(--radius-full);
   background: var(--accent);
   color: var(--on-accent);
+  font-size: 11px;
   line-height: 16px;
   text-align: center;
   box-sizing: border-box;
@@ -100,6 +188,7 @@ body {
 
 /* Button */
 .lo-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -117,14 +206,15 @@ body {
 .lo-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
-/* Máy hẹp (nhiều máy Android rộng 360px): nút bớt lề ngang để chữ trong hàng nút không bị xuống dòng */
+/* Máy hẹp: nút bớt lề ngang để chữ trong hàng nút không bị xuống dòng */
 @media (max-width: 389px) {
   .lo-btn {
     padding-inline: var(--space-2);
   }
 }
 .lo-btn-primary {
-  background: var(--accent);
+  background-color: var(--accent);
+  background-image: var(--accent-fill);
   color: var(--on-accent);
 }
 .lo-btn-secondary {
@@ -134,8 +224,11 @@ body {
 }
 .lo-btn-quiet {
   background: transparent;
-  color: var(--accent);
+  color: var(--ink);
   padding: 0 var(--space-2);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
 }
 .lo-btn-danger {
   background: var(--surface-raised);
@@ -146,9 +239,39 @@ body {
   display: flex;
   width: 100%;
 }
+/* Nút tắt có nền riêng, không giảm opacity (học từ CEN): nhìn là biết chưa bấm được */
 .lo-btn:disabled {
-  opacity: 0.45;
+  background-color: var(--surface-sunken);
+  background-image: none;
+  border-color: transparent;
+  color: var(--ink-muted);
   cursor: default;
+}
+.lo-btn-quiet:disabled {
+  background: transparent;
+  text-decoration: none;
+}
+/* Đang xử lý: chữ ẩn, vòng quay đè lên, nút giữ nguyên kích thước */
+.lo-btn[aria-busy="true"] .lo-btn-text,
+.lo-btn[aria-busy="true"] .lo-icon {
+  visibility: hidden;
+}
+.lo-btn-spin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: lo-spin 700ms linear infinite;
+}
+@keyframes lo-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .lo-icon-btn {
   display: inline-grid;
@@ -163,38 +286,54 @@ body {
   cursor: pointer;
   position: relative;
 }
+.lo-icon-btn-primary {
+  background-color: var(--accent);
+  background-image: var(--accent-fill);
+  color: var(--on-accent);
+}
 .lo-icon-btn .lo-nav-badge {
   top: 6px;
   left: auto;
   right: 4px;
 }
 
-/* SegmentedControl */
+/* SegmentedControl: như tab của CEN, mục chọn nền đặc; trong bảng trượt, hộp thoại dùng nền nhạt để không tranh với nút chính */
 .lo-seg {
-  display: inline-flex;
-  padding: 2px;
+  display: flex;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
   min-height: var(--control-h);
   box-sizing: border-box;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
 }
 .lo-seg-item {
   flex: 1;
-  min-height: 38px;
+  min-height: 36px;
   padding: 0 var(--space-3);
   border: 0;
-  border-radius: calc(var(--radius-md) - 2px);
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--ink-muted);
   font-family: var(--font-sans);
   cursor: pointer;
   white-space: nowrap;
 }
+@media (max-width: 389px) {
+  .lo-seg-item {
+    padding-inline: 6px;
+  }
+}
 .lo-seg-item.is-active {
-  background: var(--surface-raised);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.lo-sheet .lo-seg-item.is-active,
+.lo-dialog .lo-seg-item.is-active {
+  background: var(--accent-soft);
   color: var(--ink);
-  box-shadow: var(--shadow-sm);
 }
 
 /* Money */
@@ -202,8 +341,7 @@ body {
   font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
 }
-/* Số tiền chữ to trong ô (FitMoney, trang Tổng quan): cỡ chữ ≤ --fit-max, co theo bề rộng ô (@container) và số ký tự
-   --fit-chars để số dài không tràn ô trên máy hẹp. 0.62em ≈ bề rộng trung bình một ký tự số đậm, có dư. */
+/* Số tiền chữ to trong ô (FitMoney): cỡ chữ ≤ --fit-max, co theo bề rộng ô và số ký tự để số dài không tràn trên máy hẹp. */
 .lo-fit {
   display: block;
   min-width: 0;
@@ -227,12 +365,12 @@ body {
 .lo-card {
   background: var(--surface-raised);
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   padding: var(--space-3) var(--space-4);
   color: var(--ink);
 }
 .lo-overline {
-  text-transform: uppercase;
   color: var(--ink-muted);
 }
 
@@ -283,41 +421,52 @@ body {
   gap: 2px;
 }
 
-/* StatusChip */
+/* StatusChip: mỗi màu một nghĩa (S49, S51). Viền nhạt cùng tông như badge CEN. */
 .lo-chip {
   display: inline-flex;
   align-items: center;
   padding: 1px var(--space-2);
-  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
   white-space: nowrap;
 }
 .lo-chip-success {
   background: var(--success-soft);
   color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
 }
 .lo-chip-warning {
   background: var(--warning-soft);
   color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
 }
 .lo-chip-danger {
   background: var(--danger-soft);
   color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
-.lo-chip-accent {
-  background: var(--accent-soft);
-  color: var(--accent);
+.lo-chip-progress {
+  background: var(--progress-soft);
+  color: var(--progress);
+  border-color: color-mix(in srgb, var(--progress) 35%, transparent);
+}
+.lo-chip-waiting {
+  background: var(--waiting-soft);
+  color: var(--waiting);
+  border-color: color-mix(in srgb, var(--waiting) 35%, transparent);
 }
 .lo-chip-neutral {
   background: var(--surface-sunken);
   color: var(--ink-muted);
+  border-color: var(--line);
 }
 
-/* Toast */
+/* Toast: luôn nằm trên thanh nút chính và bàn phím, không che việc kế tiếp (S52) */
 .lo-toast-wrap {
   position: fixed;
   left: var(--space-4);
   right: var(--space-4);
-  bottom: calc(var(--nav-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(max(var(--lo-bottom-offset), var(--kb)) + var(--space-3));
   z-index: 60;
   display: flex;
   justify-content: center;
@@ -330,14 +479,25 @@ body {
   max-width: 100%;
   box-sizing: border-box;
   padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--surface-raised);
+  color: var(--ink);
   box-shadow: var(--shadow-lg);
   animation: lo-fade 140ms ease-out;
 }
-.lo-toast-error .lo-icon {
-  color: var(--danger-soft);
+.lo-toast-success .lo-icon {
+  color: var(--success);
+}
+.lo-toast-error {
+  border-color: var(--danger);
+  pointer-events: auto;
+}
+.lo-toast-error > .lo-icon {
+  color: var(--danger);
+}
+.lo-toast .lo-icon-btn {
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) 0;
 }
 
 /* TextField */
@@ -365,6 +525,8 @@ body {
   background: var(--surface-raised);
   color: var(--ink);
   font-family: var(--font-sans);
+  /* Dưới 16px Safari tự phóng to khi chạm, kể cả select */
+  font-size: 16px;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -375,6 +537,9 @@ textarea.lo-input {
 }
 select.lo-input {
   padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2385858c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 .lo-input::placeholder {
   color: var(--ink-muted);
@@ -425,20 +590,22 @@ select.lo-input {
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgb(0 0 0 / 0.35);
+  background: var(--overlay);
   animation: lo-fade 140ms ease-out;
 }
 .lo-sheet {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--kb);
   z-index: 50;
-  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px);
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px - var(--kb));
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--dialog-edge);
+  border-bottom: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-lg);
   animation: lo-slide 160ms ease-out;
 }
@@ -446,11 +613,12 @@ select.lo-input {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--line);
 }
 .lo-sheet-body {
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   padding: var(--space-4);
   display: flex;
@@ -462,24 +630,25 @@ select.lo-input {
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
-  background: var(--surface);
+  background: var(--surface-raised);
 }
 .lo-dialog {
   position: fixed;
   left: var(--space-4);
   right: var(--space-4);
-  top: 50%;
+  top: calc((100dvh - var(--kb)) / 2);
   transform: translateY(-50%);
   z-index: 55;
   max-width: 420px;
-  /* Hộp dài (QR chuyển khoản, tip) cuộn bên trong, không tràn khỏi màn hình iPhone */
-  max-height: calc(100dvh - 2 * var(--space-4));
+  /* Hộp dài (QR chuyển khoản) cuộn bên trong, không tràn khỏi màn hình iPhone */
+  max-height: calc(100dvh - var(--kb) - 2 * var(--space-4));
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0 auto;
   padding: var(--space-4);
   background: var(--surface-raised);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--dialog-edge);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
@@ -499,6 +668,9 @@ select.lo-input {
   margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
   color: var(--ink-muted);
 }
+.lo-sheet-head .lo-close {
+  margin: 0;
+}
 
 /* Đơn hàng: ô tích chọn tròn trong danh sách dịch vụ (C09) */
 .lo-check {
@@ -517,15 +689,15 @@ select.lo-input {
   border-color: var(--accent);
 }
 
-/* Thanh nút cố định ngay trên thanh điều hướng (màn tạo/sửa đơn) */
+/* Thanh nút cố định ngay trên thanh điều hướng; khi bàn phím mở thì nổi trên bàn phím */
 .lo-actionbar {
   position: sticky;
-  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  bottom: max(calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)), var(--kb));
   z-index: 12;
   display: flex;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  background: var(--surface);
+  background: var(--surface-raised);
   border-top: 1px solid var(--line);
 }
 
@@ -539,7 +711,7 @@ select.lo-input {
 }
 .lo-stepper button {
   min-width: var(--tap-min);
-  min-height: 40px;
+  min-height: var(--tap-min);
   border: 0;
   background: var(--surface-raised);
   color: var(--ink);
@@ -548,7 +720,7 @@ select.lo-input {
 }
 .lo-stepper input {
   width: 44px;
-  min-height: 40px;
+  min-height: var(--tap-min);
   border: 0;
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
@@ -559,9 +731,9 @@ select.lo-input {
   font-variant-numeric: tabular-nums;
 }
 
-/* Chip chọn thợ trên dòng đơn */
+/* Chip chọn thợ, chip giờ */
 .lo-toggle {
-  min-height: 40px;
+  min-height: var(--tap-min);
   padding: 0 var(--space-3);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-full);
@@ -569,11 +741,27 @@ select.lo-input {
   color: var(--ink);
   font: inherit;
   cursor: pointer;
+  white-space: nowrap;
 }
 .lo-toggle.is-on {
   background: var(--accent-soft);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--ink);
+}
+.lo-toggle:disabled {
+  background: var(--surface-sunken);
+  border-color: transparent;
+  color: var(--ink-muted);
+  cursor: default;
+}
+.lo-chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lo-chips::-webkit-scrollbar {
+  display: none;
 }
 
 /* Keyboard focus */
@@ -584,6 +772,7 @@ select.lo-input {
 .lo-stepper button:focus-visible,
 .lo-input:focus-visible,
 .lo-input:focus,
+.lo-link:focus-visible,
 .lo-icon-btn:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
@@ -640,8 +829,9 @@ select.lo-input {
   }
 }
 
-/* Trang in (Đợt 5A, bước 5.5): In / Lưu PDF báo cáo, phiếu lương. Ẩn điều hướng, nút; nền trắng, khổ A4. File này nằm
-   ngoài layer của Tailwind và đứng sau các quy tắc khác nên ghi đè được mà không cần !important.
+/* Trang in (Đợt 5A, bước 5.5): In / Lưu PDF báo cáo, phiếu lương. Ẩn điều hướng, nút; nền trắng, khổ A4. Khối màu tối trong
+   tokens.css chỉ áp trên màn hình nên bản in luôn dùng màu sáng, kể cả khi iPhone đang ở chế độ tối (S51).
+   File này nằm ngoài layer của Tailwind và đứng sau các quy tắc khác nên ghi đè được mà không cần !important.
    Đang mở phiếu lương (sheet) thì chỉ in phần sheet. */
 @media print {
   @page {
@@ -653,12 +843,16 @@ select.lo-input {
     background: #fff;
     color: #000;
   }
+  body::before {
+    display: none;
+  }
   .lo-appbar,
   .lo-nav,
   .lo-actionbar,
   .lo-backdrop,
   .lo-btn,
   .lo-icon-btn,
+  .lo-seg,
   .lo-toast,
   .no-print {
     display: none;
@@ -666,9 +860,20 @@ select.lo-input {
   main {
     padding-bottom: 0;
   }
+  .lo-card,
+  .lo-sheet,
+  .lo-sheet-body,
+  .lo-row {
+    background: #fff;
+  }
   .lo-card {
     break-inside: avoid;
     box-shadow: none;
+  }
+  /* Chip in ra giấy: chữ và viền, không tô nền */
+  .lo-chip {
+    background: none;
+    border-color: currentColor;
   }
   body:has(.lo-sheet) * {
     visibility: hidden;
@@ -683,6 +888,7 @@ select.lo-input {
     width: 100%;
     max-height: none;
     box-shadow: none;
+    border: 0;
     animation: none;
   }
   body:has(.lo-sheet) .lo-sheet-body {
