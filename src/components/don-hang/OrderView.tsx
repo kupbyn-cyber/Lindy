@@ -2,7 +2,7 @@
 // Nút hiện theo quyền; server vẫn kiểm lại. Nhãn "vượt khoảng", "nhập tay", "giảm chờ duyệt" để Nhung xem khi xác nhận [P28].
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import {
   Button,
   ConfirmDialog,
@@ -31,7 +31,7 @@ import { LABEL_TONE } from '~/lib/status-tone'
 import { formatDateTimeShort, formatIsoDate } from '~/lib/time'
 import type { PrintJobView } from '~/server/print/service'
 import { Attachments } from '../tien/Attachments'
-import { PhotoSheet } from './PhotoSheet'
+import { PhotoSheet, type PhotoSheetHandle } from './PhotoSheet'
 import { CAUSE_LABEL, OUTCOME_LABEL, TicketSheet } from './TicketSheet'
 import { TransferQr } from './TransferQr'
 
@@ -45,12 +45,19 @@ type Dialog =
   | { kind: 'voidTicket'; ticketId: string }
   | { kind: 'refund' }
 
-export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
+export function OrderView(props: {
+  order: OrderDetail
+  onEdit: () => void
+  /** Vừa Làm xong ở màn sửa đơn: mở hộp Ghi tiền thu một lần (S52) */
+  collectNow?: boolean
+  onCollectStarted?: () => void
+}) {
   const d = props.order
   const c = d.can
   const qc = useQueryClient()
   const toast = useToast()
   const [photoOpen, setPhotoOpen] = useState(false)
+  const photo = useRef<PhotoSheetHandle>(null)
   const canPhoto = d.status === 'awaiting_confirmation' || d.status === 'confirmed'
   // In bill qua trạm in (Đợt 7, S36): ai xem được đơn đã bấm Làm xong đều in được; nhận tiền → in bill → chụp ảnh
   const canPrint = canPhoto
@@ -110,14 +117,22 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
     setDialog(x)
   }
 
-  async function run() {
-    if (!dialog) return
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mở một lần khi có cờ
+  useEffect(() => {
+    if (!props.collectNow) return
+    open({ kind: 'payment' })
+    props.onCollectStarted?.()
+  }, [props.collectNow])
+
+  async function run(direct?: Exclude<Dialog, null>) {
+    const action = direct ?? dialog
+    if (!action) return
     setBusy(true)
     setError(null)
     try {
       let next: OrderDetail
       let done = ''
-      switch (dialog.kind) {
+      switch (action.kind) {
         case 'confirm':
           next = await api(`/api/orders/${d.id}/confirm`, { body: { version: d.version } })
           done = `Đã xác nhận bill ${d.codeLabel}.`
@@ -144,11 +159,11 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
           void qc.invalidateQueries({ queryKey: ['money'] })
           break
         case 'void':
-          next = await api(`/api/payments/${dialog.paymentId}/void`, { body: { reason: text } })
+          next = await api(`/api/payments/${action.paymentId}/void`, { body: { reason: text } })
           done = 'Đã huỷ khoản thu.'
           break
         case 'voidTicket':
-          next = await api(`/api/tickets/${dialog.ticketId}/void`, { body: { reason: text } })
+          next = await api(`/api/tickets/${action.ticketId}/void`, { body: { reason: text } })
           done = 'Đã huỷ phiếu xử lý.'
           break
       }
@@ -157,7 +172,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       if (d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
       toast(done)
       // Xác nhận xong mà còn phải thu → mở luôn ô ghi tiền (Nhung xác nhận bill và ghi thanh toán)
-      if (dialog.kind === 'confirm' && next.dueAmount > 0 && next.can.recordPayment) {
+      if (action.kind === 'confirm' && next.dueAmount > 0 && next.can.recordPayment) {
         setAmount(next.dueAmount)
         setMethod('transfer')
         setPayKey(crypto.randomUUID())
@@ -166,13 +181,21 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
         setDialog(null)
       }
     } catch (e) {
+      // Không có hộp (xác nhận thẳng, S48) thì lỗi báo bằng thông báo để không mất
+      const say = (m: string) => (direct ? toast(m, 'error') : setError(m))
       if (e instanceof ApiError && e.status === 409 && e.data) {
         qc.setQueryData(['orders', 'detail', d.id], e.data as OrderDetail)
-        setError('Đơn vừa được người khác sửa. Đã tải bản mới nhất, xem lại rồi thao tác.')
-      } else setError(errorText(e))
+        say('Đơn vừa được người khác sửa. Đã tải bản mới nhất, xem lại rồi thao tác.')
+      } else say(errorText(e))
     } finally {
       setBusy(false)
     }
+  }
+
+  // S48: Xác nhận bill bấm là xong. Đơn còn giảm giá chờ duyệt thì xác nhận chính là duyệt giảm giá: vẫn hỏi lại.
+  function confirmBill() {
+    if (levelNote && !d.approval?.valid) open({ kind: 'confirm' })
+    else void run({ kind: 'confirm' })
   }
 
   async function markDone() {
@@ -182,12 +205,22 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       qc.setQueryData(['orders', 'detail', d.id], next)
       await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
       if (d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
-      // S41: Làm xong là xác nhận luôn; còn giảm giá chờ duyệt thì báo chờ ai
-      toast(
-        next.status === 'confirmed'
-          ? `Đã xong, đã xác nhận bill ${d.codeLabel}.`
-          : `Đã bấm Làm xong đơn ${d.codeLabel}.${next.can.confirmBlocked ? ` ${next.can.confirmBlocked}` : ''}`,
-      )
+      // Đơn đã xác nhận mà còn phải thu: mở hộp Ghi tiền thu luôn (S52); đơn chờ duyệt giảm thì số tiền chưa chốt
+      if (next.status === 'confirmed' && next.can.recordPayment && next.dueAmount > 0) {
+        setText('')
+        setError(null)
+        setAmount(next.dueAmount)
+        setMethod('transfer')
+        setPayKey(crypto.randomUUID())
+        setDialog({ kind: 'payment' })
+      } else {
+        // S41: Làm xong là xác nhận luôn; còn giảm giá chờ duyệt thì báo chờ ai
+        toast(
+          next.status === 'confirmed'
+            ? `Đã xong, đã xác nhận bill ${d.codeLabel}.`
+            : `Đã bấm Làm xong đơn ${d.codeLabel}.${next.can.confirmBlocked ? ` ${next.can.confirmBlocked}` : ''}`,
+        )
+      }
     } catch (e) {
       toast(errorText(e), 'error')
     } finally {
@@ -276,7 +309,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             <>
               {d.customer.name}
               {d.customer.phone ? (
-                <a href={`tel:${d.customer.phone}`} className="ml-2 text-accent">
+                <a href={`tel:${d.customer.phone}`} className="lo-link ml-2">
                   {d.customer.phone}
                 </a>
               ) : null}
@@ -291,7 +324,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             {d.appointment.guestNo && d.appointment.guestCount > 1
               ? `Khách ${d.appointment.guestNo}/${d.appointment.guestCount} · `
               : ''}
-            <Link to="/lich/$id" params={{ id: d.appointment.id }} className="text-accent">
+            <Link to="/lich/$id" params={{ id: d.appointment.id }} className="lo-link">
               {d.appointment.startTime} {formatIsoDate(d.appointment.date)}
             </Link>
           </Info>
@@ -398,8 +431,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
         ) : null}
         {d.depositAvailable > 0 && d.status !== 'cancelled' ? (
           <Note>
-            Lịch có cọc {formatVND(d.depositAvailable)} chưa trừ. App tự trừ vào bill khi bấm Làm xong, xác
-            nhận bill hoặc khi cọc được xác nhận.
+            Lịch có cọc {formatVND(d.depositAvailable)} chưa trừ. Tự trừ khi Làm xong hoặc xác nhận bill.
           </Note>
         ) : null}
         {levelNote ? (
@@ -433,7 +465,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                   {!p.voided && c.voidPayment ? (
                     <button
                       type="button"
-                      className="caption border-0 bg-transparent p-0 text-danger"
+                      className="caption lo-tap-text text-danger"
                       onClick={() => open({ kind: 'void', paymentId: p.id, amount: p.amount })}
                     >
                       Huỷ khoản này
@@ -480,7 +512,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                     {c.reviewTicket ? (
                       <button
                         type="button"
-                        className="caption border-0 bg-transparent p-0 text-accent"
+                        className="caption lo-tap-text lo-link"
                         onClick={() => void reviewRefund(r.id)}
                       >
                         Đã xem
@@ -519,7 +551,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                   {t.note ? ` · ${t.note}` : ''}
                 </span>
                 {t.usedBy ? (
-                  <Link to="/don-hang/$id" params={{ id: t.usedBy.id }} className="caption text-accent">
+                  <Link to="/don-hang/$id" params={{ id: t.usedBy.id }} className="caption lo-link">
                     Đã dùng ở đơn {t.usedBy.codeLabel}
                   </Link>
                 ) : null}
@@ -530,7 +562,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                     {c.reviewTicket ? (
                       <button
                         type="button"
-                        className="caption border-0 bg-transparent p-0 text-accent"
+                        className="caption lo-tap-text lo-link"
                         onClick={() => void reviewTicket(t.id)}
                       >
                         Đã xem
@@ -544,7 +576,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                 {!t.voided && !t.usedBy && c.createTicket ? (
                   <button
                     type="button"
-                    className="caption self-start border-0 bg-transparent p-0 text-danger"
+                    className="caption lo-tap-text self-start text-danger"
                     onClick={() => open({ kind: 'voidTicket', ticketId: t.id })}
                   >
                     Huỷ phiếu
@@ -565,7 +597,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
 
       <div className="flex flex-col gap-2 px-4">
         {d.status === 'in_progress' && !c.edit ? (
-          <Note>Chỉ người tạo đơn ({d.createdByName}) hoặc Nhung, Linh sửa được đơn này.</Note>
+          <Note>Chỉ {d.createdByName}, Nhung, Linh sửa được đơn này.</Note>
         ) : null}
         {c.done
           ? d.doneProblems.map((p) => (
@@ -576,11 +608,14 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
           : null}
         {c.confirmBlocked ? <Note tone="warning">{c.confirmBlocked}</Note> : null}
         {secondary.length > 0 ? (
-          <div className={cx('grid gap-2', secondary.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+          <div
+            className={cx(
+              'grid gap-2',
+              secondary.length >= 3 ? 'grid-cols-3' : secondary.length === 2 ? 'grid-cols-2' : 'grid-cols-1',
+            )}
+          >
             {canPhoto && !photoInBar ? (
-              <Button icon="camera" onClick={() => setPhotoOpen(true)}>
-                Chụp ảnh
-              </Button>
+              <Button onClick={() => photo.current?.openCamera()}>Chụp ảnh</Button>
             ) : null}
             {printInGrid ? (
               <Button loading={printing} loadingText="Đang in…" onClick={() => void printBill()}>
@@ -590,6 +625,15 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
             {c.edit ? <Button onClick={props.onEdit}>Sửa đơn</Button> : null}
             {c.markReviewed ? <Button onClick={() => void markReviewed()}>Đã xem lại</Button> : null}
           </div>
+        ) : null}
+        {canPhoto ? (
+          <button
+            type="button"
+            className="caption lo-tap-text lo-link self-start"
+            onClick={() => photo.current?.openLibrary()}
+          >
+            Chọn ảnh có sẵn
+          </button>
         ) : null}
         {canRefund || canCancel ? (
           <div className="flex items-center justify-between gap-3">
@@ -698,12 +742,12 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
                 </Button>
               ) : null}
               {photoInBar ? (
-                <Button variant="primary" block icon="camera" onClick={() => setPhotoOpen(true)}>
+                <Button variant="primary" block icon="camera" onClick={() => photo.current?.openCamera()}>
                   Chụp ảnh
                 </Button>
               ) : null}
               {c.confirm ? (
-                <Button variant="primary" block onClick={() => open({ kind: 'confirm' })}>
+                <Button variant="primary" block loading={busy && !dialog} onClick={confirmBill}>
                   Xác nhận bill
                 </Button>
               ) : null}
@@ -715,7 +759,13 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       {TICKETS_ENABLED ? (
         <TicketSheet open={ticketOpen} order={d} onClose={() => setTicketOpen(false)} />
       ) : null}
-      <PhotoSheet open={photoOpen && canPhoto} order={d} onClose={() => setPhotoOpen(false)} />
+      <PhotoSheet
+        ref={photo}
+        open={photoOpen && canPhoto}
+        order={d}
+        onPicked={() => setPhotoOpen(true)}
+        onClose={() => setPhotoOpen(false)}
+      />
 
       <ConfirmDialog
         open={!!dialog}
@@ -761,8 +811,8 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
       >
         {dialog?.kind === 'confirm' ? (
           <p className="body m-0 text-ink-muted">
-            Thành tiền {formatVND(d.netAmount)}. Đơn vào doanh thu ngày {formatIsoDate(d.serviceDate)}.
-            {levelNote && !d.approval?.valid ? ' Xác nhận là đồng ý mức giảm giá trên đơn.' : ''}
+            Thành tiền {formatVND(d.netAmount)}, gốc {formatVND(d.grossAmount)}. Xác nhận là đồng ý mức giảm
+            giá trên đơn.
           </p>
         ) : null}
         {dialog?.kind === 'cancel' && d.status === 'confirmed' ? (
@@ -774,8 +824,7 @@ export function OrderView(props: { order: OrderDetail; onEdit: () => void }) {
         {dialog?.kind === 'refund' ? (
           <>
             <p className="body m-0 text-ink-muted">
-              Hoàn tối đa {formatVND(d.refundable)}. Doanh thu đơn và phần của thợ giảm theo tỷ lệ; tiền ra
-              khỏi tài khoản chọn bên dưới.
+              Hoàn tối đa {formatVND(d.refundable)}. Doanh thu đơn và phần của thợ giảm theo tỷ lệ.
             </p>
             <SegmentedControl
               ariaLabel="Hoàn bằng"

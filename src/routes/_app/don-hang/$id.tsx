@@ -4,7 +4,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { OrderEditor } from '~/components/don-hang/OrderEditor'
 import { OrderView } from '~/components/don-hang/OrderView'
-import { Note } from '~/components/ui'
+import { Note, ScreenHeader } from '~/components/ui'
 import { ApiError, errorText } from '~/lib/api'
 import { useOrder } from '~/lib/orders'
 
@@ -18,6 +18,8 @@ function OrderPage() {
   const q = useOrder(id)
   // auto: đơn Đang làm mở màn sửa; view/edit: người dùng chọn
   const [mode, setMode] = useState<'auto' | 'view' | 'edit'>('auto')
+  // Một lần sau Làm xong: mở hộp Ghi tiền thu (S52). Giữ trong state, không để trên URL: tải lại không mở lại
+  const [collectNow, setCollectNow] = useState(false)
 
   if (q.isLoading) return <p className="body px-4 text-ink-muted">Đang tải…</p>
   if (q.isError || !q.data) {
@@ -36,26 +38,29 @@ function OrderPage() {
   const showEditor = d.can.edit && (mode === 'edit' || (mode === 'auto' && d.status === 'in_progress'))
 
   return (
-    <section className="flex flex-col gap-3 pt-1">
-      <div className="px-4">
-        <Link to="/don-hang" search={{ d: d.serviceDate }} className="label text-accent">
-          ← Đơn hàng
-        </Link>
-        <h1 className="screen-title mt-1 mb-0">
-          Đơn {d.codeLabel}
-          {d.customer ? ` · ${d.customer.name}` : ''}
-        </h1>
-      </div>
+    <section className="flex flex-col gap-3">
+      <ScreenHeader
+        title={`Đơn ${d.codeLabel}${d.customer ? ` · ${d.customer.name}` : ''}`}
+        back={{ to: '/don-hang', search: { d: d.serviceDate }, label: 'Về đơn hàng' }}
+      />
       {showEditor ? (
         <OrderEditor
           key={`${d.id}-${mode}`}
           order={d}
-          onSaved={(next) => setMode(next.status === 'in_progress' ? 'auto' : 'view')}
+          onSaved={(next, opts) => {
+            setCollectNow(!!opts?.collectNow)
+            setMode(next.status === 'in_progress' ? 'auto' : 'view')
+          }}
           onCancel={() => setMode('view')}
         />
       ) : (
         // Làm xong không còn tự mở Chụp ảnh: nhận tiền → in bill → chụp ảnh (S36)
-        <OrderView order={d} onEdit={() => setMode('edit')} />
+        <OrderView
+          order={d}
+          collectNow={collectNow}
+          onCollectStarted={() => setCollectNow(false)}
+          onEdit={() => setMode('edit')}
+        />
       )}
     </section>
   )

@@ -13,7 +13,7 @@ import { movePhoneOutOfName, nameLooksMessy, normalizePhone } from '~/lib/phone'
 
 export type Picked = { kind: 'service' | 'combo'; id: string }
 
-type Entry = {
+export type Entry = {
   key: string
   kind: 'service' | 'combo'
   id: string
@@ -26,6 +26,161 @@ type Entry = {
 function priceText(min: number, max: number, unit: string) {
   const p = min === max ? formatVND(min) : `${formatVND(min)}–${formatVND(max)}`
   return unit === 'lần' ? p : `${p}/${unit}`
+}
+
+/** Dịch vụ, combo còn bán, gom một danh sách để tích chọn. */
+export function catalogEntries(cat: Catalog | undefined): Entry[] {
+  if (!cat) return []
+  return [
+    ...cat.services
+      .filter((s) => s.isActive)
+      .map((s) => ({
+        key: `s:${s.id}`,
+        kind: 'service' as const,
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        price: priceText(s.priceMin, s.priceMax, s.unit),
+      })),
+    ...cat.combos
+      .filter((c) => c.isActive)
+      .map((c) => ({
+        key: `c:${c.id}`,
+        kind: 'combo' as const,
+        id: c.id,
+        name: c.name,
+        category: 'Combo',
+        price: formatVND(c.price),
+        sub: c.itemNames.join(' + '),
+      })),
+  ]
+}
+
+/** Chọn dịch vụ ngay trong màn đơn (S52): chạm là thêm, nhóm đầu mở sẵn, tìm được không dấu (C09). */
+export function ServiceChecklist(props: {
+  catalog: Catalog | undefined
+  /** Số dòng đang có trên đơn của mỗi mục */
+  counts: Map<string, number>
+  disabled?: boolean
+  onToggle: (e: Entry) => void
+  onAddAgain: (e: Entry) => void
+}) {
+  const [q, setQ] = useState('')
+  const entries = useMemo(() => catalogEntries(props.catalog), [props.catalog])
+  const names = [...new Set(entries.map((e) => e.category))]
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  const firstGroup = names[0]
+  const isOpen = (name: string) => (openGroups.size === 0 ? name === firstGroup : openGroups.has(name))
+  const shown = q.trim() ? searchCatalog(entries, q) : entries
+  const groups = q.trim()
+    ? [{ name: 'Kết quả', items: shown }]
+    : names.map((name) => ({ name, items: entries.filter((e) => e.category === name) }))
+
+  function toggleGroup(name: string) {
+    setOpenGroups((old) => {
+      const next = new Set(old.size === 0 && firstGroup ? [firstGroup] : old)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
+      // Rỗng nghĩa là mặc định, nên giữ một giá trị không trùng tên nhóm khi người dùng đóng hết
+      return next.size === 0 ? new Set(['']) : next
+    })
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="px-4">
+        <div className="relative">
+          <Icon
+            name="search"
+            size={20}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted"
+          />
+          <input
+            type="search"
+            className="lo-input input-text"
+            style={{ paddingLeft: 40 }}
+            placeholder="son gel, tdc, mat meo…"
+            aria-label="Tìm dịch vụ"
+            value={q}
+            autoComplete="off"
+            enterKeyHint="search"
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+      </div>
+      {!props.catalog ? <p className="body m-0 px-4 text-ink-muted">Đang tải danh mục…</p> : null}
+      {props.catalog && shown.length === 0 ? (
+        <p className="body m-0 px-4 text-ink-muted">Không thấy dịch vụ nào. Dùng nút Khác để nhập tay.</p>
+      ) : null}
+      <div className="border-t border-line">
+        {groups.map((g) => {
+          if (g.items.length === 0) return null
+          const open = !!q.trim() || isOpen(g.name)
+          const picked = g.items.reduce((n, e) => n + (props.counts.get(e.key) ? 1 : 0), 0)
+          return (
+            <section key={g.name}>
+              {q.trim() ? null : (
+                <button
+                  type="button"
+                  className="lo-row lo-row-action"
+                  aria-expanded={open}
+                  onClick={() => toggleGroup(g.name)}
+                >
+                  <span className="body-strong">
+                    {g.name}
+                    {picked ? <span className="body text-ink-muted"> · {picked}</span> : null}
+                  </span>
+                  <Icon
+                    name="chevron-right"
+                    size={20}
+                    className={cx('text-ink-muted', open && 'rotate-90')}
+                  />
+                </button>
+              )}
+              {open
+                ? g.items.map((e) => {
+                    const n = props.counts.get(e.key) ?? 0
+                    return (
+                      <div key={e.key} className="lo-row">
+                        <button
+                          type="button"
+                          className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 border-0 bg-transparent p-0 text-left text-ink"
+                          aria-pressed={n > 0}
+                          disabled={props.disabled}
+                          onClick={() => props.onToggle(e)}
+                        >
+                          <span className={cx('lo-check', n > 0 && 'is-on')} aria-hidden="true">
+                            {n > 0 ? <Icon name="check" size={16} /> : null}
+                          </span>
+                          <span className="lo-row-main flex-1">
+                            <span className="body lo-row-title">
+                              {e.name}
+                              {n > 1 ? ` × ${n} dòng` : ''}
+                            </span>
+                            {e.sub ? <span className="lo-row-meta caption">{e.sub}</span> : null}
+                          </span>
+                          <span className="label text-ink-muted">{e.price}</span>
+                        </button>
+                        {n > 0 ? (
+                          <button
+                            type="button"
+                            className="lo-icon-btn"
+                            aria-label={`Thêm một dòng ${e.name}`}
+                            onClick={() => props.onAddAgain(e)}
+                          >
+                            <Icon name="plus" size={20} />
+                          </button>
+                        ) : null}
+                      </div>
+                    )
+                  })
+                : null}
+            </section>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export function ServicePicker(props: {
@@ -43,33 +198,7 @@ export function ServicePicker(props: {
     }
   }, [props.open])
 
-  const entries = useMemo<Entry[]>(() => {
-    const cat = props.catalog
-    if (!cat) return []
-    return [
-      ...cat.services
-        .filter((s) => s.isActive)
-        .map((s) => ({
-          key: `s:${s.id}`,
-          kind: 'service' as const,
-          id: s.id,
-          name: s.name,
-          category: s.category,
-          price: priceText(s.priceMin, s.priceMax, s.unit),
-        })),
-      ...cat.combos
-        .filter((c) => c.isActive)
-        .map((c) => ({
-          key: `c:${c.id}`,
-          kind: 'combo' as const,
-          id: c.id,
-          name: c.name,
-          category: 'Combo',
-          price: formatVND(c.price),
-          sub: c.itemNames.join(' + '),
-        })),
-    ]
-  }, [props.catalog])
+  const entries = useMemo(() => catalogEntries(props.catalog), [props.catalog])
 
   const shown = q.trim() ? searchCatalog(entries, q) : entries
   const groups = q.trim()
@@ -115,7 +244,7 @@ export function ServicePicker(props: {
       />
       {!props.catalog ? <p className="body m-0 text-ink-muted">Đang tải danh mục…</p> : null}
       {props.catalog && shown.length === 0 ? (
-        <p className="body m-0 text-ink-muted">Không thấy dịch vụ nào. Dùng “Dịch vụ khác” để nhập tay.</p>
+        <p className="body m-0 text-ink-muted">Không thấy dịch vụ nào. Dùng nút Khác để nhập tay.</p>
       ) : null}
       {groups.map((g) =>
         g.items.length === 0 ? null : (
@@ -269,7 +398,7 @@ export function CustomerPicker(props: {
             }}
           />
           <TextField
-            label="SĐT (không bắt buộc)"
+            label="SĐT"
             type="tel"
             inputMode="tel"
             autoComplete="off"
@@ -280,7 +409,7 @@ export function CustomerPicker(props: {
           />
           {same.data && same.data.items.length > 0 ? (
             <div className="flex flex-col gap-1">
-              <Note tone="warning">SĐT này đã có hồ sơ. Chọn khách có sẵn, hoặc vẫn lưu khách mới.</Note>
+              <Note tone="warning">SĐT đã có hồ sơ. Chọn khách có sẵn hoặc vẫn lưu khách mới.</Note>
               <div className="-mx-4">
                 {same.data.items.map((c) => (
                   <button key={c.id} type="button" className="lo-row lo-row-action" onClick={() => pick(c)}>
@@ -288,7 +417,7 @@ export function CustomerPicker(props: {
                       <span className="body">{c.name}</span>
                       <span className="lo-row-meta caption">{c.phoneMasked}</span>
                     </span>
-                    <span className="label text-accent">Chọn</span>
+                    <span className="label lo-link">Chọn</span>
                   </button>
                 ))}
               </div>
@@ -468,10 +597,7 @@ export function DiscountSheet(props: {
           />
         </>
       ) : null}
-      <Note>
-        Tổng giảm đến 10%: thợ tự áp. Trên 10% đến 20%: Nhung duyệt. Trên 20%: Linh duyệt. Sinh nhật: tự kiểm
-        tra trước khi chọn.
-      </Note>
+      <Note>Đến 10%: thợ tự áp. Đến 20%: Nhung duyệt. Trên 20%: Linh duyệt. Sinh nhật: tự kiểm tra.</Note>
       {error ? <Note tone="danger">{error}</Note> : null}
     </Sheet>
   )
@@ -517,11 +643,6 @@ export function ExtraLineSheet(props: {
     >
       <TextField label="Tên" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
       <MoneyInput label="Số tiền" value={amount} onValueChange={setAmount} />
-      {props.type === 'custom' ? (
-        <Note>Dòng nhập tay có nhãn riêng trên đơn để Nhung, Linh dễ thấy.</Note>
-      ) : (
-        <Note>Phụ thu tính như doanh thu dịch vụ: chia cho thợ, có hoa hồng.</Note>
-      )}
       {error ? <Note tone="danger">{error}</Note> : null}
     </Sheet>
   )

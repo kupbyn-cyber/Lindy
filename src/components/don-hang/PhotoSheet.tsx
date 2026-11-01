@@ -1,12 +1,21 @@
 // Chụp ảnh thành phẩm (S18, S21, S35): mở camera iPhone (hoặc chọn ảnh có sẵn), app tự ghép khung LINDY NAIL STUDIO
 // khổ 3:4, bấm Lưu / Chia sẻ
 // để lưu vào Ảnh hoặc gửi Instagram, Zalo. Ảnh không gửi lên server, không lưu trong app.
-import { useEffect, useRef, useState } from 'react'
+import { type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Button, Note, Sheet, useToast } from '~/components/ui'
 import type { OrderDetail } from '~/lib/orders'
 import { canvasToJpeg, drawFrame, frameFileName, loadPhoto } from '~/lib/photo-frame'
 
-export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: () => void }) {
+export type PhotoSheetHandle = { openCamera: () => void; openLibrary: () => void }
+
+export function PhotoSheet(props: {
+  open: boolean
+  order: OrderDetail
+  /** Đã chọn ảnh: mở bảng để xem kết quả */
+  onPicked: () => void
+  onClose: () => void
+  ref?: Ref<PhotoSheetHandle>
+}) {
   const toast = useToast()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -15,6 +24,11 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
   const [saved, setSaved] = useState(false)
   const camera = useRef<HTMLInputElement>(null)
   const library = useRef<HTMLInputElement>(null)
+  // Nút ở chi tiết đơn gọi thẳng; click() phải chạy đồng bộ trong sự kiện chạm thì Safari mới mở camera
+  useImperativeHandle(props.ref, () => ({
+    openCamera: () => camera.current?.click(),
+    openLibrary: () => library.current?.click(),
+  }))
 
   // Đóng bảng thì bỏ ảnh cũ (giải phóng bộ nhớ)
   useEffect(() => {
@@ -29,6 +43,7 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
 
   async function onFile(file: File | undefined) {
     if (!file) return
+    props.onPicked()
     setBusy(true)
     setSaved(false)
     setError(null)
@@ -68,46 +83,8 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
   }
 
   return (
-    <Sheet
-      open={props.open}
-      title="Chụp ảnh thành phẩm"
-      onClose={props.onClose}
-      footer={
-        result ? (
-          saved ? (
-            <>
-              <Button block onClick={() => camera.current?.click()} disabled={busy}>
-                Chụp ảnh khác
-              </Button>
-              <Button block variant="primary" onClick={props.onClose}>
-                Đóng
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button block onClick={() => camera.current?.click()} disabled={busy}>
-                Chụp lại
-              </Button>
-              {canShare ? (
-                <Button block variant="primary" onClick={() => void share()}>
-                  Lưu / Chia sẻ
-                </Button>
-              ) : (
-                <a
-                  className="lo-btn lo-btn-primary lo-btn-block button-label"
-                  href={result.url}
-                  download={fileName}
-                  onClick={() => setSaved(true)}
-                >
-                  Tải ảnh
-                </a>
-              )}
-            </>
-          )
-        ) : null
-      }
-    >
-      {/* Camera sau của iPhone; ảnh trong thư viện thì không có capture */}
+    <>
+      {/* Nằm ngoài Sheet: bảng đóng thì nội dung không tồn tại, input phải luôn có để mở camera thẳng */}
       <input
         ref={camera}
         type="file"
@@ -123,53 +100,86 @@ export function PhotoSheet(props: { open: boolean; order: OrderDetail; onClose: 
         hidden
         onChange={(e) => void onFile(e.target.files?.[0])}
       />
-
-      {result ? (
-        <>
-          {/* Cao tối đa ~nửa màn hình để thấy trọn ảnh 4:5 cùng các nút, không phải cuộn */}
-          <img
-            src={result.url}
-            alt="Ảnh thành phẩm có khung LINDY"
-            className="mx-auto block h-auto max-h-[58dvh] w-auto max-w-full rounded-[var(--radius-md)] border border-line"
-          />
-          {saved ? (
-            <>
-              <p className="body-strong m-0 text-success">Đã lưu / gửi ảnh.</p>
-              {canShare ? (
+      <Sheet
+        open={props.open}
+        title="Chụp ảnh thành phẩm"
+        onClose={props.onClose}
+        footer={
+          result ? (
+            saved ? (
+              <>
+                <Button block onClick={() => camera.current?.click()} disabled={busy}>
+                  Chụp ảnh khác
+                </Button>
+                <Button block variant="primary" onClick={props.onClose}>
+                  Đóng
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button block onClick={() => camera.current?.click()} disabled={busy}>
+                  Chụp lại
+                </Button>
+                {canShare ? (
+                  <Button block variant="primary" onClick={() => void share()}>
+                    Lưu / Chia sẻ
+                  </Button>
+                ) : (
+                  <a
+                    className="lo-btn lo-btn-primary lo-btn-block button-label"
+                    href={result.url}
+                    download={fileName}
+                    onClick={() => setSaved(true)}
+                  >
+                    Tải ảnh
+                  </a>
+                )}
+              </>
+            )
+          ) : null
+        }
+      >
+        {result ? (
+          <>
+            {/* Cao tối đa ~nửa màn hình để thấy trọn ảnh 4:5 cùng các nút, không phải cuộn */}
+            <img
+              src={result.url}
+              alt="Ảnh thành phẩm có khung LINDY"
+              className="mx-auto block h-auto max-h-[58dvh] w-auto max-w-full rounded-[var(--radius-md)] border border-line"
+            />
+            {saved ? (
+              canShare ? (
                 <Button variant="quiet" block onClick={() => void share()}>
                   Gửi thêm nơi khác
                 </Button>
-              ) : null}
-            </>
-          ) : canShare ? (
-            <p className="caption m-0 text-ink-muted">
-              Lưu / Chia sẻ: chọn “Lưu hình ảnh” để vào Ảnh, hoặc gửi thẳng Instagram, Zalo.
-            </p>
-          ) : (
-            <p className="caption m-0 text-ink-muted">Nhấn giữ ảnh rồi chọn “Lưu vào Ảnh”.</p>
-          )}
-        </>
-      ) : (
-        <>
-          <p className="body m-0 text-ink-muted">
-            Chụp móng vừa làm kèm bill, app tự ghép khung LINDY NAIL STUDIO (khổ 3:4) để lưu hoặc đăng
-            Instagram.
-          </p>
-          <Button
-            variant="primary"
-            block
-            loading={busy}
-            loadingText="Đang ghép khung…"
-            onClick={() => camera.current?.click()}
-          >
-            Chụp ảnh
-          </Button>
-          <Button variant="quiet" block disabled={busy} onClick={() => library.current?.click()}>
-            Chọn ảnh có sẵn
-          </Button>
-        </>
-      )}
-      {error ? <Note tone="danger">{error}</Note> : null}
-    </Sheet>
+              ) : null
+            ) : canShare ? (
+              <p className="caption m-0 text-ink-muted">
+                Lưu / Chia sẻ: chọn “Lưu hình ảnh” để vào Ảnh, hoặc gửi thẳng Instagram, Zalo.
+              </p>
+            ) : (
+              <p className="caption m-0 text-ink-muted">Nhấn giữ ảnh rồi chọn “Lưu vào Ảnh”.</p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="body m-0 text-ink-muted">Chụp móng kèm bill.</p>
+            <Button
+              variant="primary"
+              block
+              loading={busy}
+              loadingText="Đang ghép khung…"
+              onClick={() => camera.current?.click()}
+            >
+              Chụp ảnh
+            </Button>
+            <Button variant="quiet" block disabled={busy} onClick={() => library.current?.click()}>
+              Chọn ảnh có sẵn
+            </Button>
+          </>
+        )}
+        {error ? <Note tone="danger">{error}</Note> : null}
+      </Sheet>
+    </>
   )
 }

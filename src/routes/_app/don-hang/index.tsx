@@ -2,7 +2,7 @@
 // K09: thợ chỉ thấy đơn mình tạo và đơn có phần mình làm, tổng chỉ có phần của mình.
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { Money, Note, SegmentedControl, StatusChip, TextField } from '~/components/ui'
+import { Icon, IconButton, Money, Note, ScreenHeader, SegmentedControl, StatusChip } from '~/components/ui'
 import { errorText } from '~/lib/api'
 import {
   ORDER_FILTERS,
@@ -35,6 +35,7 @@ function OrdersPage() {
   const today = toLocalDate(new Date())
   const date = search.d ?? today
   const filter = search.loc ?? 'all'
+  const [searchOpen, setSearchOpen] = useState(false)
   const [q, setQ] = useState('')
   const [qd, setQd] = useState('')
   useEffect(() => {
@@ -55,9 +56,22 @@ function OrdersPage() {
   const s = list.data?.summary
 
   return (
-    <section className="flex flex-col gap-3 pt-1">
+    <section className="flex flex-col gap-3">
+      <ScreenHeader
+        title="Đơn hàng"
+        actions={
+          <IconButton
+            label={searchOpen ? 'Đóng tìm kiếm' : 'Tìm tên, SĐT, mã đơn'}
+            onClick={() => {
+              setSearchOpen((x) => !x)
+              setQ('')
+            }}
+          >
+            <Icon name={searchOpen ? 'x' : 'search'} size={22} />
+          </IconButton>
+        }
+      />
       <div className="flex flex-col gap-2 px-4">
-        <h1 className="screen-title m-0">Đơn hàng</h1>
         <div className="grid grid-cols-[1fr_auto] gap-2">
           <SegmentedControl
             ariaLabel="Ngày"
@@ -79,42 +93,39 @@ function OrdersPage() {
             }
           />
         </div>
-        <div className="grid grid-cols-[1fr_1fr] gap-2">
-          <select
-            aria-label="Lọc trạng thái"
+        {searchOpen ? (
+          <input
             className="lo-input input-text"
-            value={filter}
-            onChange={(e) =>
-              go({ loc: e.target.value === 'all' ? undefined : (e.target.value as OrderFilterValue) })
-            }
-          >
-            {ORDER_FILTERS.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
-          <TextField
-            label="Tìm"
-            className="[&_.lo-field-label]:sr-only"
             placeholder="Tên, SĐT, #mã"
+            aria-label="Tìm tên, SĐT, mã đơn"
             value={q}
             enterKeyHint="search"
+            // biome-ignore lint/a11y/noAutofocus: mở ô tìm thì gõ ngay
+            autoFocus
             onChange={(e) => setQ(e.target.value)}
           />
-        </div>
+        ) : null}
+        <select
+          aria-label="Lọc trạng thái"
+          className="lo-input input-text"
+          value={filter}
+          onChange={(e) =>
+            go({ loc: e.target.value === 'all' ? undefined : (e.target.value as OrderFilterValue) })
+          }
+        >
+          {ORDER_FILTERS.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {review ? (
         <div className="px-4">
           <Note>
-            Đơn đã xác nhận Nhung sửa có phần của mình hoặc Nhung huỷ, đơn có phiếu ưu đãi do Nhung lập (mọi
-            ngày). Mở đơn rồi bấm “Đã xem lại” hoặc “Đã xem” trên phiếu.{' '}
-            <button
-              type="button"
-              className="border-0 bg-transparent p-0 text-accent underline"
-              onClick={() => go({ xl: undefined })}
-            >
+            Đơn cần Linh xem lại, mọi ngày.{' '}
+            <button type="button" className="lo-link" onClick={() => go({ xl: undefined })}>
               Bỏ lọc
             </button>
           </Note>
@@ -123,7 +134,7 @@ function OrdersPage() {
 
       {allDates && !review ? (
         <div className="px-4">
-          <Note>Đang xem mọi ngày, mới nhất trước. Đơn chưa xác nhận thì chưa vào doanh thu.</Note>
+          <Note>Đang xem mọi ngày, mới nhất trước.</Note>
         </div>
       ) : null}
 

@@ -5,7 +5,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Minus, Plus, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Button,
   cx,
@@ -39,9 +39,11 @@ import { addDays, formatIsoDate, toLocalDate } from '~/lib/time'
 import {
   CustomerPicker,
   DiscountSheet,
+  type Entry,
   ExtraLineSheet,
   type Picked,
   type PickedCustomer,
+  ServiceChecklist,
   ServicePicker,
 } from './pickers'
 
@@ -75,7 +77,8 @@ function payload(d: Draft) {
 export function OrderEditor(props: {
   /** Không có: tạo đơn mới. */
   order?: OrderDetail
-  onSaved?: (d: OrderDetail) => void
+  /** collectNow: vừa Làm xong, đơn đã xác nhận mà còn phải thu (mở hộp Ghi tiền thu một lần, S52) */
+  onSaved?: (d: OrderDetail, opts?: { collectNow: boolean }) => void
   onCancel?: () => void
 }) {
   const me = useMe()
@@ -129,6 +132,24 @@ export function OrderEditor(props: {
   const myLevel = levelOf(branch?.perms ?? [])
   const canPickAnyDate = can('order.confirm')
 
+  // Chọn dịch vụ ngay trong màn đơn chỉ cho đơn Đang làm; đơn đã Làm xong một chạm là đổi tiền nên giữ bảng chọn (S52)
+  const inlinePicker = props.order?.status === 'in_progress'
+  // Linh, Nhung hay lên đơn hộ, lịch nhiều khách có nhiều thợ: luôn thấy đủ thợ để hoa hồng vào đúng người (S52)
+  const compactStaff = !can('order.confirm') && (props.order?.appointment?.guestCount ?? 1) <= 1
+  const pickerRef = useRef<HTMLDivElement>(null)
+  // Thêm, bỏ dòng làm danh sách dịch vụ trượt; bù cuộn để dòng vừa chạm đứng yên dưới ngón tay
+  const anchorTop = useRef<number | null>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chạy sau mỗi lần số dòng đổi
+  useLayoutEffect(() => {
+    const el = pickerRef.current
+    if (el && anchorTop.current != null)
+      window.scrollBy(0, el.getBoundingClientRect().top - anchorTop.current)
+    anchorTop.current = null
+  }, [draft.items.length])
+  const holdPicker = () => {
+    anchorTop.current = pickerRef.current?.getBoundingClientRect().top ?? null
+  }
+
   const setItems = (fn: (items: Line[]) => Line[]) => setDraft((d) => ({ ...d, items: fn(d.items) }))
   const patchLine = (key: string, patch: Partial<ItemInput>) =>
     setItems((items) => items.map((x) => (x.key === key ? ({ ...x, ...patch } as Line) : x)))
@@ -150,6 +171,35 @@ export function OrderEditor(props: {
             : { key: newKey(), type: 'combo', comboId: p.id, staff: defaultStaff },
       ),
     ])
+  }
+
+  const entryOf = (l: Line) =>
+    l.type === 'service' ? `s:${l.serviceId}` : l.type === 'combo' ? `c:${l.comboId}` : null
+  const pickedCounts = new Map<string, number>()
+  for (const l of draft.items) {
+    const k = entryOf(l)
+    if (k) pickedCounts.set(k, (pickedCounts.get(k) ?? 0) + 1)
+  }
+
+  /** Dòng còn nguyên mặc định: chưa sửa giá, số lượng, thợ, chưa có khoản giảm. Bỏ dòng này không mất gì. */
+  function pristine(line: Line, index: number) {
+    const sameStaff =
+      line.staff.length === defaultStaff.length &&
+      line.staff.every((s) => defaultStaff.some((x) => x.userId === s.userId))
+    const noDiscount = !draft.discounts.some((x) => x.scope === index)
+    if (line.type === 'service')
+      return sameStaff && noDiscount && line.unitPrice == null && line.quantity === 1 && !line.belowReason
+    return sameStaff && noDiscount
+  }
+
+  function toggleEntry(e: Entry) {
+    const lines = draft.items.flatMap((l, i) => (entryOf(l) === e.key ? [{ l, i }] : []))
+    holdPicker()
+    if (lines.length === 0) return addPicked([{ kind: e.kind, id: e.id }])
+    const only = lines.length === 1 ? lines[0] : undefined
+    if (only && pristine(only.l, only.i)) return removeLine(only.i)
+    anchorTop.current = null
+    toast('Dòng này đã sửa. Bỏ bằng nút X trên dòng.', 'error')
   }
 
   function removeLine(index: number) {
@@ -208,17 +258,22 @@ export function OrderEditor(props: {
       qc.setQueryData(['orders', 'detail', d.id], d)
       await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
       if (markDone && d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
+      // Đơn đã xác nhận mà còn phải thu: mở hộp Ghi tiền thu luôn, không hiện thông báo vì sẽ đè nút Lưu của hộp.
+      // Đơn còn giảm giá chờ duyệt thì không: số tiền chưa chốt (S52)
+      const collectNow = markDone && d.status === 'confirmed' && d.can.recordPayment && d.dueAmount > 0
       // S41: Làm xong là xác nhận luôn; còn giảm giá chờ duyệt thì báo chờ ai
-      toast(
-        !markDone
-          ? `Đã lưu đơn ${d.codeLabel}.`
-          : d.status === 'confirmed'
-            ? `Đã xong, đã xác nhận bill ${d.codeLabel}.`
-            : `Đã bấm Làm xong đơn ${d.codeLabel}.${d.can.confirmBlocked ? ` ${d.can.confirmBlocked}` : ''}`,
-      )
+      if (!collectNow) {
+        toast(
+          !markDone
+            ? `Đã lưu đơn ${d.codeLabel}.`
+            : d.status === 'confirmed'
+              ? `Đã xong, đã xác nhận bill ${d.codeLabel}.`
+              : `Đã bấm Làm xong đơn ${d.codeLabel}.${d.can.confirmBlocked ? ` ${d.can.confirmBlocked}` : ''}`,
+        )
+      }
       if (isEdit) {
         setVersion(d.version)
-        props.onSaved?.(d)
+        props.onSaved?.(d, { collectNow })
       } else {
         await navigate({ to: '/don-hang/$id', params: { id: d.id }, replace: true })
       }
@@ -310,8 +365,8 @@ export function OrderEditor(props: {
       <section className="flex flex-col gap-2">
         <h2 className="overline m-0 px-4 text-ink-muted">Dịch vụ</h2>
         {!catalog.data ? <p className="body m-0 px-4 text-ink-muted">Đang tải danh mục…</p> : null}
-        {draft.items.length === 0 && catalog.data ? (
-          <p className="body m-0 px-4 text-ink-muted">Chưa có dịch vụ. Bấm “Thêm dịch vụ”.</p>
+        {draft.items.length === 0 && catalog.data && !inlinePicker ? (
+          <p className="body m-0 px-4 text-ink-muted">Chưa có dịch vụ.</p>
         ) : null}
         {draft.items.map((line, i) => (
           <LineCard
@@ -326,13 +381,30 @@ export function OrderEditor(props: {
             onPatch={(patch) => patchLine(line.key, patch)}
             onToggleStaff={(uid) => toggleStaff(line, uid)}
             onSplitEven={(net) => splitEven(line, net)}
+            compactStaff={compactStaff}
             onRemove={() => removeLine(i)}
           />
         ))}
-        <div className="grid grid-cols-[2fr_1fr_1fr] gap-2 px-4">
-          <Button variant="primary" icon="plus" onClick={() => setSheet('services')}>
-            Thêm dịch vụ
-          </Button>
+        {inlinePicker ? (
+          <div ref={pickerRef}>
+            <ServiceChecklist
+              catalog={catalog.data}
+              counts={pickedCounts}
+              disabled={!staff.data}
+              onToggle={toggleEntry}
+              onAddAgain={(e) => {
+                holdPicker()
+                addPicked([{ kind: e.kind, id: e.id }])
+              }}
+            />
+          </div>
+        ) : null}
+        <div className={cx('grid gap-2 px-4', inlinePicker ? 'grid-cols-2' : 'grid-cols-[2fr_1fr_1fr]')}>
+          {inlinePicker ? null : (
+            <Button variant="primary" icon="plus" onClick={() => setSheet('services')}>
+              Thêm dịch vụ
+            </Button>
+          )}
           <Button onClick={() => setSheet('surcharge')}>Phụ thu</Button>
           <Button onClick={() => setSheet('custom')}>Khác</Button>
         </div>
@@ -385,7 +457,7 @@ export function OrderEditor(props: {
               lần.{' '}
               <button
                 type="button"
-                className="border-0 bg-transparent p-0 font-semibold text-accent underline"
+                className="lo-link font-semibold"
                 onClick={() =>
                   setDraft((d) => ({
                     ...d,
@@ -443,7 +515,7 @@ export function OrderEditor(props: {
           />
           <Note>
             Doanh thu ngày {props.order ? formatIsoDate(props.order.serviceDate) : ''} đổi theo. Thành tiền
-            mới không được nhỏ hơn số đã thu (hoàn tiền có ở Đợt 3).
+            mới không được nhỏ hơn số đã thu.
           </Note>
         </div>
       ) : null}
@@ -541,9 +613,13 @@ function LineCard(props: {
   onPatch: (patch: Partial<ItemInput>) => void
   onToggleStaff: (userId: string) => void
   onSplitEven: (net: number) => void
+  compactStaff: boolean
   onRemove: () => void
 }) {
   const { line, c } = props
+  // Một thợ, người thường lên đơn cho chính mình: chỉ hiện tên, bấm Đổi thợ mới hiện danh sách
+  const [staffOpen, setStaffOpen] = useState(false)
+  const staffCollapsed = props.compactStaff && line.staff.length === 1 && !staffOpen
   if (!c) return null
   const isService = line.type === 'service'
   const perUnit = isService && c.unit !== 'lần'
@@ -558,17 +634,20 @@ function LineCard(props: {
           <span className="body-strong break-words">
             {props.index + 1}. {c.name || '—'}
           </span>
-          <span className="caption text-ink-muted">
-            {line.type === 'combo'
-              ? 'Combo · giá niêm yết'
-              : line.type === 'surcharge'
-                ? 'Phụ thu'
-                : line.type === 'custom'
-                  ? 'Dịch vụ nhập tay'
-                  : c.priceMode === 'custom'
-                    ? `Khoảng ${formatVND(c.listMin)}–${formatVND(c.listMax)}${perUnit ? `/${c.unit}` : ''}`
-                    : `Niêm yết ${formatVND(c.listMin)}${perUnit ? `/${c.unit}` : ''}`}
-          </span>
+          {/* Giá cố định chưa sửa thì dòng giá bên dưới đã nói đủ */}
+          {isService && c.priceMode !== 'custom' && !perUnit && !props.priceEditing ? null : (
+            <span className="caption text-ink-muted">
+              {line.type === 'combo'
+                ? 'Combo · giá niêm yết'
+                : line.type === 'surcharge'
+                  ? 'Phụ thu'
+                  : line.type === 'custom'
+                    ? 'Dịch vụ nhập tay'
+                    : c.priceMode === 'custom'
+                      ? `Khoảng ${formatVND(c.listMin)}–${formatVND(c.listMax)}${perUnit ? `/${c.unit}` : ''}`
+                      : `Niêm yết ${formatVND(c.listMin)}${perUnit ? `/${c.unit}` : ''}`}
+            </span>
+          )}
         </span>
         <button
           type="button"
@@ -661,8 +740,19 @@ function LineCard(props: {
       ) : null}
 
       <div className="flex flex-col gap-2">
-        <span className="label">Thợ làm</span>
-        <div className="flex flex-wrap gap-2">
+        {staffCollapsed ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="label">
+              Thợ: <span className="body-strong">{props.nameOf(line.staff[0]!.userId)}</span>
+            </span>
+            <Button variant="quiet" onClick={() => setStaffOpen(true)}>
+              Đổi thợ
+            </Button>
+          </div>
+        ) : (
+          <span className="label">Thợ làm</span>
+        )}
+        <div className={cx('flex flex-wrap gap-2', staffCollapsed && 'hidden')}>
           {props.staff.map((s) => {
             const on = line.staff.some((x) => x.userId === s.id)
             return (
