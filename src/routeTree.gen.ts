@@ -21,6 +21,7 @@ import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiOverviewRouteImport } from './routes/api/overview'
+import { Route as ApiRecoveryImportRouteImport } from './routes/api/recovery-import'
 import { Route as ApiReviewRouteImport } from './routes/api/review'
 import { Route as AppDonHangIndexRouteImport } from './routes/_app/don-hang/index'
 import { Route as AppDonHangIdRouteImport } from './routes/_app/don-hang/$id'
@@ -41,6 +42,7 @@ import { Route as AppThemLuongRouteImport } from './routes/_app/them/luong'
 import { Route as AppThemMayInRouteImport } from './routes/_app/them/may-in'
 import { Route as AppThemNhanVienRouteImport } from './routes/_app/them/nhan-vien'
 import { Route as AppThemNhapDuLieuCuRouteImport } from './routes/_app/them/nhap-du-lieu-cu'
+import { Route as AppThemNhapLaiDuLieuRouteImport } from './routes/_app/them/nhap-lai-du-lieu'
 import { Route as AppThemSoTienRouteImport } from './routes/_app/them/so-tien'
 import { Route as AppThemTaiKhoanRouteImport } from './routes/_app/them/tai-khoan'
 import { Route as AppThemTamUngRouteImport } from './routes/_app/them/tam-ung'
@@ -174,6 +176,11 @@ const ApiOverviewRoute = ApiOverviewRouteImport.update({
   path: '/api/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRecoveryImportRoute = ApiRecoveryImportRouteImport.update({
+  id: '/api/recovery-import',
+  path: '/api/recovery-import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiReviewRoute = ApiReviewRouteImport.update({
   id: '/api/review',
   path: '/api/review',
@@ -272,6 +279,11 @@ const AppThemNhanVienRoute = AppThemNhanVienRouteImport.update({
 const AppThemNhapDuLieuCuRoute = AppThemNhapDuLieuCuRouteImport.update({
   id: '/them/nhap-du-lieu-cu',
   path: '/them/nhap-du-lieu-cu',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppThemNhapLaiDuLieuRoute = AppThemNhapLaiDuLieuRouteImport.update({
+  id: '/them/nhap-lai-du-lieu',
+  path: '/them/nhap-lai-du-lieu',
   getParentRoute: () => AppRoute,
 } as any)
 const AppThemSoTienRoute = AppThemSoTienRouteImport.update({
@@ -657,6 +669,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
+  '/api/recovery-import': typeof ApiRecoveryImportRoute
   '/api/review': typeof ApiReviewRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
   '/khach/$id': typeof AppKhachIdRoute
@@ -673,6 +686,7 @@ export interface FileRoutesByFullPath {
   '/them/may-in': typeof AppThemMayInRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
+  '/them/nhap-lai-du-lieu': typeof AppThemNhapLaiDuLieuRoute
   '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/tam-ung': typeof AppThemTamUngRoute
@@ -762,6 +776,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
+  '/api/recovery-import': typeof ApiRecoveryImportRoute
   '/api/review': typeof ApiReviewRoute
   '/': typeof AppIndexRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
@@ -779,6 +794,7 @@ export interface FileRoutesByTo {
   '/them/may-in': typeof AppThemMayInRoute
   '/them/nhan-vien': typeof AppThemNhanVienRoute
   '/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
+  '/them/nhap-lai-du-lieu': typeof AppThemNhapLaiDuLieuRoute
   '/them/so-tien': typeof AppThemSoTienRoute
   '/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/them/tam-ung': typeof AppThemTamUngRoute
@@ -870,6 +886,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
+  '/api/recovery-import': typeof ApiRecoveryImportRoute
   '/api/review': typeof ApiReviewRoute
   '/_app/': typeof AppIndexRoute
   '/_app/don-hang/$id': typeof AppDonHangIdRoute
@@ -887,6 +904,7 @@ export interface FileRoutesById {
   '/_app/them/may-in': typeof AppThemMayInRoute
   '/_app/them/nhan-vien': typeof AppThemNhanVienRoute
   '/_app/them/nhap-du-lieu-cu': typeof AppThemNhapDuLieuCuRoute
+  '/_app/them/nhap-lai-du-lieu': typeof AppThemNhapLaiDuLieuRoute
   '/_app/them/so-tien': typeof AppThemSoTienRoute
   '/_app/them/tai-khoan': typeof AppThemTaiKhoanRoute
   '/_app/them/tam-ung': typeof AppThemTamUngRoute
@@ -979,6 +997,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/api/overview'
+    | '/api/recovery-import'
     | '/api/review'
     | '/don-hang/$id'
     | '/khach/$id'
@@ -995,6 +1014,7 @@ export interface FileRouteTypes {
     | '/them/may-in'
     | '/them/nhan-vien'
     | '/them/nhap-du-lieu-cu'
+    | '/them/nhap-lai-du-lieu'
     | '/them/so-tien'
     | '/them/tai-khoan'
     | '/them/tam-ung'
@@ -1084,6 +1104,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/api/overview'
+    | '/api/recovery-import'
     | '/api/review'
     | '/'
     | '/don-hang/$id'
@@ -1101,6 +1122,7 @@ export interface FileRouteTypes {
     | '/them/may-in'
     | '/them/nhan-vien'
     | '/them/nhap-du-lieu-cu'
+    | '/them/nhap-lai-du-lieu'
     | '/them/so-tien'
     | '/them/tai-khoan'
     | '/them/tam-ung'
@@ -1191,6 +1213,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/api/me'
     | '/api/overview'
+    | '/api/recovery-import'
     | '/api/review'
     | '/_app/'
     | '/_app/don-hang/$id'
@@ -1208,6 +1231,7 @@ export interface FileRouteTypes {
     | '/_app/them/may-in'
     | '/_app/them/nhan-vien'
     | '/_app/them/nhap-du-lieu-cu'
+    | '/_app/them/nhap-lai-du-lieu'
     | '/_app/them/so-tien'
     | '/_app/them/tai-khoan'
     | '/_app/them/tam-ung'
@@ -1298,6 +1322,7 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   ApiMeRoute: typeof ApiMeRoute
   ApiOverviewRoute: typeof ApiOverviewRoute
+  ApiRecoveryImportRoute: typeof ApiRecoveryImportRoute
   ApiReviewRoute: typeof ApiReviewRoute
   ApiAppointmentsIdRoute: typeof ApiAppointmentsIdRouteWithChildren
   ApiAppointmentsAttentionRoute: typeof ApiAppointmentsAttentionRoute
@@ -1449,6 +1474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/recovery-import': {
+      id: '/api/recovery-import'
+      path: '/api/recovery-import'
+      fullPath: '/api/recovery-import'
+      preLoaderRoute: typeof ApiRecoveryImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/review': {
       id: '/api/review'
       path: '/api/review'
@@ -1587,6 +1619,13 @@ declare module '@tanstack/react-router' {
       path: '/them/nhap-du-lieu-cu'
       fullPath: '/them/nhap-du-lieu-cu'
       preLoaderRoute: typeof AppThemNhapDuLieuCuRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/them/nhap-lai-du-lieu': {
+      id: '/_app/them/nhap-lai-du-lieu'
+      path: '/them/nhap-lai-du-lieu'
+      fullPath: '/them/nhap-lai-du-lieu'
+      preLoaderRoute: typeof AppThemNhapLaiDuLieuRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/them/so-tien': {
@@ -2121,6 +2160,7 @@ interface AppRouteChildren {
   AppThemMayInRoute: typeof AppThemMayInRoute
   AppThemNhanVienRoute: typeof AppThemNhanVienRoute
   AppThemNhapDuLieuCuRoute: typeof AppThemNhapDuLieuCuRoute
+  AppThemNhapLaiDuLieuRoute: typeof AppThemNhapLaiDuLieuRoute
   AppThemSoTienRoute: typeof AppThemSoTienRoute
   AppThemTaiKhoanRoute: typeof AppThemTaiKhoanRoute
   AppThemTamUngRoute: typeof AppThemTamUngRoute
@@ -2151,6 +2191,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppThemMayInRoute: AppThemMayInRoute,
   AppThemNhanVienRoute: AppThemNhanVienRoute,
   AppThemNhapDuLieuCuRoute: AppThemNhapDuLieuCuRoute,
+  AppThemNhapLaiDuLieuRoute: AppThemNhapLaiDuLieuRoute,
   AppThemSoTienRoute: AppThemSoTienRoute,
   AppThemTaiKhoanRoute: AppThemTaiKhoanRoute,
   AppThemTamUngRoute: AppThemTamUngRoute,
@@ -2233,6 +2274,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   ApiMeRoute: ApiMeRoute,
   ApiOverviewRoute: ApiOverviewRoute,
+  ApiRecoveryImportRoute: ApiRecoveryImportRoute,
   ApiReviewRoute: ApiReviewRoute,
   ApiAppointmentsIdRoute: ApiAppointmentsIdRouteWithChildren,
   ApiAppointmentsAttentionRoute: ApiAppointmentsAttentionRoute,
