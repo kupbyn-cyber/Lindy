@@ -1,12 +1,13 @@
-LINDY OS là app quản lý nội bộ của Lindy Nailash Studio, dùng chủ yếu trên iPhone. Giao diện theo phong cách **Ngà & mực**: nền ngà, chữ mực ấm ngả nâu, tiêu đề và số tiền lớn dùng chữ có chân thanh lịch, nội dung dùng chữ không chân dễ đọc, một màu mận duy nhất cho hành động chính. Ba từ khoá: **tối giản, hiện đại, dịu nhẹ**. Người dùng ghét nhất là phải bấm nhiều bước mới xong việc, nên mỗi màn hình phục vụ một việc và việc đó xong bằng ít lần chạm nhất.
+LINDY OS là app quản lý nội bộ của Lindy Nailash Studio, dùng chủ yếu trên iPhone. Từ 01/11/2026 giao diện dùng **bộ màu Đen Ngọc Trai của CEN WORK** (S51): nền xám trắng hoặc gần đen, chữ đen trắng trung tính, nút chính đen ở sáng và dải ngọc trai ở tối, trạng thái theo màu nghĩa. Ba từ khoá: **tối giản, hiện đại, dịu nhẹ**. Người dùng ghét nhất là phải bấm nhiều bước mới xong việc, nên mỗi màn hình phục vụ một việc và việc đó xong bằng ít lần chạm nhất.
 
 ## Nguyên tắc
 
 - Số liệu trước, trang trí sau. Không ảnh minh hoạ; màn hình là chữ, số và đường kẻ mảnh.
-- Một màu nhấn. `accent` chỉ cho hành động chính (`Fab` “+ Tạo đơn”, `Button` primary) và mục đang chọn. Không tô `accent` lên mảng nền lớn.
-- Viền mảnh thay bóng. Thẻ và dòng dùng `line`. Bóng chỉ cho thứ nổi trên màn hình: `Fab` (`shadow-fab`), `Toast` và bottom sheet (`shadow-lg`).
-- Mật độ dày nhưng chạm thoải mái: mọi vùng chạm cao ít nhất `tap-min`.
+- Mỗi màu một nghĩa (bảng ở mục Màu). `accent` chỉ cho hành động và mục đang chọn, không dùng cho chip trạng thái.
+- Viền mảnh cho thẻ. Bóng chỉ cho thứ nổi trên màn hình: `Toast`, bảng trượt, hộp thoại.
+- Mật độ dày nhưng chạm thoải mái: mọi vùng chạm cao ít nhất `tap-min`, trừ ô lịch và ô bảng công.
 - Ít bước: tạo đơn, xác nhận bill, ghi tiền không quá ba lần chạm kể từ màn hình đang mở. Một màn hình chỉ có một `Button` primary.
+- Chỉ việc không hoàn tác được mới hỏi lại (S48). Không ghi chữ hướng dẫn lặp mỗi lần mở màn (S52); câu giữ tiền, giữ quyền thì giữ, rút gọn được.
 
 ## Giọng văn
 
@@ -18,15 +19,26 @@ LINDY OS là app quản lý nội bộ của Lindy Nailash Studio, dùng chủ y
 
 ## Màu
 
-- Nền trang `surface`; thẻ, dòng, thanh dưới, ô nhập `surface-raised`; nền phân đoạn và dòng đang nhấn `surface-sunken`.
+- Nền trang `surface` kèm ánh sáng tĩnh `page-glow`; thẻ, dòng, thanh trên, ô nhập `surface-raised`; nền chìm, nút tắt, chip xám `surface-sunken`.
 - Chữ chính `ink`, chữ phụ `ink-muted`. Cả hai đọc được trên ba nền surface ở cả hai giao diện.
 - Đường kẻ `line`. Viền ô nhập và nút phụ `line-strong` (đạt 3:1).
-- Nút chính: nền `accent`, chữ `on-accent`. Nền nhạt sau chữ `accent`: `accent-soft`.
-- Trạng thái tiền có cặp màu riêng và **luôn có chữ đi kèm**, không bao giờ chỉ là chấm màu: Đã thu đủ `success` trên `success-soft`; Thu một phần `warning` trên `warning-soft`; Chưa thu `danger` trên `danger-soft`. `danger` còn dùng cho số âm, chênh lệch quỹ và nút nguy hiểm.
-- Giao diện tự đổi sáng/tối theo cài đặt của iPhone. Mọi màu lấy từ token; không viết màu cứng. Trên `accent` luôn dùng `on-accent`, vì giao diện tối cần chữ tối.
-- Màu thương hiệu be, nâu, trắng nằm trong các màu trung tính: `surface` (ngà), `line-strong` (nâu xám), `ink` (nâu đen).
-- Ô lịch kiểu lịch iPhone (S31): nền màu nhạt `cal-*-bg`, vạch trái 4px `cal-*-bar`, chữ đậm `cal-*-ink`, chữ phụ `cal-*-sub`. Theo trạng thái: **hồng mận** `cal-booked` = đã chốt; **xanh** `cal-active` = khách đã đến, đang làm; **xám** `cal-done` = xong; **xám mờ, gạch ngang** `cal-cancel` = huỷ, không đến. Chưa cọc, cọc chờ xác nhận, yêu cầu huỷ: vạch trái **cam** `cal-deposit-bar`, chữ trạng thái `cal-deposit-ink`. Màn Danh sách dùng cùng màu vạch ở đầu dòng. Ngoài chip trạng thái, đây là chỗ duy nhất tô mảng màu; màu luôn đi kèm chữ trạng thái. Vạch giờ hiện tại (S34) dùng `cal-now`, chữ giờ trên nhãn `on-cal-now`.
-- Độ tương phản (kiểm 16/10/2026, WCAG 2.x): mọi cặp chữ/nền ≥ 4.5:1, viền ô nhập và vạch màu ≥ 3:1 ở cả hai giao diện (trừ vạch `cal-cancel` cố ý mờ). Thêm màu mới phải đo lại trước khi dùng.
+- Nút chính: `accent` + gradient `accent-fill`, chữ `on-accent`. Mục đang chọn màu đặc `accent`; trong bảng trượt, hộp thoại dùng `accent-soft` + `ink`.
+- `accent` trùng màu chữ nên link dùng `.lo-link` (gạch chân), số ngày hôm nay dùng `cal-now`.
+- Mỗi màu một nghĩa, **luôn có chữ đi kèm** (G10). Bảng trạng thái → tone nằm ở `src/lib/status-tone.ts`, không viết tone tay ở màn.
+
+| Nghĩa | Tone | Ví dụ |
+|---|---|---|
+| Đang làm | `progress` xanh dương | Đang làm, Khách đã đến, Tạm tính |
+| Đang chờ ai đó | `waiting` tím | Chờ xác nhận, Chờ duyệt, Chưa duyệt, Đã duyệt chờ chi, Cọc chờ xác nhận, Cần xem lại |
+| Chưa đủ, cần chú ý | `warning` cam | Thu một phần, Chưa cọc, Vượt khoảng giá, Sửa tên |
+| Tiền chưa về, hỏng | `danger` đỏ | Chưa thu, số âm, Từ chối, Khách không đến, nút Huỷ |
+| Xong và đúng | `success` xanh lá | Đã thu đủ, Đã xác nhận, Đã chi, Đi làm |
+| Còn lại | `neutral` xám | Đã huỷ, Hoàn thành, Quán đóng cửa, Nghỉ có phép |
+
+- Giao diện tự đổi sáng/tối theo cài đặt của iPhone. Mọi màu lấy từ token; không viết màu cứng. Trên `accent` luôn dùng `on-accent`, vì giao diện tối cần chữ tối. In ra giấy luôn dùng màu sáng.
+- Kính chỉ ở thanh dưới (`nav-fill`, 86%, trong `@supports`). Gradient chỉ ở nút chính và `page-glow`, tĩnh.
+- Ô lịch kiểu lịch iPhone (S31): nền màu nhạt `cal-*-bg`, vạch trái 4px `cal-*-bar`, chữ đậm `cal-*-ink`, chữ phụ `cal-*-sub`. Theo trạng thái: **hồng mận** `cal-booked` = đã chốt; **xanh** `cal-active` = khách đã đến, đang làm; **xám** `cal-done` = xong; **xám mờ, gạch ngang** `cal-cancel` = huỷ, không đến. Chưa cọc, cọc chờ xác nhận, yêu cầu huỷ: vạch trái **cam** `cal-deposit-bar`, chữ trạng thái `cal-deposit-ink`. Màn Danh sách dùng cùng màu vạch ở đầu dòng. Ngoài chip trạng thái, đây là chỗ duy nhất tô mảng màu; màu luôn đi kèm chữ trạng thái. Vạch giờ hiện tại (S34) dùng `cal-now`, chữ giờ trên nhãn `on-cal-now`. Ngoài giờ mở cửa dùng `cal-closed`.
+- Độ tương phản (WCAG 2.x, đo lại 01/11/2026): mọi cặp chữ/nền ≥ 4.5:1, viền ô nhập và vạch màu ≥ 3:1 ở cả hai giao diện (trừ vạch `cal-cancel` cố ý mờ). Thêm màu mới phải đo lại trước khi dùng.
 
 ## Chữ
 
@@ -34,7 +46,8 @@ LINDY OS là app quản lý nội bộ của Lindy Nailash Studio, dùng chủ y
 - Cormorant Garamond (họ `brand`) chỉ còn cho `wordmark` (chữ LINDY OS), làm dấu hiệu thương hiệu. Cả hai họ chữ có đủ dấu tiếng Việt và tải từ Google Fonts.
 - Số tiền dùng `font-variant-numeric: lining-nums tabular-nums` để các cột số thẳng hàng; `Money` đã đặt sẵn.
 - Ô nhập luôn dùng `input-text` (16px) để Safari không tự phóng to khi chạm.
-- `overline` viết hoa bằng CSS, cho nhãn nhóm trên số liệu như “DOANH THU THUẦN”.
+- `overline` là nhãn nhóm trên số liệu như “Doanh thu thuần”, 13px chữ thường (bỏ chữ hoa giãn vì gãy dòng). Chữ nhỏ nhất trên nội dung là 13px; 11px chỉ cho thanh dưới.
+- `heading` 17px cho tiêu đề màn con và số phụ.
 
 ## Bố cục trên iPhone
 
@@ -48,8 +61,8 @@ LINDY OS là app quản lý nội bộ của Lindy Nailash Studio, dùng chủ y
 
 ## Bo góc, viền, bóng
 
-- `radius-md` cho nút, thẻ, ô nhập, `Toast`; `radius-sm` cho chip; `radius-lg` cho bottom sheet và hộp xác nhận; `radius-full` cho `Fab`, huy hiệu số và nhãn cơ sở.
-- Vòng focus bàn phím là `focus-ring`: khe màu nền 2px rồi vòng `accent` 2px, đạt 3:1 trên mọi nền surface.
+- `radius-sm` cho ô lịch, ô bảng công; `radius-md` cho nút, ô nhập, `Toast`; `radius-lg` cho thẻ; `radius-xl` cho bảng trượt, hộp thoại; `radius-full` cho chip trạng thái, phân đoạn, huy hiệu, ô tích.
+- Vòng focus bàn phím là `focus-ring`: khe màu nền 2px rồi vòng 2px, đạt 3:1 trên mọi nền surface.
 
 ## Chuyển động
 
@@ -72,7 +85,7 @@ Gần như không dùng ảnh: không ảnh minh hoạ, không ảnh nền. Màn
 
 ## Dùng trong app
 
-- Thành phần React nằm ở `components/bundle.js` dưới tên `window.LindyOS`, cần React 18 và stylesheet `components/bundle.css` nạp sau token.
+- App chạy từ `src/styles/components.css` và `src/components/ui/`. `components/bundle.js`, `bundle.css` là bộ gốc Ngà & mực, chỉ để tra lịch sử.
 - Tải phông: `https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Cormorant+Garamond:wght@600&display=swap`.
-- Giao diện tối: đặt `data-theme="dark"` lên thẻ `html` khi `matchMedia('(prefers-color-scheme: dark)')` khớp, và lắng nghe sự kiện `change` để đổi theo máy. Không có nút bật/tắt riêng.
-- Định dạng tiền bằng `LindyOS.formatVND(n)`; đọc số từ ô nhập bằng `LindyOS.parseVND(text)`. Tiền luôn là số nguyên VND.
+- Giao diện tối theo `prefers-color-scheme`, sinh trong `src/styles/tokens.css`. Không có nút bật/tắt riêng.
+- Định dạng tiền bằng `formatVND` ở `src/lib/money`. Tiền luôn là số nguyên VND.

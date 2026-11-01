@@ -18,6 +18,7 @@ type Tokens = {
   radius: { tokens: { name: string; value: string }[] }
   size: { tokens: { name: string; value: string }[] }
   shadow: { tokens: { name: string; value: { light: string; dark: string } }[] }
+  gradient: { tokens: { name: string; value: { light: string; dark: string } }[] }
 }
 
 const root = process.cwd()
@@ -29,7 +30,8 @@ for (const c of t.color.tokens) {
   light.push(`  --${c.name}: ${c.value.light};`)
   dark.push(`    --${c.name}: ${c.value.dark};`)
 }
-for (const s of t.shadow.tokens) {
+// Bóng, gradient không vào @theme: gradient không dùng được làm màu của Tailwind (S51)
+for (const s of [...t.shadow.tokens, ...t.gradient.tokens]) {
   light.push(`  --${s.name}: ${s.value.light};`)
   dark.push(`    --${s.name}: ${s.value.dark};`)
 }
@@ -49,7 +51,7 @@ for (const g of t.type.groups) {
     ]
     if (s.letterSpacing) rules.push(`letter-spacing: ${s.letterSpacing};`)
     // Tailwind cũng có lớp "overline" (gạch trên chữ) — tắt để giữ đúng kiểu chữ của bộ giao diện.
-    if (s.name === 'overline') rules.push('text-transform: uppercase; text-decoration-line: none;')
+    if (s.name === 'overline') rules.push('text-decoration-line: none;')
     if (['display-money', 'amount'].includes(s.name))
       rules.push('font-variant-numeric: lining-nums tabular-nums;')
     typeClasses.push(`.${s.name} { ${rules.join(' ')} }`)
@@ -67,8 +69,8 @@ ${light.join('\n')}
 ${fixed.join('\n')}
 }
 
-/* Sáng/tối tự đổi theo iPhone (G09); không có nút bật/tắt riêng. */
-@media (prefers-color-scheme: dark) {
+/* Sáng/tối tự đổi theo iPhone (G09); không có nút bật/tắt riêng. Chỉ áp trên màn hình: in ra giấy luôn dùng màu sáng. */
+@media screen and (prefers-color-scheme: dark) {
   :root {
 ${dark.join('\n')}
   }
