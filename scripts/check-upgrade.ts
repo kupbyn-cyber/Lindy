@@ -179,12 +179,13 @@ try {
     if (a.status !== 'completed' || (ov.revenue?.net ?? 0) - net0 !== 70000)
       throw new Error('Luồng chính sai kết quả.')
 
-    // Cọc Tết (0012): mùa cọc → lịch 2 khách → ghi, xác nhận cọc 200.000đ → đơn 500.000đ → Làm xong trừ cọc
+    // Cọc Tết (0012): mùa cọc → lịch 1 khách → ghi, xác nhận cọc 200.000đ → đơn 500.000đ → Làm xong trừ cọc.
+    // Lịch nhiều khách chia đều cọc cho từng đơn (S07): thử ở tests/acceptance/coc-tet.test.ts
     await saveSeason(auth, {
       name: 'Tết thử nâng cấp',
       startDate: addDays(today, -1),
       endDate: addDays(today, 5),
-      amountPerGuest: 100000,
+      amountPerGuest: 200000,
       refundNoticeHours: 12,
       forfeitOwnerUserId: linh!.id,
       isActive: true,
@@ -195,7 +196,7 @@ try {
       date: today,
       startTime: '15:00',
       endTime: '16:00',
-      guestCount: 2,
+      guestCount: 1,
       serviceSummary: null,
       notes: null,
       createRequestId: crypto.randomUUID(),

@@ -101,7 +101,9 @@ beforeAll(async () => {
     values (${org!.id}, 'CS6', 'Zz cơ sở thử lương', 'CS6') returning id`
   cs6 = b!.id
   await owner`insert into branch_booking_settings (branch_id) values (${cs6})`
-  await owner`insert into payroll_settings (branch_id, start_month) values (${cs6}, ${`${M}-01`}::date)`
+  // Ngày nháp = ngày 1: tháng trước (M1) khoá được mọi ngày trong tháng, kể cả mùng 1–4 khi ngày nháp 05 chưa tới
+  await owner`
+    insert into payroll_settings (branch_id, start_month, draft_day) values (${cs6}, ${`${M}-01`}::date, 1)`
   await owner`
     insert into kpi_policy_versions (branch_id, effective_month, tier1_min, tier1_bps, tier2_min, tier2_bps)
     values (${cs6}, '2026-01-01', 85000000, 100, 102000000, 150)`
