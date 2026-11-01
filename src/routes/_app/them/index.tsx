@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Button, ConfirmDialog, Icon, StatusChip } from '~/components/ui'
+import { ConfirmDialog, Icon, ScreenHeader, StatusChip } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useBranch, useCan, useMe } from '~/lib/me'
 import { disableThisDevice } from '~/lib/push-client'
@@ -73,17 +73,14 @@ function MorePage() {
     window.location.assign('/dang-nhap')
   }
 
-  const approvesExpense = can('expense.approve_within_limit') || can('expense.approve_above_limit')
   const readsAllPay = can('payroll.read_all_branch')
 
   return (
     <section className="pb-4">
-      <div className="px-4 pt-2">
-        <h1 className="screen-title m-0">Thêm</h1>
-        <p className="body m-0 text-ink-muted">
-          {[me.displayName, branch?.roleName, branch?.shortLabel].filter(Boolean).join(' · ')}
-        </p>
-      </div>
+      <ScreenHeader title="Thêm" />
+      <p className="body m-0 px-4 text-ink-muted">
+        {[me.displayName, branch?.roleName, branch?.shortLabel].filter(Boolean).join(' · ')}
+      </p>
 
       <Group
         title="Hằng ngày"
@@ -91,28 +88,24 @@ function MorePage() {
           {
             to: '/them/chot-ngay',
             label: 'Chốt quỹ',
-            hint: 'Đếm tiền mặt cuối ngày',
             show: can('cashbook.manage'),
             badge: a?.closeOverdue ? `Chưa chốt ${formatIsoDate(a.closeOverdue).slice(0, 5)}` : null,
           },
           {
             to: '/them/thu-chi',
             label: 'Thu chi',
-            hint: approvesExpense ? 'Đề nghị, duyệt, chi' : 'Đề nghị chi',
             show: can('expense.request'),
             badge: a ? sum(a.expensesToApprove, a.expensesToPay) : null,
           },
           {
             to: '/lich/cham-cong',
             label: 'Chấm công',
-            hint: can('attendance.approve') ? 'Duyệt công, nghỉ, bảng công' : 'Vào ca, ra ca, đăng ký nghỉ',
             show: can('attendance.own') || can('attendance.approve'),
             badge: a ? sum(a.pendingDays, a.leavesPending) : null,
           },
           {
             to: '/them/can-xem-lai',
             label: 'Cần xem lại',
-            hint: 'Việc người khác tự duyệt',
             show: can('review_queue.read'),
             badge: a?.reviewTotal || null,
           },
@@ -225,15 +218,15 @@ function MorePage() {
       <Group
         title="Cá nhân"
         items={[
-          { to: '/them/thong-bao', label: 'Thông báo', hint: 'Bật trên máy này, chọn nhóm', show: true },
+          { to: '/them/thong-bao', label: 'Thông báo', show: true },
           { to: '/them/doi-mat-khau', label: 'Đổi mật khẩu', show: true },
         ]}
       />
 
-      <div className="px-4 pt-6">
-        <Button block variant="danger" onClick={() => setConfirm(true)}>
+      <div className="flex justify-center px-4 pt-4">
+        <button type="button" className="label lo-tap-text text-danger" onClick={() => setConfirm(true)}>
           Đăng xuất
-        </Button>
+        </button>
       </div>
       <ConfirmDialog
         open={confirm}
@@ -243,9 +236,7 @@ function MorePage() {
         busy={busy}
         onConfirm={() => void logout()}
         onCancel={() => setConfirm(false)}
-      >
-        <p className="body m-0 text-ink-muted">Máy này sẽ ngừng nhận thông báo cho đến khi đăng nhập lại.</p>
-      </ConfirmDialog>
+      ></ConfirmDialog>
     </section>
   )
 }

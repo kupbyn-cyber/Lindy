@@ -4,7 +4,18 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Phone } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
-import { Button, cx, Icon, Money, Note, Sheet, StatusChip, TextField, useToast } from '~/components/ui'
+import {
+  Button,
+  cx,
+  Icon,
+  Money,
+  Note,
+  ScreenHeader,
+  Sheet,
+  StatusChip,
+  TextField,
+  useToast,
+} from '~/components/ui'
 import { ApiError, api, errorText } from '~/lib/api'
 import { TICKETS_ENABLED } from '~/lib/features'
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, type OrderStatus } from '~/lib/orders'
@@ -55,15 +66,12 @@ function CustomerPage() {
   const c = q.data
 
   return (
-    <section className="flex flex-col gap-3 pt-1">
+    <section className="flex flex-col gap-3">
+      <ScreenHeader title={c.name} back={{ to: '/khach', label: 'Về danh sách khách' }} />
       <div className="px-4">
-        <Link to="/khach" className="label text-accent">
-          ← Khách
-        </Link>
-        <h1 className="screen-title mt-1 mb-1 break-words">{c.name}</h1>
         <div className="flex items-center justify-between gap-2">
           {c.phone ? (
-            <a href={`tel:${c.phone}`} className="lo-btn lo-btn-secondary button-label min-h-[36px]!">
+            <a href={`tel:${c.phone}`} className="lo-btn lo-btn-secondary button-label">
               <Phone size={16} strokeWidth={1.7} aria-hidden="true" /> {c.phone}
             </a>
           ) : (
@@ -79,7 +87,7 @@ function CustomerPage() {
 
       {c.canEdit && nameLooksMessy(c.name) ? (
         <div className="px-4">
-          <Note tone="warning">Tên đang lẫn SĐT, giờ hoặc dịch vụ. Bấm Sửa để chỉ giữ tên khách.</Note>
+          <Note tone="warning">Tên đang lẫn SĐT hoặc giờ. Bấm Sửa để chỉ giữ tên.</Note>
         </div>
       ) : null}
 
@@ -283,7 +291,7 @@ function EditSheet(props: { open: boolean; customer: Customer; onClose: () => vo
         }}
       />
       <TextField
-        label="SĐT (không bắt buộc)"
+        label="SĐT"
         type="tel"
         inputMode="tel"
         value={phone}
@@ -291,7 +299,6 @@ function EditSheet(props: { open: boolean; customer: Customer; onClose: () => vo
         error={phone && !check.ok ? check.error : undefined}
         onChange={(e) => setPhone(e.target.value)}
       />
-      <Note>CRM chỉ lưu tên, SĐT và lịch sử đơn. Hai khách dùng chung SĐT vẫn lưu được.</Note>
       {error ? <Note tone="danger">{error}</Note> : null}
     </Sheet>
   )

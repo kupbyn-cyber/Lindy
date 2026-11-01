@@ -72,7 +72,7 @@ function CustomersPage() {
           <h1 className="screen-title m-0">Khách</h1>
           {list.data ? (
             <span className="caption text-ink-muted">
-              {qd ? `${items.length} kết quả` : `${items.length} khách có đơn gần đây`}
+              {qd ? `${items.length} kết quả` : `${items.length} khách`}
             </span>
           ) : null}
         </div>
@@ -103,11 +103,7 @@ function CustomersPage() {
       {list.isLoading ? <p className="body m-0 px-4 py-2 text-ink-muted">Đang tải…</p> : null}
       {!list.isLoading && items.length === 0 ? (
         <p className="body m-0 px-4 py-3 text-ink-muted">
-          {qd.length === 1
-            ? 'Gõ ít nhất 2 ký tự.'
-            : qd
-              ? 'Không thấy khách nào.'
-              : 'Chưa có khách nào có đơn.'}
+          {qd.length === 1 ? '' : qd ? 'Không thấy khách nào.' : 'Chưa có khách nào có đơn.'}
         </p>
       ) : null}
       {groups.map((g, gi) => (

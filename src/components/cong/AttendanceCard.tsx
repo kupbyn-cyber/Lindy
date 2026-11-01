@@ -31,7 +31,7 @@ export function AttendanceCard() {
       <section className="lo-card flex flex-col gap-2">
         <span className="overline text-ink-muted">Chấm công hôm nay</span>
         <Note tone="warning">
-          Chưa có hồ sơ nhân viên nên chưa vào ca, đăng ký nghỉ được. Báo Linh nhập ở Thêm → Nhân viên.
+          Chưa có hồ sơ nhân viên, chưa vào ca được. Báo Linh nhập ở Thêm → Nhân viên.
         </Note>
       </section>
     )
@@ -60,7 +60,7 @@ export function AttendanceCard() {
     <section className="lo-card flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <span className="overline text-ink-muted">Chấm công hôm nay</span>
-        <Link to="/lich/cham-cong" className="label text-accent">
+        <Link to="/lich/cham-cong" className="label lo-link">
           Chấm công
         </Link>
       </div>

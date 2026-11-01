@@ -8,7 +8,7 @@ import { type CSSProperties, type ReactNode, useState } from 'react'
 import { AttendanceCard } from '~/components/cong/AttendanceCard'
 import { AttentionPanel, useAttention } from '~/components/lich/AttentionPanel'
 import { TodaySummary } from '~/components/lich/TodaySummary'
-import { cx, Icon, Money, SegmentedControl } from '~/components/ui'
+import { cx, Icon, Money, ScreenHeader, SegmentedControl } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useCan, useMe } from '~/lib/me'
 import { formatVND } from '~/lib/money'
@@ -39,9 +39,9 @@ function Overview() {
   const month = d ? d.to.slice(5, 7) : ''
 
   return (
-    <section className="flex flex-col gap-4 px-4 pt-2">
+    <section className="flex flex-col gap-3 px-4">
       <div>
-        <h1 className="screen-title m-0">Tổng quan</h1>
+        <ScreenHeader className="-mx-4" title="Tổng quan" />
         <p className="body m-0 text-ink-muted">
           {d ? `${weekdayLong(d.to)} ${formatIsoDate(d.to)} · ` : ''}Chào {me.displayName}.
         </p>
@@ -60,10 +60,19 @@ function Overview() {
       ) : null}
 
       {q.isError ? (
-        <p className="body m-0 text-danger">Không tải được số liệu. Kéo xuống để thử lại.</p>
+        <p className="body m-0 text-danger">
+          Không tải được số liệu.{' '}
+          <button type="button" className="lo-link" onClick={() => void q.refetch()}>
+            Thử lại
+          </button>
+        </p>
       ) : null}
 
-      {d && h ? <Tiles h={h} money={d.money} myPay={d.myPay} month={month} /> : <TilesSkeleton />}
+      {d && h ? (
+        <Tiles h={h} money={d.money} myPay={d.myPay} month={month} closeOverdue={d.attention.closeOverdue} />
+      ) : (
+        <TilesSkeleton />
+      )}
 
       <AttendanceCard />
 
@@ -155,6 +164,16 @@ function FitMoney(props: { value: number; max: number; tone?: 'negative' }) {
   )
 }
 
+/** Số phụ trong thẻ hôm nay: nhãn trên, số dưới */
+function Stat(props: { label: string; children: ReactNode }) {
+  return (
+    <div className="@container flex min-w-0 flex-col">
+      <span className="caption text-ink-muted">{props.label}</span>
+      {props.children}
+    </div>
+  )
+}
+
 /** Số đếm chữ to, cùng cỡ với số tiền lớn */
 function Count(props: { value: number; unit: string }) {
   return (
@@ -165,9 +184,15 @@ function Count(props: { value: number; unit: string }) {
   )
 }
 
-function Tiles(props: { h: HomeBlock; money: Data['money']; myPay: Data['myPay']; month: string }) {
+function Tiles(props: {
+  h: HomeBlock
+  money: Data['money']
+  myPay: Data['myPay']
+  month: string
+  closeOverdue: string | null | undefined
+}) {
   const { h, money, myPay, month } = props
-  const openNote = h.today.open ? `+ ${h.today.open} đơn đang làm, chờ xác nhận` : 'Tính đơn đã xác nhận'
+  const openNote = h.today.open ? `+ ${h.today.open} đơn chưa xác nhận` : undefined
   if (h.scope === 'mine') {
     return (
       <div className="grid grid-cols-2 gap-3">
@@ -195,37 +220,53 @@ function Tiles(props: { h: HomeBlock; money: Data['money']; myPay: Data['myPay']
   }
   return (
     <div className="grid grid-cols-2 gap-3">
-      <Tile label="Doanh thu hôm nay" wide sub={openNote}>
+      {/* Một số lớn nhất màn, các số còn lại nhỏ hơn: nhìn một cái thấy thứ bậc */}
+      <Tile label="Doanh thu hôm nay" wide sub={openNote} to="/don-hang">
         <FitMoney value={h.today.net} max={30} />
-      </Tile>
-      <Tile label="Số khách hôm nay" sub={h.today.open ? `+ ${h.today.open} chưa xác nhận` : undefined}>
-        <Count value={h.today.guests} unit="khách" />
-      </Tile>
-      <Tile label={`Doanh thu tháng ${month}`} sub={`${h.month.guests} khách`}>
-        <FitMoney value={h.month.net} max={24} />
-      </Tile>
-      <Tile label="Hôm nay đã thu" to="/don-hang">
-        <FitMoney value={h.today.paid ?? 0} max={24} />
-      </Tile>
-      <Tile label="Khách còn nợ" to="/don-hang">
-        <FitMoney value={h.today.due ?? 0} max={24} tone={(h.today.due ?? 0) > 0 ? 'negative' : undefined} />
+        <div className="mt-1 grid grid-cols-3 gap-2 border-t border-line pt-2">
+          <Stat label="Số khách">
+            <span className="heading">{h.today.guests}</span>
+          </Stat>
+          <Stat label="Đã thu">
+            <FitMoney value={h.today.paid ?? 0} max={17} />
+          </Stat>
+          <Stat label="Còn nợ">
+            <FitMoney
+              value={h.today.due ?? 0}
+              max={17}
+              tone={(h.today.due ?? 0) > 0 ? 'negative' : undefined}
+            />
+          </Stat>
+        </div>
       </Tile>
       {money ? (
         money.some((m) => m.balance == null) ? (
           <Tile label="Tiền trong quỹ" wide to="/them/so-tien">
-            <span className="body text-ink-muted">Chưa mở sổ. Linh mở sổ ở Thêm → Sổ tiền.</span>
+            <span className="body text-ink-muted">Chưa mở sổ.</span>
           </Tile>
         ) : (
           money.map((m) => (
             <Tile key={m.id} label={m.name} to="/them/so-tien">
               <FitMoney
                 value={m.balance ?? 0}
-                max={24}
+                max={20}
                 tone={(m.balance ?? 0) < 0 ? 'negative' : undefined}
               />
             </Tile>
           ))
         )
+      ) : null}
+      <Tile label={`Doanh thu tháng ${month}`} wide sub={`${h.month.guests} khách`}>
+        <FitMoney value={h.month.net} max={20} />
+      </Tile>
+      {money && props.closeOverdue ? (
+        <Link
+          to="/them/chot-ngay"
+          className="lo-card col-span-2 flex items-center justify-between gap-2 no-underline"
+        >
+          <span className="body">Chưa chốt quỹ ngày {formatIsoDate(props.closeOverdue)}</span>
+          <span className="label lo-link">Chốt quỹ</span>
+        </Link>
       ) : null}
     </div>
   )
@@ -276,7 +317,15 @@ function RevenueChart(props: { series: HomeBlock['series']; mine: boolean }) {
         <span className="caption absolute top-0 right-0 -translate-y-full text-ink-muted">
           {formatVND(max)}
         </span>
-        <fieldset className="absolute inset-0 m-0 flex min-w-0 items-end gap-[2px] border-0 p-0">
+        {/* Cột nhỏ ~10px: vuốt ngang trên biểu đồ để chọn ngày, chạm từng cột khó trúng */}
+        <fieldset
+          className="absolute inset-0 m-0 flex min-w-0 touch-pan-y items-end gap-[2px] border-0 p-0"
+          onPointerMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect()
+            const i = Math.floor(((e.clientX - r.left) / r.width) * series.length)
+            setSel(Math.max(0, Math.min(series.length - 1, i)))
+          }}
+        >
           <legend className="sr-only">Doanh thu từng ngày</legend>
           {series.map((s, i) => (
             <button
@@ -286,7 +335,6 @@ function RevenueChart(props: { series: HomeBlock['series']; mine: boolean }) {
               aria-label={`${formatIsoDate(s.date)}: ${formatVND(s.net)}`}
               aria-pressed={i === idx}
               onClick={() => setSel(i)}
-              onMouseEnter={() => setSel(i)}
             >
               <span
                 className={cx(
@@ -428,9 +476,7 @@ function AttentionCard(props: { d: Data; canManageBooking: boolean }) {
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="body-strong">Cần xử lý</span>
-          <span className="caption text-ink-muted">
-            {total} việc · bấm để {open ? 'thu gọn' : 'xem'}
-          </span>
+          <span className="caption text-ink-muted">{total} việc</span>
         </span>
         <Icon name="chevron-right" size={20} className={cx('transition-transform', open && 'rotate-90')} />
       </button>
@@ -439,7 +485,7 @@ function AttentionCard(props: { d: Data; canManageBooking: boolean }) {
           {links.map((l) => (
             <Link key={l.key} to={l.to} search={l.search as never} className="lo-row lo-row-action">
               <span className="body">{l.text}</span>
-              <span className="label text-accent">Xem</span>
+              <span className="label lo-link">Xem</span>
             </Link>
           ))}
           {apptCount ? (
