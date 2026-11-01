@@ -10,8 +10,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { title: 'LINDY OS' },
-      { name: 'theme-color', content: '#fbf8f3', media: '(prefers-color-scheme: light)' },
-      { name: 'theme-color', content: '#161214', media: '(prefers-color-scheme: dark)' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
       { name: 'mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-title', content: 'LINDY OS' },
@@ -52,6 +50,9 @@ function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="vi">
       <head>
+        {/* Viết tay, không để trong head.meta: TanStack lọc trùng theo name nên chỉ giữ một thẻ, mất màu sáng */}
+        <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)" />
         <HeadContent />
       </head>
       <body>
