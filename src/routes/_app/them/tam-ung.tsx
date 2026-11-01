@@ -2,7 +2,7 @@
 // mình; tổng trong tháng không quá lương cứng; chỉ Linh duyệt; Nhung, Linh bấm "Đã chi". Tạm ứng không phải chi phí,
 // trừ vào lương. Nút hiện theo quyền; server và DB kiểm lại.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import {
   Button,
@@ -10,6 +10,7 @@ import {
   Money,
   MoneyInput,
   Note,
+  ScreenHeader,
   SegmentedControl,
   Sheet,
   StatusChip,
@@ -54,20 +55,20 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-1 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="screen-title m-0">Tạm ứng</h1>
-          {d?.can.request ? (
-            <Button variant="primary" onClick={() => setCreating(true)}>
-              + Đề nghị tạm ứng
-            </Button>
-          ) : null}
-        </div>
+        <ScreenHeader
+          className="-mx-4"
+          title="Tạm ứng"
+          back={{ to: '/them', label: 'Về Thêm' }}
+          actions={
+            d?.can.request ? (
+              <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
+                Đề nghị
+              </Button>
+            ) : null
+          }
+        />
         <p className="caption m-0 text-ink-muted">
-          Tổng tạm ứng trong tháng tối đa bằng lương cứng. Chỉ Linh duyệt; tạm ứng trừ vào lương, không phải
-          chi phí.
+          Tối đa bằng lương cứng mỗi tháng. Chỉ Linh duyệt; trừ vào lương.
         </p>
       </div>
       {d?.limit ? (
@@ -349,9 +350,7 @@ function DetailSheet(props: { a: AdvanceView; onClose: () => void }) {
         ) : null}
         {act === 'reject' || act === 'cancel' ? (
           <TextArea
-            label={
-              act === 'reject' || a.status === 'approved' ? 'Lý do (bắt buộc)' : 'Lý do (không bắt buộc)'
-            }
+            label={act === 'reject' || a.status === 'approved' ? 'Lý do (bắt buộc)' : 'Lý do'}
             value={note}
             maxLength={300}
             onChange={(ev) => setNote(ev.target.value)}

@@ -11,6 +11,7 @@ import {
   Money,
   MoneyInput,
   Note,
+  ScreenHeader,
   SegmentedControl,
   Sheet,
   TextArea,
@@ -52,10 +53,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-1 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Sổ tiền</h1>
+        <ScreenHeader className="-mx-4" title="Sổ tiền" back={{ to: '/them', label: 'Về Thêm' }} />
       </div>
       {book.isLoading ? <p className="body px-4 text-ink-muted">Đang tải…</p> : null}
       {book.isError ? (
@@ -109,8 +107,7 @@ function Balances(props: { b: Book }) {
       <Line label="Cộng" value={total} />
       <p className="caption m-0 border-t border-line pt-1 text-ink-muted">
         Mở sổ ngày {formatIsoDate(b.book!.openingDate)}
-        {b.book!.openedByName ? ` · ${b.book!.openedByName}` : ''}. Số dư = số mở sổ + tiền vào − tiền ra từ
-        ngày mở sổ.
+        {b.book!.openedByName ? ` · ${b.book!.openedByName}` : ''}.
       </p>
     </Card>
   )
@@ -219,9 +216,6 @@ function BankCard(props: { b: Book }) {
             {bankName(acc.bankBin)} · {acc.bankAccountNo}
           </span>
           <span className="body text-ink-muted">{acc.bankAccountName}</span>
-          <p className="caption m-0 text-ink-muted">
-            Hộp ghi tiền thu của đơn hiện QR có sẵn số tiền, nội dung LINDY + mã đơn, tiền vào tài khoản này.
-          </p>
         </>
       ) : (
         <p className="body m-0 text-ink-muted">
@@ -501,11 +495,11 @@ function EntryRow(props: { i: Entries['items'][number]; showAccount: boolean; ca
       <span className="lo-row-main">
         <span className="body lo-row-title">
           {i.order ? (
-            <Link to="/don-hang/$id" params={{ id: i.order.id }} className="text-accent">
+            <Link to="/don-hang/$id" params={{ id: i.order.id }} className="lo-link">
               {label} #{String(i.order.code).padStart(4, '0')}
             </Link>
           ) : i.appointment ? (
-            <Link to="/lich/$id" params={{ id: i.appointment.id }} className="text-accent">
+            <Link to="/lich/$id" params={{ id: i.appointment.id }} className="lo-link">
               {label} · {i.appointment.name}
             </Link>
           ) : (
@@ -635,7 +629,7 @@ function TransferSheet(props: { b: Book; onClose: () => void }) {
       />
       <MoneyInput label="Số tiền" value={amount} onValueChange={setAmount} />
       <TextField
-        label="Ghi chú (không bắt buộc)"
+        label="Ghi chú"
         value={note}
         maxLength={300}
         placeholder="Nộp tiền mặt vào tài khoản…"

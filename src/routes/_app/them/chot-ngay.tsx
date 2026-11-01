@@ -2,7 +2,7 @@
 // Nhung chốt, ngày Nhung nghỉ Linh chốt; hôm nay chốt từ giờ đóng cửa, hôm trước quên thì chốt bù. Nhập tiền mặt đếm
 // được; lệch thì ghi lý do, app ghi bút toán chênh lệch để số dư bằng tiền thật trong két, Linh xem lại.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { type ReactNode, useState } from 'react'
 import {
   Button,
@@ -10,6 +10,7 @@ import {
   Money,
   MoneyInput,
   Note,
+  ScreenHeader,
   StatusChip,
   TextArea,
   TextField,
@@ -54,10 +55,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-1 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Chốt quỹ tiền mặt</h1>
+        <ScreenHeader className="-mx-4" title="Chốt quỹ tiền mặt" back={{ to: '/them', label: 'Về Thêm' }} />
       </div>
       {q.isLoading ? <p className="body px-4 text-ink-muted">Đang tải…</p> : null}
       {q.isError ? (
@@ -183,7 +181,7 @@ function CloseForm(props: { d: Data; onDone: () => void }) {
               {w.count} {w.text}
             </span>
           ))}
-          <p className="caption m-0 text-ink-muted">Vẫn chốt được; xử lý tiếp vào hôm sau.</p>
+          <p className="caption m-0 text-ink-muted">Vẫn chốt được.</p>
         </Card>
       ) : null}
 
@@ -197,8 +195,7 @@ function CloseForm(props: { d: Data; onDone: () => void }) {
                 <Note>Khớp số lý thuyết.</Note>
               ) : (
                 <Note tone="warning">
-                  {diff > 0 ? 'Thừa' : 'Thiếu'} {formatVND(Math.abs(diff))}. Ghi lý do; app ghi khoản chênh
-                  lệch để số dư bằng tiền thật trong két, Linh xem lại.
+                  {diff > 0 ? 'Thừa' : 'Thiếu'} {formatVND(Math.abs(diff))}. Ghi lý do, Linh xem lại.
                 </Note>
               )
             ) : null}
@@ -211,19 +208,23 @@ function CloseForm(props: { d: Data; onDone: () => void }) {
               />
             ) : null}
             {error ? <Note tone="danger">{error}</Note> : null}
-            <Button
-              variant="primary"
-              block
-              disabled={counted == null || d.tooEarly || (!!diff && !reason.trim())}
-              onClick={() => setConfirm(true)}
-            >
-              Chốt quỹ ngày {formatIsoDate(d.date)}
-            </Button>
           </>
         ) : (
           <Note>Chỉ Nhung, Linh chốt quỹ.</Note>
         )}
       </div>
+      {d.can.close ? (
+        <div className="lo-actionbar">
+          <Button
+            variant="primary"
+            block
+            disabled={counted == null || d.tooEarly || (!!diff && !reason.trim())}
+            onClick={() => setConfirm(true)}
+          >
+            Chốt quỹ ngày {formatIsoDate(d.date)}
+          </Button>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={confirm}
@@ -310,9 +311,7 @@ function TipsCard() {
         busy={busy}
         onConfirm={() => void run()}
         onCancel={() => setPay(null)}
-      >
-        <p className="body m-0 text-ink-muted">App ghi khoản chi tip từ tiền mặt.</p>
-      </ConfirmDialog>
+      ></ConfirmDialog>
     </Card>
   )
 }

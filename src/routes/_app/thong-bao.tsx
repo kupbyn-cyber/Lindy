@@ -1,7 +1,7 @@
 // UI17 — Trung tâm thông báo.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { Button, cx } from '~/components/ui'
+import { Button, cx, ScreenHeader } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { formatDateTimeShort } from '~/lib/time'
 import type { NotificationItem } from '~/server/notifications/center'
@@ -36,19 +36,22 @@ function NotificationsPage() {
 
   return (
     <section>
-      <div className="flex items-center justify-between px-4 pt-2 pb-3">
-        <h1 className="screen-title m-0">Thông báo</h1>
-        {unread ? (
-          <Button
-            variant="quiet"
-            loading={markAll.isPending}
-            loadingText="Đang đánh dấu…"
-            onClick={() => markAll.mutate()}
-          >
-            Đã đọc hết
-          </Button>
-        ) : null}
-      </div>
+      <ScreenHeader
+        className="pb-2"
+        title="Thông báo"
+        actions={
+          unread ? (
+            <Button
+              variant="quiet"
+              loading={markAll.isPending}
+              loadingText="Đang đánh dấu…"
+              onClick={() => markAll.mutate()}
+            >
+              Đã đọc hết
+            </Button>
+          ) : null
+        }
+      />
       {list.isError ? <p className="body px-4 text-danger">{errorText(list.error)}</p> : null}
       {list.isLoading ? <p className="body px-4 text-ink-muted">Đang tải…</p> : null}
       {!list.isLoading && items.length === 0 ? (
@@ -75,7 +78,7 @@ function NotificationsPage() {
       </div>
       <p className="caption px-4 pt-4 text-ink-muted">
         Bật nhận thông báo trên máy này ở{' '}
-        <Link to="/them/thong-bao" className="text-accent">
+        <Link to="/them/thong-bao" className="lo-link">
           Thêm → Thông báo
         </Link>
         .

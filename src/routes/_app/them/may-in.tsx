@@ -1,12 +1,13 @@
 // Máy in bill (Đợt 7, S36–S38) — Linh: thông tin in trên bill, khổ giấy; trạm in (MacBook ở quán) dùng mã kết nối để
 // lấy lệnh in; tạo / thu hồi mã, xem trạm in còn kết nối không; in thử.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { type ReactNode, useState } from 'react'
 import {
   Button,
   ConfirmDialog,
   Note,
+  ScreenHeader,
   SegmentedControl,
   Sheet,
   StatusChip,
@@ -47,10 +48,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-4 pt-1">
       <div className="flex flex-col gap-1 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Máy in bill</h1>
+        <ScreenHeader className="-mx-4" title="Máy in bill" back={{ to: '/them', label: 'Về Thêm' }} />
         <p className="body m-0 text-ink-muted">
           Nhân viên bấm In bill trên điện thoại; MacBook trạm in ở quầy lấy bill từ app và in ra máy in của
           quán.

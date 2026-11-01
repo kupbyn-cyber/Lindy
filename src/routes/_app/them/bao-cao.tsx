@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { Button, Money, Note, SegmentedControl, TextField } from '~/components/ui'
+import { Button, Money, Note, ScreenHeader, SegmentedControl, TextField } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { formatDateTimeShort, formatIsoDate, toLocalDate } from '~/lib/time'
@@ -50,26 +50,27 @@ function ReportPage() {
   return (
     <section className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-2 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="screen-title m-0">Báo cáo doanh thu</h1>
-          <div className="no-print flex gap-1">
-            {can('data.export') ? (
-              <Link
-                to="/them/xuat-du-lieu"
-                search={{ m: kind === 'month' ? month : date.slice(0, 7) }}
-                className="lo-btn lo-btn-quiet button-label no-underline"
-              >
-                Tải file
-              </Link>
-            ) : null}
-            <Button variant="quiet" onClick={() => window.print()}>
-              In / PDF
-            </Button>
-          </div>
-        </div>
+        <ScreenHeader
+          className="-mx-4"
+          title="Báo cáo doanh thu"
+          back={{ to: '/them', label: 'Về Thêm' }}
+          actions={
+            <div className="no-print flex gap-1">
+              {can('data.export') ? (
+                <Link
+                  to="/them/xuat-du-lieu"
+                  search={{ m: kind === 'month' ? month : date.slice(0, 7) }}
+                  className="lo-btn lo-btn-quiet button-label"
+                >
+                  Tải
+                </Link>
+              ) : null}
+              <Button variant="quiet" onClick={() => window.print()}>
+                In
+              </Button>
+            </div>
+          }
+        />
         <div className="no-print grid grid-cols-[1fr_1fr] gap-2">
           <SegmentedControl
             ariaLabel="Loại báo cáo"

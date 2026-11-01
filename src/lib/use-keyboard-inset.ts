@@ -17,8 +17,7 @@ export function useKeyboardInset() {
     // Rời ô nhập: trả về 0 ngay, một số bản iOS không báo resize khi bàn phím đóng
     const blur = () => {
       setTimeout(() => {
-        const el = document.activeElement
-        if (!el || !el.matches('input, textarea, select')) write(0)
+        if (!document.activeElement?.matches('input, textarea, select')) write(0)
       }, 100)
     }
     vv.addEventListener('resize', measure)

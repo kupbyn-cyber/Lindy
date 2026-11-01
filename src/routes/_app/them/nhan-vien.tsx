@@ -2,13 +2,14 @@
 // ngày nghỉ việc, cách nhận lương; chính sách lương theo tháng (chỉ từ ngày 1, không lùi vào tháng đã khoá); mốc thưởng
 // KPI quản lý; tháng bắt đầu tính lương trên app. Nhung (payroll.read_all_branch) chỉ xem. Server và DB kiểm lại.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   Button,
   Money,
   MoneyInput,
   Note,
+  ScreenHeader,
   SegmentedControl,
   Sheet,
   StatusChip,
@@ -62,10 +63,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 px-4 pt-1 pb-4">
       <div className="flex flex-col gap-1">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Nhân viên</h1>
+        <ScreenHeader className="-mx-4" title="Nhân viên" back={{ to: '/them', label: 'Về Thêm' }} />
         <p className="caption m-0 text-ink-muted">
           Đổi lương cứng, % hoa hồng chỉ có hiệu lực từ ngày 1 của tháng; không đổi tháng đã khoá bảng lương.
         </p>
@@ -390,7 +388,7 @@ function PersonSheet(props: {
               onChange={(v) => setKpi(v === 'yes')}
             />
             <TextField
-              label="Ghi chú (không bắt buộc)"
+              label="Ghi chú"
               value={reason}
               maxLength={300}
               onChange={(e) => setReason(e.target.value)}

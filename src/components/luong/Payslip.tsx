@@ -249,7 +249,7 @@ function Adjustments(props: { d: Slip; onDone: (s: Slip) => void }) {
         </div>
       ))}
       {d.can.adjust ? (
-        <div className="flex flex-col gap-2">
+        <div className="no-print flex flex-col gap-2">
           <SegmentedControl
             ariaLabel="Loại điều chỉnh"
             options={[

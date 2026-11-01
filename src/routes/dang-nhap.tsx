@@ -1,6 +1,6 @@
 // UI01 — Đăng nhập. Chỉ có chữ, không ảnh (design README).
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Button, Note, TextField } from '~/components/ui'
 import { ApiError, api } from '~/lib/api'
 import { getMeFn } from '~/server/me'
@@ -20,6 +20,12 @@ function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Mở bàn phím số vì đa số đăng nhập bằng SĐT; bàn phím số không gõ được email nên có lối đổi (S50)
+  const [useEmail, setUseEmail] = useState(false)
+  const idRef = useRef<HTMLInputElement>(null)
+  // App ghim đã đăng nhập trong app thì không cần câu nhắc
+  const [standalone, setStandalone] = useState(true)
+  useEffect(() => setStandalone(window.matchMedia('(display-mode: standalone)').matches), [])
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -44,15 +50,26 @@ function LoginPage() {
       </div>
       <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
         <TextField
-          label="SĐT hoặc email"
+          ref={idRef}
+          label={useEmail ? 'Email' : 'SĐT'}
           name="username"
           autoComplete="username"
-          inputMode="email"
+          inputMode={useEmail ? 'email' : 'tel'}
           autoCapitalize="none"
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           required
         />
+        <button
+          type="button"
+          className="caption lo-tap-text lo-link -mt-2 self-start"
+          onClick={() => {
+            setUseEmail((x) => !x)
+            setTimeout(() => idRef.current?.focus())
+          }}
+        >
+          {useEmail ? 'Dùng SĐT' : 'Dùng email'}
+        </button>
         <TextField
           label="Mật khẩu"
           name="password"
@@ -67,9 +84,9 @@ function LoginPage() {
           Đăng nhập
         </Button>
       </form>
-      <p className="caption text-ink-muted">
-        App đã ghim ra màn hình chính có phiên đăng nhập riêng, cần đăng nhập lại một lần trong app.
-      </p>
+      {standalone ? null : (
+        <p className="caption text-ink-muted">App đã ghim ra màn hình chính cần đăng nhập lại một lần.</p>
+      )}
     </main>
   )
 }

@@ -1,7 +1,7 @@
 // Xuất dữ liệu (Đợt 5A, bước 5.5–5.6; PRD §11, §15, test 19; K25). Chỉ Linh (data.export): tải báo cáo tháng, đơn hàng,
 // sổ tiền, thu chi, bảng lương, khách hàng (CSV hoặc XLSX) và bản sao lưu dữ liệu. Mỗi lần tải có audit.
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { Note, TextField } from '~/components/ui'
+import { createFileRoute } from '@tanstack/react-router'
+import { Note, ScreenHeader, TextField } from '~/components/ui'
 import { useCan } from '~/lib/me'
 import { isYearMonth, toLocalDate } from '~/lib/time'
 
@@ -80,14 +80,8 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 px-4 pt-1 pb-4">
       <div className="flex flex-col gap-1">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Xuất dữ liệu</h1>
-        <p className="caption m-0 text-ink-muted">
-          File CSV, XLSX mở bằng Excel, Numbers, Google Sheets. Muốn PDF: mở Báo cáo hoặc phiếu lương → In /
-          PDF.
-        </p>
+        <ScreenHeader className="-mx-4" title="Xuất dữ liệu" back={{ to: '/them', label: 'Về Thêm' }} />
+        <p className="caption m-0 text-ink-muted">Mở bằng Excel, Numbers, Google Sheets.</p>
       </div>
       <TextField
         label="Tháng"

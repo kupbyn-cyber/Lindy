@@ -2,7 +2,7 @@
 // Mọi người đề nghị chi và xem phiếu của mình. Nhung duyệt đến 1.000.000đ/phiếu trừ 4 nhóm; trên mức hoặc 4 nhóm Linh
 // duyệt. "Đã chi" (Nhung, Linh) mới ghi tiền ra khỏi tài khoản. Nút hiện theo quyền; server và DB vẫn kiểm lại.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { Attachments } from '~/components/tien/Attachments'
 import {
@@ -11,6 +11,7 @@ import {
   Money,
   MoneyInput,
   Note,
+  ScreenHeader,
   SegmentedControl,
   Sheet,
   StatusChip,
@@ -60,19 +61,17 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-1 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="screen-title m-0">Thu chi</h1>
-          <Button variant="primary" onClick={() => setCreating(true)}>
-            + Đề nghị chi
-          </Button>
-        </div>
-        <p className="caption m-0 text-ink-muted">
-          Nhung duyệt đến {formatVND(LIMIT)}/phiếu. Trên mức đó, hoặc tiền nhà, lương thưởng, máy móc, sửa
-          chữa: Linh duyệt. Tiền chỉ ra khỏi quỹ khi bấm “Đã chi”.
-        </p>
+        <ScreenHeader
+          className="-mx-4"
+          title="Thu chi"
+          back={{ to: '/them', label: 'Về Thêm' }}
+          actions={
+            <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
+              Đề nghị
+            </Button>
+          }
+        />
+        <p className="caption m-0 text-ink-muted">Tiền chỉ ra khỏi quỹ khi bấm “Đã chi”.</p>
       </div>
       <div className="px-4">
         <SegmentedControl
@@ -346,9 +345,7 @@ function DetailSheet(props: { e: ExpenseView; onClose: () => void }) {
         ) : null}
         {act === 'reject' || act === 'cancel' ? (
           <TextArea
-            label={
-              act === 'reject' || e.status === 'approved' ? 'Lý do (bắt buộc)' : 'Lý do (không bắt buộc)'
-            }
+            label={act === 'reject' || e.status === 'approved' ? 'Lý do (bắt buộc)' : 'Lý do'}
             value={reason}
             maxLength={500}
             onChange={(ev) => setReason(ev.target.value)}

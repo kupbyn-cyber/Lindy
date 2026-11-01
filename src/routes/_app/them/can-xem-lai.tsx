@@ -4,7 +4,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Button, Money, Note, StatusChip, useToast } from '~/components/ui'
+import { Button, Money, Note, ScreenHeader, StatusChip, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { LABEL_TONE } from '~/lib/status-tone'
@@ -61,13 +61,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-1 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Cần xem lại</h1>
-        <p className="caption m-0 text-ink-muted">
-          Việc người khác tự làm có liên quan tiền hoặc phần của chính họ. Xem xong bấm “Đã xem”.
-        </p>
+        <ScreenHeader className="-mx-4" title="Cần xem lại" back={{ to: '/them', label: 'Về Thêm' }} />
       </div>
       {q.isLoading ? <p className="body px-4 text-ink-muted">Đang tải…</p> : null}
       {q.isError ? (
@@ -118,19 +112,19 @@ function Row(props: { i: ReviewItem }) {
       <div className="flex items-start justify-between gap-2">
         <span className="flex flex-wrap items-center gap-1">
           {i.link.to === 'order' && i.link.id ? (
-            <Link to="/don-hang/$id" params={{ id: i.link.id }} className="text-accent">
+            <Link to="/don-hang/$id" params={{ id: i.link.id }} className="lo-link">
               {title}
             </Link>
           ) : i.link.to === 'appointment' && i.link.id ? (
-            <Link to="/lich/$id" params={{ id: i.link.id }} className="text-accent">
+            <Link to="/lich/$id" params={{ id: i.link.id }} className="lo-link">
               {title}
             </Link>
           ) : i.link.to === 'expenses' ? (
-            <Link to="/them/thu-chi" className="text-accent">
+            <Link to="/them/thu-chi" className="lo-link">
               {title}
             </Link>
           ) : (
-            <Link to="/them/chot-ngay" className="text-accent">
+            <Link to="/them/chot-ngay" className="lo-link">
               {title}
             </Link>
           )}

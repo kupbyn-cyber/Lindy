@@ -1,11 +1,11 @@
 // Cài đặt lịch (bước 1.15): chỉ người có booking_settings.manage (Linh). Mùa cọc Tết (Đợt 3, bước 3.4). Ngày quán
 // đóng cửa (Đợt 4, bước 4.4).
 import { useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useState } from 'react'
 import { ClosedDays } from '~/components/lich/ClosedDays'
 import { DepositSeasons } from '~/components/lich/DepositSeasons'
-import { Button, Note, TextField, useToast } from '~/components/ui'
+import { Button, Note, ScreenHeader, TextField, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { type Settings, useBookingSettings } from '~/lib/appointments'
 import { useCan } from '~/lib/me'
@@ -58,10 +58,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-4 px-4 pt-2">
       <div className="flex flex-col gap-1">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Cài đặt lịch</h1>
+        <ScreenHeader className="-mx-4" title="Cài đặt lịch" back={{ to: '/them', label: 'Về Thêm' }} />
       </div>
       <form className="flex flex-col gap-3" onSubmit={submit}>
         <div className="grid grid-cols-2 gap-2">

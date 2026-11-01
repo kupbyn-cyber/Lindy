@@ -6,6 +6,7 @@ import {
   createContext,
   type InputHTMLAttributes,
   type ReactNode,
+  type Ref,
   type TextareaHTMLAttributes,
   useCallback,
   useContext,
@@ -227,7 +228,9 @@ export function StatusChip(props: { tone?: ChipTone; children: ReactNode; classN
 
 type FieldBase = { label: string; hint?: string; error?: string; className?: string }
 
-export function TextField(props: FieldBase & InputHTMLAttributes<HTMLInputElement>) {
+export function TextField(
+  props: FieldBase & InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> },
+) {
   const { label, hint, error, className, id, ...rest } = props
   const autoId = useId()
   const inputId = id ?? autoId

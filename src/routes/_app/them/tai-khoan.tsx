@@ -4,7 +4,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { type FormEvent, useState } from 'react'
-import { Button, ConfirmDialog, Note, Sheet, StatusChip, TextField, useToast } from '~/components/ui'
+import {
+  Button,
+  ConfirmDialog,
+  Note,
+  ScreenHeader,
+  Sheet,
+  StatusChip,
+  TextField,
+  useToast,
+} from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { LABEL_TONE } from '~/lib/status-tone'
@@ -131,13 +140,16 @@ function AccountsPage() {
   }
 
   return (
-    <section className="flex flex-col gap-3 pt-2">
-      <div className="flex items-center justify-between gap-2 px-4">
-        <h1 className="screen-title m-0">Tài khoản</h1>
-        <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
-          Thêm
-        </Button>
-      </div>
+    <section className="flex flex-col gap-3">
+      <ScreenHeader
+        title="Tài khoản"
+        back={{ to: '/them', label: 'Về Thêm' }}
+        actions={
+          <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
+            Thêm
+          </Button>
+        }
+      />
       {list.isError ? <p className="body px-4 text-danger">{errorText(list.error)}</p> : null}
       <div className="border-t border-line">
         {list.data?.items.map((u) => (

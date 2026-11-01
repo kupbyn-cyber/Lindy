@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Button, ConfirmDialog, Note, TextField, useToast } from '~/components/ui'
+import { Button, ConfirmDialog, Note, ScreenHeader, TextField, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useCan } from '~/lib/me'
 import { formatDateTimeShort } from '~/lib/time'
@@ -91,7 +91,7 @@ function DemoPage() {
 
   return (
     <section className="flex flex-col gap-3 px-4 pt-2">
-      <h1 className="screen-title m-0">Dữ liệu dùng thử</h1>
+      <ScreenHeader className="-mx-4" title="Dữ liệu dùng thử" back={{ to: '/them', label: 'Về Thêm' }} />
       {q.isError ? <Note tone="danger">{errorText(q.error)}</Note> : null}
       {s ? (
         <div className="lo-card flex flex-col gap-1">

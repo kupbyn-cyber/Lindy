@@ -279,7 +279,6 @@ function DecideSheet(props: {
       />
       <TextArea
         label={needNote ? 'Lý do (bắt buộc)' : 'Ghi chú (không bắt buộc)'}
-        hint="Bắt buộc khi bổ sung công không có giờ vào ca, hoặc đổi quyết định đã ghi."
         value={note}
         maxLength={300}
         onChange={(e) => setNote(e.target.value)}

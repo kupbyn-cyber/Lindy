@@ -5,7 +5,17 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { MonthNav } from '~/components/cong/parts'
 import { Payslip } from '~/components/luong/Payslip'
-import { Button, ConfirmDialog, Money, Note, Sheet, StatusChip, SummaryCard, useToast } from '~/components/ui'
+import {
+  Button,
+  ConfirmDialog,
+  Money,
+  Note,
+  ScreenHeader,
+  Sheet,
+  StatusChip,
+  SummaryCard,
+  useToast,
+} from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { useMe } from '~/lib/me'
 import { formatVND } from '~/lib/money'
@@ -70,10 +80,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 px-4 pt-1 pb-4">
       <div className="flex flex-col gap-1">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Lương</h1>
+        <ScreenHeader className="-mx-4" title="Lương" back={{ to: '/them', label: 'Về Thêm' }} />
       </div>
       <MonthNav month={month} onChange={(m) => void navigate({ search: { m }, replace: true })} />
       {q.isError ? <Note tone="danger">{errorText(q.error)}</Note> : null}
@@ -115,7 +122,7 @@ function Page() {
               {d.status !== 'locked' && d.pendingDays ? (
                 <Note tone="warning">
                   Còn {d.pendingDays} ngày công chưa duyệt (tạm coi là đi làm). Duyệt hết ở{' '}
-                  <Link to="/lich/cham-cong" search={{ tab: 'bang', m: month }} className="text-accent">
+                  <Link to="/lich/cham-cong" search={{ tab: 'bang', m: month }} className="lo-link">
                     Chấm công
                   </Link>{' '}
                   rồi mới khoá được.
@@ -131,7 +138,7 @@ function Page() {
                 <Note tone="warning">
                   Chưa có chính sách lương của {d.warnings.missingPolicy.join(', ')} (có hồ sơ trong tháng).
                   Nhập ở{' '}
-                  <Link to="/them/nhan-vien" className="text-accent">
+                  <Link to="/them/nhan-vien" className="lo-link">
                     Thêm → Nhân viên
                   </Link>{' '}
                   rồi mới khoá được.

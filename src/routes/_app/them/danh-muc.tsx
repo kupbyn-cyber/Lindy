@@ -1,7 +1,7 @@
 // UI14 — Cài đặt danh mục (Linh, bước 2.22; PRD §6.8, C09). Thêm, sửa, ngừng bán, xoá dịch vụ và combo; đổi giá có lịch sử.
 // Đổi giá không đổi đơn cũ (dòng đơn lưu tên, giá lúc bán). Xoá (S42): món biến mất khỏi menu và màn này, đơn cũ giữ nguyên.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import {
   Button,
@@ -10,6 +10,7 @@ import {
   Icon,
   MoneyInput,
   Note,
+  ScreenHeader,
   SegmentedControl,
   Sheet,
   StatusChip,
@@ -53,10 +54,7 @@ function CatalogPage() {
   return (
     <section className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-2 px-4">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Danh mục dịch vụ</h1>
+        <ScreenHeader className="-mx-4" title="Danh mục dịch vụ" back={{ to: '/them', label: 'Về Thêm' }} />
         <div className="grid grid-cols-2 gap-2">
           <Button icon="plus" onClick={() => setEditService('new')}>
             Dịch vụ

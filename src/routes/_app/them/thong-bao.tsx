@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { Button, Note, StatusChip, useToast } from '~/components/ui'
+import { Button, Note, ScreenHeader, StatusChip, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { disableThisDevice, enablePush, isIos, type PushSupport, pushSupport } from '~/lib/push-client'
 import { LABEL_TONE } from '~/lib/status-tone'
@@ -117,7 +117,7 @@ function NotificationSettings() {
 
   return (
     <section className="flex flex-col gap-6 px-4 pt-2">
-      <h1 className="screen-title m-0">Thông báo</h1>
+      <ScreenHeader className="-mx-4" title="Thông báo" back={{ to: '/them', label: 'Về Thêm' }} />
 
       <div className="flex flex-col gap-3">
         <p className="overline m-0 text-ink-muted">Máy này</p>

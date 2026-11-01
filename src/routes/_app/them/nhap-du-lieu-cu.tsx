@@ -2,13 +2,14 @@
 // Tải CSV một tab tháng → ghép cột (app gợi ý) → Kiểm tra (lỗi, cảnh báo, tổng theo thợ) → Nhập. Dữ liệu vào bảng riêng:
 // không thành đơn, không vào sổ tiền, không vào lương; nhãn "không rõ dịch vụ / chưa biết đã thu tiền".
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { type ChangeEvent, useState } from 'react'
 import {
   Button,
   ConfirmDialog,
   Money,
   Note,
+  ScreenHeader,
   StatusChip,
   TextArea,
   TextField,
@@ -155,10 +156,7 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 px-4 pt-1 pb-4">
       <div className="flex flex-col gap-1">
-        <Link to="/them" className="label text-accent">
-          ← Thêm
-        </Link>
-        <h1 className="screen-title m-0">Nhập dữ liệu cũ</h1>
+        <ScreenHeader className="-mx-4" title="Nhập dữ liệu cũ" back={{ to: '/them', label: 'Về Thêm' }} />
         <p className="caption m-0 text-ink-muted">
           Doanh thu cũ trên Google Sheets để tra cứu. Không thành đơn, không vào sổ tiền, không vào lương; ghi
           nhãn "không rõ dịch vụ / chưa biết đã thu tiền". Mỗi lần nhập một tab tháng: Google Sheets → Tệp →
