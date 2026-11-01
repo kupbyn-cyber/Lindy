@@ -18,7 +18,7 @@ import {
 import { ApiError, api, errorText } from '~/lib/api'
 import { TICKETS_ENABLED } from '~/lib/features'
 import { formatVND } from '~/lib/money'
-import { DISCOUNT_LABEL } from '~/lib/order-math'
+import { collectSuggestion, DISCOUNT_LABEL } from '~/lib/order-math'
 import {
   LEVEL_NOTE,
   ORDER_STATUS_LABEL,
@@ -104,7 +104,7 @@ export function OrderView(props: {
     setText('')
     setError(null)
     if (x?.kind === 'payment') {
-      setAmount(d.dueAmount)
+      setAmount(collectSuggestion(d) || null)
       // Phần lớn khách chuyển khoản: mở là hiện QR luôn (S29)
       setMethod('transfer')
     }
@@ -172,8 +172,8 @@ export function OrderView(props: {
       if (d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
       toast(done)
       // Xác nhận xong mà còn phải thu → mở luôn ô ghi tiền (Nhung xác nhận bill và ghi thanh toán)
-      if (action.kind === 'confirm' && next.dueAmount > 0 && next.can.recordPayment) {
-        setAmount(next.dueAmount)
+      if (action.kind === 'confirm' && collectSuggestion(next) > 0 && next.can.recordPayment) {
+        setAmount(collectSuggestion(next))
         setMethod('transfer')
         setPayKey(crypto.randomUUID())
         setDialog({ kind: 'payment' })
@@ -206,10 +206,10 @@ export function OrderView(props: {
       await qc.invalidateQueries({ queryKey: ['orders', 'list'] })
       if (d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
       // Đơn đã xác nhận mà còn phải thu: mở hộp Ghi tiền thu luôn (S52); đơn chờ duyệt giảm thì số tiền chưa chốt
-      if (next.status === 'confirmed' && next.can.recordPayment && next.dueAmount > 0) {
+      if (next.status === 'confirmed' && next.can.recordPayment && collectSuggestion(next) > 0) {
         setText('')
         setError(null)
-        setAmount(next.dueAmount)
+        setAmount(collectSuggestion(next))
         setMethod('transfer')
         setPayKey(crypto.randomUUID())
         setDialog({ kind: 'payment' })
@@ -433,6 +433,9 @@ export function OrderView(props: {
           <Note>
             Lịch có cọc {formatVND(d.depositAvailable)} chưa trừ. Tự trừ khi Làm xong hoặc xác nhận bill.
           </Note>
+        ) : null}
+        {d.depositPending > 0 && d.dueAmount > 0 && d.status !== 'cancelled' ? (
+          <Note>Cọc {formatVND(d.depositPending)} đang chờ xác nhận. Xác nhận xong tự trừ vào bill.</Note>
         ) : null}
         {levelNote ? (
           <Note tone={d.approval?.valid ? 'info' : 'warning'}>
@@ -727,7 +730,9 @@ export function OrderView(props: {
                   block
                   onClick={() => open({ kind: 'payment' })}
                 >
-                  {c.confirm || approveFirst ? 'Ghi tiền thu' : `Ghi tiền thu ${formatVND(d.dueAmount)}`}
+                  {c.confirm || approveFirst || collectSuggestion(d) === 0
+                    ? 'Ghi tiền thu'
+                    : `Ghi tiền thu ${formatVND(collectSuggestion(d))}`}
                 </Button>
               ) : null}
               {printInBar ? (
@@ -858,6 +863,13 @@ export function OrderView(props: {
         {dialog?.kind === 'payment' ? (
           <>
             <p className="body m-0 text-ink-muted">Còn phải thu {formatVND(d.dueAmount)}.</p>
+            {d.depositPending > 0 ? (
+              <Note tone="warning">
+                {collectSuggestion(d) > 0
+                  ? `Cọc ${formatVND(d.depositPending)} đang chờ xác nhận, nên chỉ cần thu ${formatVND(collectSuggestion(d))}.`
+                  : `Cọc ${formatVND(d.depositPending)} đang chờ xác nhận, đủ trả phần còn lại.`}
+              </Note>
+            ) : null}
             <SegmentedControl
               ariaLabel="Hình thức"
               className="w-full"

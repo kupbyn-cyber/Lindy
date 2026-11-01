@@ -16,6 +16,7 @@ import {
   levelOf,
   type PaymentStatus,
   paymentStatus,
+  pendingDepositShare,
 } from '~/lib/order-math'
 import { normalizePhone } from '~/lib/phone'
 import { escapeLike, foldVietnamese } from '~/lib/text'
@@ -399,6 +400,8 @@ export type OrderDetail = {
   dueAmount: number
   /** Cọc đã xác nhận của lịch chưa trừ vào bill nào (module §10) */
   depositAvailable: number
+  /** Phần cọc đang chờ xác nhận sẽ trừ vào đơn này (S53); chưa trừ vào dueAmount */
+  depositPending: number
   /** Đã hoàn (phiếu hoàn, Đợt 3) */
   refundedAmount: number
   /** Đã thu − đã hoàn: số còn hoàn được tối đa; bằng 0 thì huỷ được đơn đã xác nhận */
@@ -541,11 +544,14 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
            t.recorded_at, t.payout_id, t.voided_at, t.void_reason
     from tip_holdings t join users us on us.id = t.staff_user_id left join users ur on ur.id = t.recorded_by
     where t.order_id = ${o.id} order by t.recorded_at`
-  // Cọc đã xác nhận của lịch còn chưa trừ (app tự trừ khi bấm Làm xong hoặc xác nhận)
+  // Cọc đã xác nhận của lịch còn chưa trừ (app tự trừ khi bấm Làm xong hoặc xác nhận),
+  // và cọc đã ghi nhưng chờ xác nhận (xác nhận xong app tự trừ, S41, S53)
   const [dep] = o.appointmentId
-    ? await tx<{ available: string }[]>`
-        select coalesce(sum(d.amount - coalesce(d.resolved_amount, 0) - app.deposit_applied(d.id)), 0) as available
-        from appointment_deposits d where d.appointment_id = ${o.appointmentId} and d.status = 'confirmed'`
+    ? await tx<{ available: string; pending: string }[]>`
+        select coalesce(sum(d.amount - coalesce(d.resolved_amount, 0) - app.deposit_applied(d.id))
+                          filter (where d.status = 'confirmed'), 0) as available,
+               coalesce(sum(d.amount) filter (where d.status = 'recorded'), 0) as pending
+        from appointment_deposits d where d.appointment_id = ${o.appointmentId}`
     : []
   const [customer] = o.customerId
     ? await tx<{ id: string; name: string; phone: string | null }[]>`
@@ -701,6 +707,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
     paidAmount: paid,
     dueAmount: Math.max(0, o.netAmount - paid),
     depositAvailable: Number(dep?.available ?? 0),
+    depositPending: pendingDepositShare(Number(dep?.pending ?? 0), o.guestNo, appointment?.guestCount ?? 1),
     refundedAmount: refunded,
     refundable: Math.max(0, paid - refunded),
     refunds: refundRows.map((r) => ({

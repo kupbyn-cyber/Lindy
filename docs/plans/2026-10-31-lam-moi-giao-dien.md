@@ -615,4 +615,4 @@ Ba agent độc lập, chỉ đọc (iPhone và PWA; màu và thành phần; ngh
 
 **Chưa kiểm được:** bàn phím iOS thật, kính mờ trên Safari, camera thật, chụm trên màn hình cảm ứng thật, máy in thật. Nhánh xác nhận bill khi đơn còn giảm giá chờ duyệt (S48) mới đọc mã, chưa bấm thử vì dữ liệu mẫu không có đơn như vậy. Khi chạy bản build ở local phải giấu `MIGRATE_DATABASE_URL`, `PG_ADMIN_URL` trong tiến trình vì production coi đó là quyền quản trị và trả 503 khi không tạo được role.
 
-**Ngoài phạm vi, chưa sửa:** cọc đang chờ xác nhận chưa vào số cọc khả dụng, nên hộp Ghi tiền thu có thể gợi ý thu đủ. Sửa phải đổi API nên để anh quyết. Biểu tượng app chữ L nền mận giữ nguyên. Ô Tuần dùng chữ 12px là ngoại lệ có chủ ý.
+**Ngoài phạm vi:** cọc đang chờ xác nhận chưa vào số cọc khả dụng, nên hộp Ghi tiền thu có thể gợi ý thu đủ. Anh duyệt sửa ngày 01/11/2026, xem S53. Biểu tượng app chữ L nền mận giữ nguyên. Ô Tuần dùng chữ 12px là ngoại lệ có chủ ý.

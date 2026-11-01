@@ -1,6 +1,7 @@
 // Nghiệm thu tiền cọc mùa Tết (Đợt 3A, bước 3.4–3.8): module lịch §13 test 29–36; PRD §18 test 35, 36, 54;
 // test bảo mật S31, S32, S35–S38 (kế hoạch Đợt 3 mục 10.2). Mỗi test ghi đúng số thứ tự.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { collectSuggestion } from '../../src/lib/order-math'
 import { addDays, toLocalDate } from '../../src/lib/time'
 import {
   attentionList,
@@ -521,6 +522,36 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
       state: 'done',
       heldAmount: 0,
     })
+  })
+
+  it('S53: cọc chờ xác nhận hiện trên đơn, gợi ý thu trừ phần đó; xác nhận xong về 0 và trừ vào bill', async () => {
+    const a = await newAppt('trang', { guests: 1, date: today })
+    const d = await record('trang', a.id, 100_000)
+    const dep = d.deposit!.items.at(-1)!
+    const o = await orderFrom(a.id, 300_000)
+    expect([o.depositPending, o.depositAvailable]).toEqual([100_000, 0])
+    const done = await markDone(auth('trang'), o.id, o.version)
+    expect([done.dueAmount, done.depositPending]).toEqual([300_000, 100_000])
+    expect(collectSuggestion(done)).toBe(200_000)
+    await confirmDeposit(auth('nhung'), dep.id, dep.version)
+    const after = await getOrder(auth('trang'), o.id)
+    expect([after.dueAmount, after.depositPending]).toEqual([200_000, 0])
+    expect(collectSuggestion(after)).toBe(200_000)
+  })
+
+  it('S53: cọc đã huỷ không còn tính là chờ xác nhận; lịch nhiều khách chia đều phần chờ', async () => {
+    const one = await newAppt('trang', { guests: 1, date: today })
+    const d = await record('trang', one.id, 100_000)
+    const dep = d.deposit!.items.at(-1)!
+    const o = await orderFrom(one.id, 300_000)
+    expect(o.depositPending).toBe(100_000)
+    await voidDeposit(auth('nhung'), dep.id, dep.version, 'Ghi nhầm')
+    expect((await getOrder(auth('trang'), o.id)).depositPending).toBe(0)
+
+    const two = await newAppt('trang', { guests: 2, date: today })
+    await record('trang', two.id, 200_000)
+    const { saved } = await ordersFrom(two.id, [500_000, 80_000])
+    expect(saved.map((x) => x.depositPending)).toEqual([100_000, 100_000])
   })
 
   it('cọc dư sau khi lịch Hoàn thành (khách 2 không làm) → gợi ý hoàn phần còn lại', async () => {

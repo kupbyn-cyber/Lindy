@@ -473,6 +473,21 @@ export function paymentStatus(net: number, paid: number, refunded = 0): PaymentS
   return paid > 0 ? 'partial' : 'unpaid'
 }
 
+/**
+ * Phần cọc chờ xác nhận sẽ trừ vào một đơn (S53). Lịch nhiều khách chia đều, phần lẻ vào Khách 1,
+ * giống cách app.apply_deposits chia cọc đã xác nhận (S07).
+ */
+export function pendingDepositShare(pending: number, guestNo: number | null, guestCount: number) {
+  if (guestNo === null) return pending
+  const guests = Math.max(guestCount, 1)
+  return Math.floor(pending / guests) + (guestNo === 1 ? pending % guests : 0)
+}
+
+/** Số gợi ý ở hộp Ghi tiền thu (S53): còn phải thu trừ phần cọc đang chờ xác nhận, tránh thu trùng. */
+export function collectSuggestion(d: { dueAmount: number; depositPending: number }) {
+  return Math.max(0, d.dueAmount - d.depositPending)
+}
+
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   unpaid: 'Chưa thu',
   partial: 'Thu một phần',

@@ -2,11 +2,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   type CatalogLookup,
+  collectSuggestion,
   computeOrder,
   type DiscountInput,
   type ItemInput,
   levelOf,
   paymentStatus,
+  pendingDepositShare,
   splitProportional,
   warrantyUntil,
 } from '../../src/lib/order-math'
@@ -296,6 +298,22 @@ describe('Chia thợ và doanh thu (test 1, 4, 49, 33, 34)', () => {
       }
     }
     expect(checked).toBeGreaterThan(900)
+  })
+})
+
+describe('Gợi ý thu khi cọc chờ xác nhận (S53)', () => {
+  it('đơn một khách nhận cả phần chờ; lịch nhiều khách chia đều, phần lẻ vào Khách 1', () => {
+    expect(pendingDepositShare(100_000, null, 1)).toBe(100_000)
+    expect(pendingDepositShare(200_000, 1, 2)).toBe(100_000)
+    expect(pendingDepositShare(200_000, 2, 2)).toBe(100_000)
+    expect(pendingDepositShare(100_000, 1, 3)).toBe(33_334)
+    expect(pendingDepositShare(100_000, 2, 3)).toBe(33_333)
+  })
+
+  it('số gợi ý là phần còn lại, không âm khi cọc lớn hơn bill', () => {
+    expect(collectSuggestion({ dueAmount: 300_000, depositPending: 100_000 })).toBe(200_000)
+    expect(collectSuggestion({ dueAmount: 300_000, depositPending: 0 })).toBe(300_000)
+    expect(collectSuggestion({ dueAmount: 80_000, depositPending: 100_000 })).toBe(0)
   })
 })
 

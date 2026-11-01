@@ -24,6 +24,7 @@ import { useBranch, useCan, useMe } from '~/lib/me'
 import { formatVND } from '~/lib/money'
 import {
   type ComputedItem,
+  collectSuggestion,
   computeOrder,
   DISCOUNT_LABEL,
   type DiscountInput,
@@ -260,7 +261,8 @@ export function OrderEditor(props: {
       if (markDone && d.appointment) await qc.invalidateQueries({ queryKey: ['appointments'] })
       // Đơn đã xác nhận mà còn phải thu: mở hộp Ghi tiền thu luôn, không hiện thông báo vì sẽ đè nút Lưu của hộp.
       // Đơn còn giảm giá chờ duyệt thì không: số tiền chưa chốt (S52)
-      const collectNow = markDone && d.status === 'confirmed' && d.can.recordPayment && d.dueAmount > 0
+      const collectNow =
+        markDone && d.status === 'confirmed' && d.can.recordPayment && collectSuggestion(d) > 0
       // S41: Làm xong là xác nhận luôn; còn giảm giá chờ duyệt thì báo chờ ai
       if (!collectNow) {
         toast(
