@@ -579,4 +579,40 @@ Ba agent độc lập, chỉ đọc (iPhone và PWA; màu và thành phần; ngh
 | `bun run build` | Đạt |
 | `bun scripts/scan-bundle.ts` | 73 file, không có bí mật |
 
-**Điều kiện push:** phiên khôi phục dữ liệu báo xong việc trên bản thật và đã gỡ công cụ. Trước đó không push, không chạy test trên `lindy_test` (đã thống nhất giữa hai phiên).
+**Điều kiện push:** phiên khôi phục dữ liệu báo xong việc trên bản thật và đã gỡ công cụ. Trước đó không push, không chạy test trên `lindy_test` (đã thống nhất giữa hai phiên). Điều kiện này đã đạt ngày 01/11/2026.
+
+**Mốc đo lại sau khi phiên khôi phục xong:** 375 test đạt trên 375, không còn ca hỏng phụ thuộc ngày, lint đạt.
+
+### 4.5. Kết quả cổng kiểm tra (01/11/2026, bản build thật ở cổng 3001, DB local)
+
+| Hạng mục | Mốc | Sau làm mới |
+|---|---|---|
+| `bun run check` (lint, typecheck, test) | 375/375 | 379/379 |
+| `bun run build` | Đạt | Đạt |
+| `bun scripts/scan-bundle.ts` | 73 file, không bí mật | 71 file, không bí mật |
+
+| Cổng | Kết quả | Trạng thái |
+|---|---|---|
+| Chụp mọi màn, 4 vai, sáng tối, khổ 360 và 390 | 188 trang mỗi khổ, 0 tràn ngang | Đạt |
+| Tương phản quét trang thật | 188 trang mỗi khổ, 0 chỗ dưới chuẩn; ở đỉnh ánh sáng nền chữ ≥ 4.70, viền ô nhập ≥ 3.02 | Đạt |
+| Tải trực tiếp 8 lần mỗi màn (Tổng quan, Đơn, Lịch, Khách, Thêm, Sổ tiền, Lương, Báo cáo) | 0 trang trắng, 0 lỗi console | Đạt |
+| K09: Trang, Chin | Tổng quan không có số toàn quán; API trả `money`, `profit`, `revenue` rỗng, phạm vi `mine`; Thêm không có Sổ tiền, Chốt quỹ, Báo cáo | Đạt |
+| Vuốt đổi ngày | Vuốt trái sang `?d=2026-11-02` | Đạt |
+| Chụm phóng to lịch | Trục giờ 1152px lên 2880px, có nhớ mức phóng | Đạt |
+| Bản in ở máy để tối (báo cáo, phiếu lương) | Nền sáng, chữ đen, ẩn thanh dưới, thanh trên và lớp ánh sáng | Đạt |
+| Toast so thanh nút cuối màn | Toast đáy 707, thanh nút đỉnh 719, không chồng | Đạt |
+| Màu viết cứng | Không còn màu cũ trong `src`; ngoại lệ mã QR, khung ảnh, bill, trạm in không đụng | Đạt |
+| Luồng tạo lịch, tạo đơn, Làm xong, Ghi tiền thu, In bill | Chạy thật trên bản dev, khổ 390, sáng; In bill chỉ kiểm được trạng thái đang gửi vì không có trạm in | Đạt phần chạy được |
+
+| Thao tác | Trước (chạm) | Sau (chạm) |
+|---|---|---|
+| Tạo lịch giờ khác mặc định | 5 | 3 |
+| Làm xong | 4 | 2 |
+| Từ Làm xong tới Lưu tiền thu | 3 | 2 |
+| Chụp ảnh thành phẩm | 3 | 2 |
+| Chốt quỹ | 5 | 4 |
+| Xác nhận bill không giảm giá | 3 | 2 |
+
+**Chưa kiểm được:** bàn phím iOS thật, kính mờ trên Safari, camera thật, chụm trên màn hình cảm ứng thật, máy in thật. Nhánh xác nhận bill khi đơn còn giảm giá chờ duyệt (S48) mới đọc mã, chưa bấm thử vì dữ liệu mẫu không có đơn như vậy. Khi chạy bản build ở local phải giấu `MIGRATE_DATABASE_URL`, `PG_ADMIN_URL` trong tiến trình vì production coi đó là quyền quản trị và trả 503 khi không tạo được role.
+
+**Ngoài phạm vi, chưa sửa:** cọc đang chờ xác nhận chưa vào số cọc khả dụng, nên hộp Ghi tiền thu có thể gợi ý thu đủ. Sửa phải đổi API nên để anh quyết. Biểu tượng app chữ L nền mận giữ nguyên. Ô Tuần dùng chữ 12px là ngoại lệ có chủ ý.
