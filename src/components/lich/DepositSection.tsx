@@ -199,7 +199,7 @@ export function DepositSection(props: { d: Detail }) {
               ) : null}
               {i.can.review ? (
                 <Button variant="quiet" onClick={() => void review(i)}>
-                  Đã xem (Cần xem lại)
+                  Đã xem
                 </Button>
               ) : null}
             </div>
@@ -247,7 +247,7 @@ export function DepositSection(props: { d: Detail }) {
           hint={`Gợi ý ${formatVND(b.suggested)}. Tiền vào ${method === 'cash' ? 'Tiền mặt' : 'Tài khoản'} cs khi Nhung, Linh xác nhận.`}
         />
         <TextField
-          label="Ghi chú (không bắt buộc)"
+          label="Ghi chú"
           value={note}
           maxLength={300}
           placeholder="Nội dung chuyển khoản, 4 số cuối…"

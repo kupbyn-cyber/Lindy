@@ -1,10 +1,11 @@
 // Form tạo/sửa lịch (bước 1.12) trong bottom sheet. Không có ô chọn thợ (D17).
-// Tạo nhanh: chạm khung giờ → nhập tên → Lưu. Cảnh báo không chặn lưu (§8).
+// Tạo nhanh: chạm khung giờ hoặc chip giờ → nhập tên → Lưu (S52). Cảnh báo không chặn lưu (§8).
 // Mùa cọc (Đợt 3, module §5.1, §6): form tạo lịch hiện phần cọc và số gợi ý; chưa nhận cọc vẫn lưu được (K16).
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button,
+  cx,
   MoneyInput,
   Note,
   SegmentedControl,
@@ -17,6 +18,7 @@ import { ApiError, api } from '~/lib/api'
 import { addMinutes, type Detail, type ListItem, type Settings, type Warnings } from '~/lib/appointments'
 import { formatVND } from '~/lib/money'
 import { movePhoneOutOfName, nameLooksMessy, normalizePhone } from '~/lib/phone'
+import { hhmmToMinutes, minutesToHHMM } from '~/lib/time'
 import { CustomerPicker } from '../don-hang/pickers'
 
 type Values = {
@@ -32,6 +34,20 @@ type Values = {
 }
 
 const LIMITS = { name: 100, phone: 20, service: 200, notes: 1000 }
+const DURATIONS = [60, 90, 120, 180]
+const DAY_END = 24 * 60
+
+/** "1h30" */
+const durationLabel = (min: number) =>
+  `${Math.floor(min / 60)}h${min % 60 ? String(min % 60).padStart(2, '0') : ''}`
+
+/** Tám mốc 15 phút từ giờ mở form, không qua nửa đêm. */
+function startChips(from: string) {
+  const m = hhmmToMinutes(from)
+  return Array.from({ length: 8 }, (_, i) => m + i * 15)
+    .filter((x) => x < DAY_END)
+    .map(minutesToHHMM)
+}
 
 function fromDetail(d: Detail): Values {
   return {
@@ -70,6 +86,10 @@ export function AppointmentForm(props: {
   const [conflict, setConflict] = useState<Detail | null>(null)
   const [warnings, setWarnings] = useState<Warnings | null>(null)
   const [picking, setPicking] = useState(false)
+  // Lịch thường chỉ cần tên và giờ: ngày, giờ lẻ, dịch vụ, ghi chú mở khi cần (S52)
+  const [timeOpen, setTimeOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [chipFrom, setChipFrom] = useState('09:00')
   // SĐT vừa lấy ra khỏi ô tên khách (S40)
   const [moved, setMoved] = useState<string | null>(null)
   const requestId = useRef<string>('')
@@ -88,6 +108,9 @@ export function AppointmentForm(props: {
     setWarnings(null)
     setEndTouched(false)
     setMoved(null)
+    setTimeOpen(!!props.editing)
+    setMoreOpen(!!props.editing?.serviceSummary || !!props.editing?.notes)
+    if (props.initial) setChipFrom(props.initial.startTime)
     if (props.editing) {
       setV(fromDetail(props.editing))
       setVersion(props.editing.version)
@@ -149,8 +172,44 @@ export function AppointmentForm(props: {
           ? phoneCheck.error
           : null
 
+  // Đổi giờ bắt đầu, giữ thời lượng người dùng đã chọn
+  function pickStart(s: string) {
+    setV((old) =>
+      old
+        ? {
+            ...old,
+            startTime: s,
+            endTime: endTouched
+              ? addMinutes(s, hhmmToMinutes(old.endTime) - hhmmToMinutes(old.startTime))
+              : addMinutes(s, props.defaultDurationMin),
+          }
+        : old,
+    )
+  }
+
+  function pickDuration(min: number) {
+    setEndTouched(true)
+    setV((old) => (old ? { ...old, endTime: addMinutes(old.startTime, min) } : old))
+  }
+
+  // Enter ở ô tên chỉ lưu khi không còn gì cần xem (S52): không mùa cọc, không cảnh báo, đã tách SĐT khỏi tên (S40)
+  function onNameEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    e.preventDefault()
+    const clear =
+      !isEdit && !season && !localError && warnings && !warnings.outsideHours && !warnings.duplicates.length
+    const r = v ? movePhoneOutOfName(v.customerDisplayName, v.phone) : null
+    if (r?.moved) {
+      setV((old) => (old ? { ...old, customerDisplayName: r.name, phone: r.phone } : old))
+      setMoved(r.moved)
+      return
+    }
+    if (clear) void save()
+    else e.currentTarget.blur()
+  }
+
   async function save() {
-    if (!v) return
+    if (!v || busy) return
     if (localError) {
       setError(localError)
       return
@@ -280,6 +339,7 @@ export function AppointmentForm(props: {
           maxLength={LIMITS.name}
           autoFocus={!isEdit}
           enterKeyHint="done"
+          onKeyDown={onNameEnter}
           hint={
             moved
               ? `Đã chuyển ${moved} sang ô SĐT.`
@@ -299,15 +359,60 @@ export function AppointmentForm(props: {
             setMoved(r.moved)
           }}
         />
-        <div className="-mt-2 flex items-center justify-between gap-2">
-          <span className="caption text-ink-muted">
-            {v.customerId ? 'Đã gắn hồ sơ khách.' : 'Khách quen: chọn hồ sơ để giữ lịch sử.'}
-          </span>
+        <div className="-mt-2 flex items-center justify-end">
           <Button variant="quiet" onClick={() => setPicking(true)}>
             {v.customerId ? 'Đổi khách' : 'Chọn khách có sẵn'}
           </Button>
         </div>
-        <div className="grid grid-cols-[1.3fr_1fr_1fr] gap-2">
+        {isEdit ? null : (
+          <>
+            <div className="lo-field">
+              <span className="lo-field-label label">Bắt đầu</span>
+              <div className="lo-chips">
+                {startChips(chipFrom).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={cx('lo-toggle', 'label', v.startTime === t && 'is-on')}
+                    aria-pressed={v.startTime === t}
+                    onClick={() => pickStart(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="lo-field">
+              <span className="lo-field-label label">Thời lượng</span>
+              <div className="lo-chips">
+                {[...new Set([...DURATIONS, props.defaultDurationMin])]
+                  .sort((a, b) => a - b)
+                  .map((m) => {
+                    const on = hhmmToMinutes(v.endTime) - hhmmToMinutes(v.startTime) === m
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        className={cx('lo-toggle', 'label', on && 'is-on')}
+                        aria-pressed={on}
+                        // Không vừa trong ngày thì tắt: lịch không vắt qua nửa đêm
+                        disabled={hhmmToMinutes(v.startTime) + m > DAY_END - 1}
+                        onClick={() => pickDuration(m)}
+                      >
+                        {durationLabel(m)}
+                      </button>
+                    )
+                  })}
+              </div>
+            </div>
+          </>
+        )}
+        {!timeOpen ? (
+          <Button variant="quiet" className="self-start" onClick={() => setTimeOpen(true)}>
+            Ngày khác, giờ khác
+          </Button>
+        ) : null}
+        <div className={cx('grid grid-cols-[1.3fr_1fr_1fr] gap-2', !timeOpen && 'hidden')}>
           <TextField
             label="Ngày"
             type="date"
@@ -321,16 +426,7 @@ export function AppointmentForm(props: {
             value={v.startTime}
             onChange={(e) => {
               const s = e.target.value
-              if (!s) return
-              setV((old) =>
-                old
-                  ? {
-                      ...old,
-                      startTime: s,
-                      endTime: endTouched ? old.endTime : addMinutes(s, props.defaultDurationMin),
-                    }
-                  : old,
-              )
+              if (s) pickStart(s)
             }}
           />
           <TextField
@@ -355,7 +451,7 @@ export function AppointmentForm(props: {
           />
         </div>
         <TextField
-          label="SĐT (không bắt buộc)"
+          label="SĐT"
           type="tel"
           inputMode="tel"
           autoComplete="off"
@@ -364,27 +460,33 @@ export function AppointmentForm(props: {
           error={v.phone && !phoneCheck.ok ? phoneCheck.error : undefined}
           onChange={(e) => set('phone', e.target.value)}
         />
-        <TextField
-          label="Dịch vụ dự kiến (không bắt buộc)"
-          placeholder="sơn gel tay + chân"
-          value={v.serviceSummary}
-          maxLength={LIMITS.service}
-          onChange={(e) => set('serviceSummary', e.target.value)}
-        />
-        <TextArea
-          label="Ghi chú nội bộ"
-          hint="Không hiện trên thông báo màn hình khoá."
-          value={v.notes}
-          maxLength={LIMITS.notes}
-          onChange={(e) => set('notes', e.target.value)}
-        />
+        {moreOpen ? (
+          <>
+            <TextField
+              label="Dịch vụ dự kiến"
+              placeholder="sơn gel tay + chân"
+              value={v.serviceSummary}
+              maxLength={LIMITS.service}
+              onChange={(e) => set('serviceSummary', e.target.value)}
+            />
+            <TextArea
+              label="Ghi chú nội bộ"
+              value={v.notes}
+              maxLength={LIMITS.notes}
+              onChange={(e) => set('notes', e.target.value)}
+            />
+          </>
+        ) : (
+          <Button variant="quiet" className="self-start" onClick={() => setMoreOpen(true)}>
+            Thêm dịch vụ, ghi chú
+          </Button>
+        )}
 
         {season ? (
           <div className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-line p-3">
             <span className="label">Cọc · {season.name}</span>
             <p className="caption m-0 text-ink-muted">
-              Lịch này cần cọc {formatVND(suggested)} ({v.guestCount} khách ×{' '}
-              {formatVND(season.amountPerGuest)}). Chưa nhận cọc vẫn lưu được; lịch hiện “Chưa cọc”.
+              Cần cọc {formatVND(suggested)} ({v.guestCount} khách × {formatVND(season.amountPerGuest)}).
             </p>
             <SegmentedControl
               ariaLabel="Cọc"
@@ -427,7 +529,7 @@ export function AppointmentForm(props: {
         {warnings?.duplicates.map((d) => (
           <Note key={d.id} tone="warning">
             Có thể trùng khách với lịch lúc {d.startTime}.{' '}
-            <a href={`/lich/${d.id}`} className="underline">
+            <a href={`/lich/${d.id}`} className="lo-link">
               Mở lịch kia
             </a>
           </Note>

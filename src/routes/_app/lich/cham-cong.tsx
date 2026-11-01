@@ -1,8 +1,8 @@
 // UI08, UI09 — Chấm công (Đợt 4A, bước 4.5–4.8; PRD §8). Mọi người: công tháng của mình, đăng ký nghỉ. Nhung, Linh:
 // duyệt công theo ngày, đơn nghỉ chờ duyệt, bảng công tháng cả quán. Nút hiện theo quyền; server và DB kiểm lại.
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { DayBoardView, MonthSheetView, MyMonthView } from '~/components/cong/views'
-import { Note, SegmentedControl } from '~/components/ui'
+import { Note, ScreenHeader, SegmentedControl } from '~/components/ui'
 import { useCan } from '~/lib/me'
 import { isIsoDate, isYearMonth, toLocalDate } from '~/lib/time'
 
@@ -46,12 +46,9 @@ function Page() {
   return (
     <section className="flex flex-col gap-3 px-4 pt-1 pb-4">
       <div className="flex flex-col gap-1">
-        <Link to="/lich" className="label text-accent">
-          ← Lịch
-        </Link>
-        <h1 className="screen-title m-0">Chấm công</h1>
+        <ScreenHeader className="-mx-4" title="Chấm công" back={{ to: '/lich', label: 'Về lịch' }} />
         <p className="caption m-0 text-ink-muted">
-          Mỗi ngày 1 ca fulltime 9:00–21:00 = 1 công. Ngày quán đóng cửa không tính là ngày nghỉ.
+          1 ca 9:00–21:00 = 1 công. Ngày quán đóng cửa không tính nghỉ.
         </p>
       </div>
       {tabs.length > 1 ? (
@@ -71,9 +68,6 @@ function Page() {
           onMonth={(m) => set({ m })}
           onPickDate={approver ? (d) => set({ tab: 'duyet', d }) : undefined}
         />
-      ) : null}
-      {tab === 'bang' && approver ? (
-        <p className="caption m-0 text-ink-muted">Chạm một ngày để mở Duyệt công ngày đó.</p>
       ) : null}
     </section>
   )

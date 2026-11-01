@@ -1,13 +1,17 @@
 /* Thành phần giao diện LINDY OS. Màu theo CEN WORK (S51), mọi màu đi qua token. */
 
 :root {
-  /* Khoảng trống đáy một nguồn (học từ CEN): thanh dưới, cộng thanh nút khi màn có thanh nút. --kb do hook bàn phím ghi. */
+  /* --kb: chiều cao bàn phím, do hook useKeyboardInset ghi */
   --kb: 0px;
+}
+/* Khoảng trống đáy một nguồn (học từ CEN): thanh dưới, cộng thanh nút khi màn có thanh nút. Đặt ở body vì biến
+   tính tại nơi khai báo: khai ở :root sẽ không thấy giá trị --lo-actionbar-h của body. */
+body {
   --lo-actionbar-h: 0px;
   --lo-bottom-offset: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + var(--lo-actionbar-h));
 }
 body:has(.lo-actionbar) {
-  --lo-actionbar-h: 68px;
+  --lo-actionbar-h: 69px;
 }
 
 html {
@@ -50,7 +54,21 @@ body::before {
   background: none;
   border: 0;
   padding: 0;
+  cursor: pointer;
+}
+/* :where để không đè cỡ chữ của .label, .caption đi cùng */
+:where(button.lo-link) {
   font: inherit;
+}
+
+/* Nút chữ nhỏ (Huỷ lịch, Huỷ khoản này…): chữ nhỏ nhưng vùng chạm vẫn 44px */
+.lo-tap-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-1);
+  border: 0;
+  background: none;
   cursor: pointer;
 }
 
@@ -486,14 +504,14 @@ body::before {
   box-shadow: var(--shadow-lg);
   animation: lo-fade 140ms ease-out;
 }
-.lo-toast-success .lo-icon {
+.lo-toast-success > svg {
   color: var(--success);
 }
 .lo-toast-error {
   border-color: var(--danger);
   pointer-events: auto;
 }
-.lo-toast-error > .lo-icon {
+.lo-toast-error > svg {
   color: var(--danger);
 }
 .lo-toast .lo-icon-btn {
@@ -691,7 +709,9 @@ select.lo-input {
 
 /* Thanh nút cố định ngay trên thanh điều hướng; khi bàn phím mở thì nổi trên bàn phím */
 .lo-actionbar {
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: max(calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)), var(--kb));
   z-index: 12;
   display: flex;
@@ -800,6 +820,23 @@ select.lo-input {
     transform: none;
     opacity: 1;
   }
+}
+/* Lịch kiểu Ngày: màn vừa khung, chỉ trục giờ cuộn; vuốt dọc không lẫn giữa cuộn trang và cuộn lịch */
+.lo-day-screen {
+  display: flex;
+  flex-direction: column;
+  height: calc(
+    100dvh -
+    var(--control-h) -
+    1px -
+    env(safe-area-inset-top, 0px) -
+    var(--nav-h) -
+    env(safe-area-inset-bottom, 0px)
+  );
+  min-height: 520px;
+}
+main:has(.lo-day-screen) {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
 }
 /* Lịch: đổi ngày/tuần (vuốt hoặc chạm) thì nội dung hiện mờ dần (S10) */
 .lo-day-enter {

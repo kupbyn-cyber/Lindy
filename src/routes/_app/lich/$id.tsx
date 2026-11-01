@@ -11,6 +11,7 @@ import {
   Button,
   ConfirmDialog,
   Note,
+  ScreenHeader,
   SegmentedControl,
   Sheet,
   StatusChip,
@@ -29,7 +30,7 @@ import {
 } from '~/lib/appointments'
 import { ORDER_STATUS_LABEL, type OrderStatus } from '~/lib/orders'
 import { LABEL_TONE } from '~/lib/status-tone'
-import { formatDateTimeShort, formatIsoDate, weekdayLong } from '~/lib/time'
+import { formatDateTimeShort, formatIsoDate, toLocalDate, weekdayLong } from '~/lib/time'
 
 export const Route = createFileRoute('/_app/lich/$id')({
   head: () => ({ meta: [{ title: 'Chi tiết lịch · LINDY OS' }] }),
@@ -241,13 +242,22 @@ function DetailPage() {
     setAskGuests(true)
   }
 
+  const canOrder = c.createOrder && missing.length > 0
+  // Lịch ngày sau hoặc có yêu cầu huỷ: Tạo đơn không phải việc kế tiếp, không để dính đáy dễ chạm nhầm
+  const orderInBar = canOrder && d.date <= toLocalDate(new Date()) && !d.customerCancelReported
+  const createOrderButton = (
+    <Button variant="primary" block loading={orderBusy && !askGuests} onClick={onCreateOrder}>
+      Tạo đơn
+    </Button>
+  )
+
   return (
-    <section className="flex flex-col gap-3 pt-1">
+    <section className="flex flex-col gap-3">
+      <ScreenHeader
+        title={d.name}
+        back={{ to: '/lich', search: { d: d.date }, label: `Về lịch ${formatIsoDate(d.date)}` }}
+      />
       <div className="px-4">
-        <Link to="/lich" search={{ d: d.date }} className="label text-accent">
-          ← Lịch {formatIsoDate(d.date)}
-        </Link>
-        <h1 className="screen-title mt-1 mb-1 break-words">{d.name}</h1>
         <div className="flex flex-wrap gap-1">
           {/* Lịch nào cũng đã chốt (S02): chỉ hiện trạng thái khác */}
           {d.status !== 'confirmed' ? (
@@ -288,26 +298,22 @@ function DetailPage() {
               {weekdayLong(d.date)} {formatIsoDate(d.date)}, {d.startTime}–{d.endTime}
             </Row>
             <Row label="Số khách">{d.guestCount}</Row>
-            <Row label="SĐT">
-              {d.phone ? (
+            {d.phone ? (
+              <Row label="SĐT">
                 <span className="flex items-center justify-between gap-2">
                   <span>{d.phone}</span>
-                  <a href={`tel:${d.phone}`} className="lo-btn lo-btn-secondary button-label min-h-[36px]!">
+                  <a href={`tel:${d.phone}`} className="lo-btn lo-btn-secondary button-label">
                     <Phone size={16} strokeWidth={1.7} aria-hidden="true" /> Gọi
                   </a>
                 </span>
-              ) : (
-                <span className="text-ink-muted">Không có</span>
-              )}
-            </Row>
-            <Row label="Dịch vụ">{d.serviceSummary ?? <span className="text-ink-muted">Chưa ghi</span>}</Row>
-            <Row label="Ghi chú">
-              {d.notes ? (
+              </Row>
+            ) : null}
+            {d.serviceSummary ? <Row label="Dịch vụ">{d.serviceSummary}</Row> : null}
+            {d.notes ? (
+              <Row label="Ghi chú">
                 <span className="whitespace-pre-wrap">{d.notes}</span>
-              ) : (
-                <span className="text-ink-muted">Không có</span>
-              )}
-            </Row>
+              </Row>
+            ) : null}
             {d.customerCancelReported ? (
               <Row label="Yêu cầu huỷ">
                 {d.customerCancelReportedByName ?? ''}
@@ -335,7 +341,7 @@ function DetailPage() {
             {d.warnings.duplicates.map((x) => (
               <Note key={x.id} tone="warning">
                 Có thể trùng khách với lịch lúc {x.startTime}.{' '}
-                <Link to="/lich/$id" params={{ id: x.id }} className="underline">
+                <Link to="/lich/$id" params={{ id: x.id }} className="lo-link">
                   Mở lịch kia
                 </Link>
               </Note>
@@ -368,30 +374,25 @@ function DetailPage() {
             </div>
           ) : null}
 
-          {/* 3 nút theo thứ tự anh chọn: Sửa lịch · Tạo đơn · Huỷ lịch (S03) */}
-          <div className="flex flex-col gap-2 px-4 pb-2">
-            <div className="flex gap-2">
-              {c.edit ? (
-                <Button block onClick={() => setEditing(true)}>
-                  Sửa lịch
-                </Button>
-              ) : null}
-              {c.createOrder && missing.length > 0 ? (
-                <Button variant="primary" block loading={orderBusy && !askGuests} onClick={onCreateOrder}>
-                  Tạo đơn
-                </Button>
-              ) : null}
-              {showCancel ? (
-                <Button block variant="danger" onClick={openCancel}>
-                  Huỷ lịch
-                </Button>
-              ) : null}
-            </div>
+          {/* S45: Tạo đơn là nút chính; Sửa lịch nút nhỏ; Huỷ lịch chữ nhỏ ở cuối, tách xa nút chính */}
+          <div className="flex flex-col gap-2 px-4 pb-6">
+            {canOrder && !orderInBar ? createOrderButton : null}
+            {c.edit ? (
+              <Button block onClick={() => setEditing(true)}>
+                Sửa lịch
+              </Button>
+            ) : null}
             {orderError ? <Note tone="danger">{orderError}</Note> : null}
             {d.customerCancelReported && !c.cancel && ['pending', 'confirmed'].includes(d.status) ? (
               <p className="caption m-0 text-ink-muted">Đã gửi yêu cầu huỷ, chờ Linh, Nhung, Chin xử lý.</p>
             ) : null}
+            {showCancel ? (
+              <button type="button" className="label lo-tap-text self-end text-danger" onClick={openCancel}>
+                Huỷ lịch
+              </button>
+            ) : null}
           </div>
+          {orderInBar ? <div className="lo-actionbar">{createOrderButton}</div> : null}
         </>
       )}
 
@@ -417,8 +418,8 @@ function DetailPage() {
             setActionError(null)
           }}
         />
-        {kind === 'no_show' && !request ? (
-          <p className="caption m-0 text-ink-muted">Cọc (nếu có) chuyển sang chờ Nhung giữ cọc.</p>
+        {kind === 'no_show' && !request && d.deposit ? (
+          <p className="caption m-0 text-ink-muted">Cọc chuyển sang chờ Nhung giữ cọc.</p>
         ) : null}
         {request ? (
           <p className="caption m-0 text-ink-muted">
@@ -432,7 +433,7 @@ function DetailPage() {
         ) : null}
         {kind !== 'no_show' || request ? (
           <TextArea
-            label={noteRequired ? 'Lý do (bắt buộc)' : 'Ghi chú (không bắt buộc)'}
+            label={noteRequired ? 'Lý do (bắt buộc)' : 'Ghi chú'}
             value={text}
             maxLength={450}
             onChange={(e) => setText(e.target.value)}
@@ -451,10 +452,6 @@ function DetailPage() {
           </Button>
         }
       >
-        <p className="caption m-0 text-ink-muted">
-          Mỗi khách một đơn riêng: thợ, dịch vụ, thanh toán riêng. Để trống tên thì đơn ghi “{companionLabel}
-          ”.
-        </p>
         {missing.includes(1) ? (
           <div className="flex flex-col gap-1 rounded-[var(--radius-md)] border border-line p-3">
             <span className="label text-ink-muted">Khách 1 · người đặt</span>
@@ -471,7 +468,7 @@ function DetailPage() {
           >
             <span className="label text-ink-muted">Khách {g.guestNo}</span>
             <TextField
-              label="Tên (không bắt buộc)"
+              label="Tên"
               placeholder={companionLabel}
               value={g.name}
               maxLength={100}
@@ -480,7 +477,7 @@ function DetailPage() {
               }
             />
             <TextField
-              label="SĐT (không bắt buộc)"
+              label="SĐT"
               type="tel"
               inputMode="tel"
               autoComplete="off"

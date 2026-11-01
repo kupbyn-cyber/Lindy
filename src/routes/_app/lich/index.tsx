@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { AppointmentForm } from '~/components/lich/AppointmentForm'
 import { DayHeader } from '~/components/lich/DayHeader'
 import { AppointmentRows, DateStrip, DayTimeline, GroupedList, WeekGrid } from '~/components/lich/views'
-import { Button, Icon, IconButton, SegmentedControl } from '~/components/ui'
+import { Button, Icon, IconButton, ScreenHeader, SegmentedControl } from '~/components/ui'
 import { errorText } from '~/lib/api'
 import { FILTERS, type Filter, useAppointments, useBookingSettings } from '~/lib/appointments'
 import { useCan } from '~/lib/me'
@@ -57,32 +57,37 @@ function SchedulePage() {
     navigate({ search: (prev: Search) => ({ ...prev, ...patch }), replace: true })
 
   const canCreate = can('appointments.create')
+  const showResults = searchOpen && !!qDebounced
 
   return (
-    <section className="flex flex-col gap-2 pt-1">
-      <div className="flex items-center gap-2 px-4">
-        <h1 className="screen-title m-0 flex-1">Lịch hẹn</h1>
-        {can('attendance.own') || can('attendance.approve') ? (
-          <Link to="/lich/cham-cong" className="lo-icon-btn" aria-label="Chấm công">
-            <Clock size={22} strokeWidth={1.7} />
-          </Link>
-        ) : null}
-        <IconButton
-          label={searchOpen ? 'Đóng tìm kiếm' : 'Tìm theo tên hoặc SĐT'}
-          onClick={() => setSearchOpen((x) => !x)}
-        >
-          {searchOpen ? <X size={22} strokeWidth={1.7} /> : <SearchIcon size={22} strokeWidth={1.7} />}
-        </IconButton>
-        {canCreate ? (
-          <IconButton
-            label="Tạo lịch"
-            className="bg-accent text-on-accent"
-            onClick={() => setForm({ date, startTime: date === today ? nextQuarter() : '09:00' })}
-          >
-            <Icon name="plus" size={22} strokeWidth={2} />
-          </IconButton>
-        ) : null}
-      </div>
+    <section className={`flex flex-col gap-2 ${view === 'ngay' && !showResults ? 'lo-day-screen' : ''}`}>
+      <ScreenHeader
+        title="Lịch hẹn"
+        actions={
+          <>
+            {can('attendance.own') || can('attendance.approve') ? (
+              <Link to="/lich/cham-cong" className="lo-icon-btn" aria-label="Chấm công">
+                <Clock size={22} strokeWidth={1.7} />
+              </Link>
+            ) : null}
+            <IconButton
+              label={searchOpen ? 'Đóng tìm kiếm' : 'Tìm theo tên hoặc SĐT'}
+              onClick={() => setSearchOpen((x) => !x)}
+            >
+              {searchOpen ? <X size={22} strokeWidth={1.7} /> : <SearchIcon size={22} strokeWidth={1.7} />}
+            </IconButton>
+            {canCreate ? (
+              <IconButton
+                label="Tạo lịch"
+                className="lo-icon-btn-primary"
+                onClick={() => setForm({ date, startTime: date === today ? nextQuarter() : '09:00' })}
+              >
+                <Icon name="plus" size={22} strokeWidth={2} />
+              </IconButton>
+            ) : null}
+          </>
+        }
+      />
 
       {searchOpen ? (
         <div className="px-4">
@@ -99,7 +104,7 @@ function SchedulePage() {
         </div>
       ) : null}
 
-      {searchOpen && qDebounced ? (
+      {showResults ? (
         <>
           <p className="caption m-0 px-4 text-ink-muted">Kết quả tìm “{qDebounced}”</p>
           <AppointmentRows items={items} showDate empty="Không tìm thấy lịch nào." />
@@ -119,7 +124,7 @@ function SchedulePage() {
               onChange={(v) => go({ view: v === 'ngay' ? undefined : (v as View) })}
             />
             <select
-              className="lo-input label w-auto! min-w-0 pr-2"
+              className="lo-input w-auto! min-w-0"
               aria-label="Lọc trạng thái"
               value={filter}
               onChange={(e) =>

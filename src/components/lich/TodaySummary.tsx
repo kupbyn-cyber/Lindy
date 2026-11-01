@@ -18,7 +18,7 @@ export function TodaySummary() {
           Lịch hôm nay
           {q.isLoading ? '' : ` · ${items.length} lịch${reported ? ` · ${reported} yêu cầu huỷ` : ''}`}
         </h2>
-        <Link to="/lich" className="label text-accent">
+        <Link to="/lich" className="label lo-link">
           Mở lịch →
         </Link>
       </div>

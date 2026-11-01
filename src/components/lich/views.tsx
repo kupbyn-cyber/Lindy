@@ -51,7 +51,13 @@ export function DateStrip(props: { value: string; today: string; onChange: (d: s
             )}
           >
             <span className={cx('caption', !on && 'text-ink-muted')}>{weekdayShort(d)}</span>
-            <span className={cx('body-strong', isToday && !on && 'text-accent')}>
+            {/* Màu nhấn trùng màu chữ nên hôm nay dùng dấu đỏ như lịch iPhone */}
+            <span
+              className={cx(
+                'body-strong min-w-6 rounded-full px-1 text-center',
+                isToday && !on && 'bg-cal-now text-on-cal-now',
+              )}
+            >
               {Number(d.slice(8, 10))}
             </span>
           </button>
@@ -387,29 +393,22 @@ export function DayTimeline(props: {
   return (
     <div
       ref={scroller}
-      className="relative touch-pan-y overflow-y-auto overflow-x-hidden border-t border-line"
-      style={{
-        height: 'calc(100dvh - 220px - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
-        minHeight: 360,
-      }}
+      className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-y-contain border-t border-line"
     >
       <div ref={swipeLayer} key={props.date} className="lo-day-enter relative" style={{ height: total }}>
         {/* Ngoài giờ mở cửa tô nền khác */}
-        <div
-          className="absolute right-0 bg-surface-sunken"
-          style={{ left: GUTTER, top: 0, height: openTop }}
-        />
-        <div
-          className="absolute right-0 bg-surface-sunken"
-          style={{ left: GUTTER, top: closeTop, bottom: 0 }}
-        />
+        <div className="absolute right-0 bg-cal-closed" style={{ left: GUTTER, top: 0, height: openTop }} />
+        <div className="absolute right-0 bg-cal-closed" style={{ left: GUTTER, top: closeTop, bottom: 0 }} />
         {HOURS.map((hh, h) => (
           <div
             key={hh}
-            className="absolute right-0 left-0 border-t border-line"
-            style={{ top: h * pxPerHour }}
+            className="absolute right-0 border-t border-line"
+            style={{ left: GUTTER, top: h * pxPerHour }}
           >
-            <span className="caption absolute -top-2 left-1 bg-surface px-0.5 text-ink-muted">{hh}:00</span>
+            {/* Kẻ giờ bắt đầu từ cột nội dung; nhãn không có nền để lộ ánh sáng nền */}
+            <span className="caption absolute -top-2 text-ink-muted" style={{ left: 4 - GUTTER }}>
+              {hh}:00
+            </span>
           </div>
         ))}
         {halfHours
@@ -531,13 +530,19 @@ export function WeekGrid(props: {
               type="button"
               onClick={() => props.onPickDay(d)}
               className={cx(
-                'flex min-h-[44px] w-full flex-col items-center justify-center border-0 border-b border-line bg-transparent',
-                d === props.today ? 'text-accent' : 'text-ink',
+                'flex min-h-[44px] w-full flex-col items-center justify-center border-0 border-b border-line bg-transparent text-ink',
               )}
               aria-label={`${weekdayLong(d)} ${formatIsoDate(d)}, ${list.length} lịch`}
             >
               <span className="caption">{weekdayShort(d)}</span>
-              <span className="body-strong">{Number(d.slice(8, 10))}</span>
+              <span
+                className={cx(
+                  'body-strong min-w-6 rounded-full px-1 text-center',
+                  d === props.today && 'bg-cal-now text-on-cal-now',
+                )}
+              >
+                {Number(d.slice(8, 10))}
+              </span>
             </button>
             <div className="flex flex-col gap-0.5 p-0.5">
               {list.map((it) => (
@@ -545,13 +550,16 @@ export function WeekGrid(props: {
                   key={it.id}
                   to="/lich/$id"
                   params={{ id: it.id }}
-                  className={cx(blockClass(it), 'relative! block min-h-[34px]')}
+                  className={cx(blockClass(it), 'relative! block min-h-[34px] px-1!')}
                 >
-                  <span className="caption block truncate font-semibold">
+                  {/* Cột hẹp ~50px: tên hai dòng, 12px, để còn đọc được */}
+                  <span className="line-clamp-2 text-[12px] leading-[15px] font-semibold [overflow-wrap:anywhere]">
                     {it.guestCount > 1 ? `${it.guestCount} · ` : ''}
                     {it.name}
                   </span>
-                  <span className={cx('caption block', calTone(it).sub)}>{it.startTime}</span>
+                  <span className={cx('block text-[12px] leading-[15px]', calTone(it).sub)}>
+                    {it.startTime}
+                  </span>
                 </Link>
               ))}
               {list.length === 0 ? <span className="caption py-2 text-center text-ink-muted">—</span> : null}

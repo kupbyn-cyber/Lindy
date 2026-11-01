@@ -17,29 +17,24 @@ export function DayHeader(props: { date: string; count: number | null; showAtten
   const off = q.data?.off ?? []
   const pending = q.data?.pending ?? []
   return (
-    <section className="mx-4 overflow-hidden rounded-[var(--radius-md)] border border-line bg-surface-raised">
+    <section className="mx-4 overflow-hidden rounded-[var(--radius-lg)] border border-line bg-surface-raised">
       <p className="body-strong m-0 px-3 py-2">
         {weekdayLong(props.date)} {formatIsoDate(props.date).slice(0, 5)} ·{' '}
         {props.count == null ? 'Đang tải…' : `${props.count} lịch`}
       </p>
-      {q.data ? (
-        off.length || pending.length ? (
-          <div className="flex items-start gap-2 border-t border-line bg-warning-soft px-3 py-2 text-warning">
-            <UserX size={18} strokeWidth={1.8} aria-hidden="true" className="mt-0.5 shrink-0" />
-            <div className="flex min-w-0 flex-col">
-              {off.length ? <span className="body-strong break-words">Nghỉ: {off.join(', ')}</span> : null}
-              {pending.length ? (
-                <span className={off.length ? 'caption break-words' : 'body-strong break-words'}>
-                  {pending.join(', ')} xin nghỉ, chờ duyệt
-                </span>
-              ) : null}
-            </div>
+      {/* Không ai nghỉ thì không hiện dòng nào (S46) */}
+      {off.length || pending.length ? (
+        <div className="flex items-start gap-2 border-t border-line bg-warning-soft px-3 py-2 text-warning">
+          <UserX size={18} strokeWidth={1.8} aria-hidden="true" className="mt-0.5 shrink-0" />
+          <div className="flex min-w-0 flex-col">
+            {off.length ? <span className="body-strong break-words">Nghỉ: {off.join(', ')}</span> : null}
+            {pending.length ? (
+              <span className={off.length ? 'caption break-words' : 'body-strong break-words'}>
+                {pending.join(', ')} xin nghỉ, chờ duyệt
+              </span>
+            ) : null}
           </div>
-        ) : (
-          <p className="caption m-0 border-t border-line px-3 py-2 text-ink-muted">
-            Đủ nhân sự, không ai nghỉ
-          </p>
-        )
+        </div>
       ) : null}
       {props.showAttention ? <AttentionPanel compact /> : null}
     </section>
