@@ -3,11 +3,12 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Button, Note, TextField } from '~/components/ui'
 import { ApiError, api } from '~/lib/api'
+import { retryNetworkRead } from '~/lib/network'
 import { getMeFn } from '~/server/me'
 
 export const Route = createFileRoute('/dang-nhap')({
   beforeLoad: async () => {
-    const me = await getMeFn()
+    const me = await retryNetworkRead(() => getMeFn())
     if (me) throw redirect({ to: me.mustChangePassword ? '/doi-mat-khau' : '/' })
   },
   head: () => ({ meta: [{ title: 'Đăng nhập · LINDY OS' }] }),

@@ -1,11 +1,12 @@
 // Bắt đổi mật khẩu lần đầu (K04, P16). Server cũng chặn mọi API khác khi cờ còn bật.
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ChangePasswordForm } from '~/components/ChangePasswordForm'
+import { retryNetworkRead } from '~/lib/network'
 import { getMeFn } from '~/server/me'
 
 export const Route = createFileRoute('/doi-mat-khau')({
   beforeLoad: async () => {
-    const me = await getMeFn()
+    const me = await retryNetworkRead(() => getMeFn())
     if (!me) throw redirect({ to: '/dang-nhap' })
     if (!me.mustChangePassword) throw redirect({ to: '/' })
   },

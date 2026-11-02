@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter } from '@tanstack/react-router'
+import { AppError } from './components/AppError'
 import { ToastProvider } from './components/ui'
 import { routeTree } from './routeTree.gen'
 
@@ -20,6 +21,7 @@ export function getRouter() {
   return createRouter({
     routeTree,
     context: { queryClient },
+    defaultErrorComponent: AppError,
     defaultPreload: 'intent',
     scrollRestoration: true,
     Wrap: ({ children }) => (

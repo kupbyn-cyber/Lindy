@@ -7,13 +7,14 @@ import { AppBar, cx, Icon, type IconName } from '~/components/ui'
 import { api } from '~/lib/api'
 import { useLiveEvents } from '~/lib/live'
 import { useBranch } from '~/lib/me'
+import { retryNetworkRead } from '~/lib/network'
 import { registerServiceWorker } from '~/lib/push-client'
 import { useKeyboardInset } from '~/lib/use-keyboard-inset'
 import { getMeFn } from '~/server/me'
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async () => {
-    const me = await getMeFn()
+    const me = await retryNetworkRead(() => getMeFn())
     if (!me) throw redirect({ to: '/dang-nhap' })
     if (me.mustChangePassword) throw redirect({ to: '/doi-mat-khau' })
     return { me }
