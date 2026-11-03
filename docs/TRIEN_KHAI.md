@@ -7,7 +7,7 @@ Cập nhật 13/10/2026: dựng bằng `Dockerfile` riêng theo cách của CEN 
 | Mục | Giá trị |
 |---|---|
 | Bảng quản lý | https://v2.tinhgon.xyz (mục **Triển khai website**) |
-| Địa chỉ app | **https://lindy.n2.tinhgon.xyz** (SSL tự cấp) |
+| Địa chỉ app | **https://lindy.aiduocviec.com** (T05; tên miền cũ `lindy.n2.tinhgon.xyz` tự chuyển sang, trừ `/api/health` và API trạm in) |
 | Mã nguồn | GitHub `kupbyn-cyber/Lindy` (riêng tư), nhánh `main`. Chưa bật tự triển khai: push xong phải bấm **Triển khai lại** |
 | Gói | Vibe Host Starter: **2 dịch vụ tính cả website** (website Lindy + 1 DB là hết), **1 GB lưu trữ tính chung** ảnh website, DB và bản sao lưu; website 0,3 nhân, 512 MB RAM |
 | Database | PostgreSQL 16 `linhdy-db`, chỉ có địa chỉ nội bộ, gắn vào website ở trang DB → Website sử dụng; Vibe Host tự điền `DATABASE_URL`. Tạo lại website thì phải gắn lại (không còn chỗ để Vibe Host tự tạo DB) |
@@ -43,7 +43,7 @@ Mẫu: `.env.example` (Vibe Host đọc file này khi tạo website).
 | `LINDY_APP_PASSWORD` | Trong `.local/prod-env.txt` (sinh bằng `bun scripts/gen-prod-env.ts`) | Có |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Trong `.local/prod-env.txt`; khác khoá local | Khoá riêng: có |
 | `VAPID_SUBJECT` | `mailto:` + email liên hệ thật của quán | |
-| `APP_ORIGIN` | `https://lindy.n2.tinhgon.xyz` (không có `/` cuối) | |
+| `APP_ORIGIN` | `https://lindy.aiduocviec.com` (không có `/` cuối). Tên miền khác giá trị này thì đăng nhập bị chặn (403) | |
 | `TRUST_PROXY` | `1` (lấy IP người dùng ở cuối `X-Forwarded-For`, do proxy Vibe Host thêm) | |
 | `INITIAL_OWNER_NAME`, `INITIAL_OWNER_PHONE` | `Linh` và SĐT đăng nhập của Linh | |
 | `INITIAL_OWNER_PASSWORD` | Mật khẩu tạm ≥ 8 ký tự; Linh đổi khi đăng nhập lần đầu | Có |
@@ -54,7 +54,7 @@ Mẫu: `.env.example` (Vibe Host đọc file này khi tạo website).
 
 ## Kiểm tra trạng thái
 
-Nhật ký triển khai: dòng `[release]` cho biết bước chuẩn bị DB. Sau khi lên, mở `https://lindy.n2.tinhgon.xyz/api/health`:
+Nhật ký triển khai: dòng `[release]` cho biết bước chuẩn bị DB. Sau khi lên, mở `https://lindy.aiduocviec.com/api/health`:
 
 - `"ready": true` → đã chuẩn bị DB xong.
 - `"missingEnv": [...]` → tên biến còn thiếu hoặc gõ sai tên.
@@ -67,6 +67,14 @@ Nhật ký triển khai: dòng `[release]` cho biết bước chuẩn bị DB. S
 1. Sao lưu DB nếu bản mới có migration (mục **Sao lưu**).
 2. Push lên `main` → **Triển khai lại**.
 3. Xem nhật ký có `[release] Xong` và `/api/health` → `ready: true`.
+
+## Đổi tên miền (T05, 03/11/2026)
+
+1. Vibe Host → Lindy → **Cấu hình**: `APP_ORIGIN` = `https://lindy.aiduocviec.com`, lưu.
+2. **Triển khai lại** (hoặc đẩy code lên `main`, website đang tự triển khai từ GitHub).
+3. Mở `https://lindy.n2.tinhgon.xyz` phải tự sang `https://lindy.aiduocviec.com`; `/api/health` → `ready: true`.
+4. Mỗi người: xoá icon LINDY OS cũ → Safari mở `lindy.aiduocviec.com` → Thêm vào Màn hình chính → đăng nhập → **Thêm → Thông báo** → bật lại. Cookie và thông báo gắn theo tên miền nên không mang sang được.
+5. Trạm in không phải cài lại (API trạm in không chuyển hướng). Muốn đổi thì chạy lại `setup --server https://lindy.aiduocviec.com …`.
 
 ## Sau khi lên lần đầu
 

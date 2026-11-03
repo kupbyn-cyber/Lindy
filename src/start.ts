@@ -27,9 +27,20 @@ const serverSetup = createMiddleware().server(async ({ next, request }) => {
   return result
 })
 
+// Tên miền cũ → tên miền chính trong APP_ORIGIN (T05). 307 để đổi lại được mà trình duyệt không nhớ mãi.
+const canonicalHost = createMiddleware().server(async ({ next, request }) => {
+  const { canonicalRedirect } = await import('./server/http/canonical-host')
+  const { env } = await import('./server/env')
+  const location = canonicalRedirect(request, env('APP_ORIGIN'))
+  if (location) {
+    throw new Response(null, { status: 307, headers: { location, 'cache-control': 'no-store' } })
+  }
+  return next()
+})
+
 // Server function (getMeFn) cũng được chặn gọi từ trang khác.
 const csrfMiddleware = createCsrfMiddleware({ filter: (ctx) => ctx.handlerType === 'serverFn' })
 
 export const startInstance = createStart(() => ({
-  requestMiddleware: [csrfMiddleware, serverSetup],
+  requestMiddleware: [canonicalHost, csrfMiddleware, serverSetup],
 }))

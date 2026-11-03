@@ -139,6 +139,12 @@ Nguồn: kế hoạch `docs/plans/2026-10-12-dot-0-dot-1.md` mục 11, sau phả
 - Xoá website cũ, tạo lại từ đầu. Dự định dùng DB mới, nhưng gói tính cả website là dịch vụ nên không tạo được DB thứ hai: dùng lại `linhdy-db` (giữ dữ liệu, tài khoản cũ).
 - Chi tiết: `docs/TRIEN_KHAI.md`, `docs/BAI_HOC_TRIEN_KHAI.md`.
 
+## T05 — Tên miền chính lindy.aiduocviec.com (03/11/2026, anh duyệt)
+
+- Địa chỉ app: **`https://lindy.aiduocviec.com`** (CNAME về `lindy.n2.tinhgon.xyz`, SSL Let's Encrypt do Vibe Host cấp). `APP_ORIGIN` đặt bằng địa chỉ này.
+- Mở tên miền cũ `lindy.n2.tinhgon.xyz` thì tự chuyển (307) sang tên miền chính, giữ trang đang mở. Không chuyển: thao tác ghi, `/api/health`, API trạm in (`/api/print/agent/…`), địa chỉ nội bộ.
+- Cookie đăng nhập và thông báo đẩy gắn theo tên miền: mỗi người xoá icon cũ, thêm lại icon từ tên miền mới, đăng nhập, bật lại thông báo.
+
 ## K09–K11 — Đơn hàng, trước Đợt 2 (13/10/2026, đã chốt)
 
 Nguồn: hỏi khi lập kế hoạch `docs/plans/2026-10-13-dot-2-don-hang.md`.

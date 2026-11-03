@@ -269,7 +269,7 @@ function setup() {
   const server = (arg('server') ?? '').replace(/\/+$/, '')
   const token = arg('token') ?? ''
   const printer = arg('printer') ?? ''
-  if (!/^https?:\/\//.test(server)) throw new Error('Thiếu --server (địa chỉ app, ví dụ https://lindy.n2.tinhgon.xyz).')
+  if (!/^https?:\/\//.test(server)) throw new Error('Thiếu --server (địa chỉ app, ví dụ https://lindy.aiduocviec.com).')
   if (!/^[\w-]{20,100}$/.test(token)) throw new Error('Thiếu hoặc sai --token (mã kết nối tạo ở Thêm → Máy in bill).')
   parsePrinter(printer)
   writeFileSync(CONFIG, JSON.stringify({ server, token, printer }, null, 2))
