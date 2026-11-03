@@ -100,13 +100,13 @@ const request = (k: SeedKey, categoryCode: string, amount: number, note = 'Mua �
   createExpense(auth(k), { branchId: cs3, createRequestId: rid(), categoryCode, amount, note })
 
 describe('3.12 — đề nghị chi và duyệt chi', () => {
-  it('PRD 8, 22, §13C: đề nghị 650.000đ vật tư → Nhung duyệt → chi tiền mặt, số dư giảm đúng một lần', async () => {
+  it('PRD 8, 22, §13C: đề nghị 650.000đ vật tư → Linh duyệt → Nhung chi tiền mặt, số dư giảm đúng một lần', async () => {
     const b0 = await balances()
     const e = await request('trang', 'supplies', 650_000, 'Mua gel, cọ')
     expect(e).toMatchObject({ status: 'requested', requiredLevel: 'manager' })
     expect(await balances()).toEqual(b0) // test 22: chưa duyệt → số dư không đổi
-    const a = await actOnExpense(auth('nhung'), e.id, 'approve', { version: e.version })
-    expect(a).toMatchObject({ status: 'approved', approvedByName: 'Nhung', needsOwnerReview: false })
+    const a = await actOnExpense(auth('linh'), e.id, 'approve', { version: e.version })
+    expect(a).toMatchObject({ status: 'approved', approvedByName: 'Linh', needsOwnerReview: false })
     expect(await balances()).toEqual(b0) // đã duyệt, chưa chi → số dư không đổi (invariant 9)
     const p = await actOnExpense(auth('nhung'), e.id, 'pay', { version: a.version, method: 'cash' })
     expect(p).toMatchObject({ status: 'paid', paidAccountName: 'Tiền mặt CS3' })
@@ -139,10 +139,12 @@ describe('3.12 — đề nghị chi và duyệt chi', () => {
       ),
       '42501',
     )
-    // Đúng 1.000.000đ: Nhung duyệt được
+    // S58: đúng 1.000.000đ cũng chỉ Linh duyệt
     const edge = await request('trang', 'supplies', 1_000_000)
     expect(edge.requiredLevel).toBe('manager')
-    await actOnExpense(auth('nhung'), edge.id, 'approve', { version: edge.version })
+    expect(
+      (await err(actOnExpense(auth('nhung'), edge.id, 'approve', { version: edge.version }))).status,
+    ).toBe(403)
     const ok = await actOnExpense(auth('linh'), big.id, 'approve', { version: big.version })
     expect(ok).toMatchObject({ status: 'approved', approvedByName: 'Linh' })
   })
@@ -150,7 +152,7 @@ describe('3.12 — đề nghị chi và duyệt chi', () => {
   it('S40: thợ không tự duyệt, không bấm Đã chi; không sửa số tiền sau khi duyệt; thợ chỉ thấy phiếu của mình', async () => {
     const e = await request('trang', 'supplies', 100_000)
     expect((await err(actOnExpense(auth('trang'), e.id, 'approve', { version: e.version }))).status).toBe(403)
-    const a = await actOnExpense(auth('nhung'), e.id, 'approve', { version: e.version })
+    const a = await actOnExpense(auth('linh'), e.id, 'approve', { version: e.version })
     expect(
       (await err(actOnExpense(auth('trang'), e.id, 'pay', { version: a.version, method: 'cash' }))).status,
     ).toBe(403)
@@ -188,23 +190,28 @@ describe('3.12 — đề nghị chi và duyệt chi', () => {
     ).toBe(false)
   })
 
-  it('Linh lập phiếu → duyệt luôn; Nhung lập phiếu trong hạn mức → duyệt luôn và vào Cần xem lại của Linh', async () => {
+  it('S58 — Nhung lập phiếu nhỏ cũng chờ Linh; SQL không tự duyệt hoặc từ chối được', async () => {
     const l = await request('linh', 'rent', 8_000_000, 'Tiền nhà tháng')
     expect(l).toMatchObject({ status: 'approved', needsOwnerReview: false })
     const n = await request('nhung', 'supplies', 200_000, 'Mua bông')
-    expect(n).toMatchObject({ status: 'approved', needsOwnerReview: true })
-    expect(n.can.review).toBe(false) // chỉ Linh bấm "Đã xem"
-    const seen = (await listExpenses(auth('linh'), { branchId: cs3, filter: 'approved' })).items.find(
-      (i) => i.id === n.id,
+    expect(n).toMatchObject({ status: 'requested', needsOwnerReview: false })
+    expect(n.can.approve).toBe(false)
+    expect(n.can.reject).toBe(false)
+    await expectPgError(
+      withUser(uid('nhung'), (tx) => tx`update expense_requests set status = 'approved' where id = ${n.id}`),
+      '42501',
     )
-    expect(seen).toMatchObject({ needsOwnerReview: true })
-    expect(seen!.can.review).toBe(true)
-    expect((await err(actOnExpense(auth('nhung'), n.id, 'review', { version: n.version }))).status).toBe(403)
-    const r = await actOnExpense(auth('linh'), n.id, 'review', { version: n.version })
-    expect(r.needsOwnerReview).toBe(false)
-    // Nhung lập phiếu trên hạn mức → chờ Linh
-    const big = await request('nhung', 'supplies', 2_000_000)
-    expect(big.status).toBe('requested')
+    await expectPgError(
+      withUser(
+        uid('nhung'),
+        (tx) =>
+          tx`update expense_requests set status = 'rejected', reject_reason = 'Không mua' where id = ${n.id}`,
+      ),
+      '42501',
+    )
+    const ok = await actOnExpense(auth('linh'), n.id, 'approve', { version: n.version })
+    expect(ok.approvedByName).toBe('Linh')
+    expect(ok.can.pay).toBe(true)
   })
 })
 

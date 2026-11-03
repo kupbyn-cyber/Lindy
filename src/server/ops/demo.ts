@@ -269,10 +269,14 @@ async function build(owner: Auth, branchId: string) {
         await transitionAppointment(mgr, appointment.id, 'no_show', { version: 1 })
         continue
       }
-      const { orders } = await createOrderFromAppointment(authOf(creator), appointment.id, {
-        createRequestId: randomUUID(),
-        guests: guests > 1 ? [{ guestNo: 2, name: null, phone: null }] : undefined,
-      })
+      const orders = []
+      for (let guestNo = 1; guestNo <= guests; guestNo++) {
+        const res = await createOrderFromAppointment(authOf(creator), appointment.id, {
+          createRequestId: randomUUID(),
+          guestNo,
+        })
+        orders.push(res.order)
+      }
       for (const [gi, o] of orders.entries()) {
         const t = templates[(i + gi) % templates.length]!
         const doer = doers[(i + gi) % doers.length]!
@@ -339,7 +343,7 @@ async function build(owner: Auth, branchId: string) {
       })
       summary.expenses++
       if (!pay) continue
-      const approver = hasPerm(mgr, branchId, 'expense.approve_within_limit') ? mgr : owner
+      const approver = owner
       const a = await actOnExpense(approver, e.id, 'approve', { version: e.version })
       if (hasPerm(mgr, branchId, 'cashbook.manage'))
         await actOnExpense(mgr, a.id, 'pay', { version: a.version, method: 'cash' })

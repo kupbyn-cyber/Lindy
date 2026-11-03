@@ -20,14 +20,23 @@ export async function staffOff(auth: Auth, input: { branchId?: string; date: str
   if (!isIsoDate(input.date)) throw invalid('Ngày không hợp lệ.')
   const rows = await withUser(
     auth.userId,
-    (tx) => tx<{ displayName: string; status: 'approved' | 'requested' }[]>`
-      select display_name, status from app.staff_off_on(${branch.id}::uuid, ${input.date}::date)
+    (tx) => tx<
+      {
+        displayName: string
+        status: 'approved' | 'requested'
+        startTime: string | null
+        endTime: string | null
+      }[]
+    >`
+      select display_name, status, start_time, end_time from app.staff_off_hours_on(${branch.id}::uuid, ${input.date}::date)
       order by display_name`,
   )
+  const label = (r: (typeof rows)[number]) =>
+    r.startTime ? `${r.displayName} (${r.startTime}–${r.endTime})` : r.displayName
   return {
     date: input.date,
-    off: rows.filter((r) => r.status === 'approved').map((r) => r.displayName),
-    pending: rows.filter((r) => r.status === 'requested').map((r) => r.displayName),
+    off: rows.filter((r) => r.status === 'approved').map(label),
+    pending: rows.filter((r) => r.status === 'requested').map(label),
   }
 }
 
@@ -35,16 +44,39 @@ type Row = Parameters<typeof leaveView>[1]
 
 export async function createLeave(
   auth: Auth,
-  input: { branchId?: string; createRequestId: string; fromDate: string; toDate: string; reason: string },
+  input: {
+    branchId?: string
+    createRequestId: string
+    fromDate: string
+    toDate: string
+    reason: string
+    startTime?: string | null
+    endTime?: string | null
+  },
 ): Promise<LeaveView> {
   const branch = requireBranch(auth, input.branchId)
   if (!hasPerm(auth, branch.id, 'attendance.own')) throw forbidden('Không có quyền đăng ký nghỉ.')
+  const { startTime, endTime } = input
+  if (startTime != null || endTime != null) {
+    const validTime = (v: string | null | undefined): v is string =>
+      !!v && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+    if (
+      !validTime(startTime) ||
+      !validTime(endTime) ||
+      input.fromDate !== input.toDate ||
+      startTime < '09:00' ||
+      endTime > '21:00' ||
+      endTime <= startTime
+    )
+      throw invalid('Chọn khoảng nghỉ trong cùng ngày, từ 09:00 đến 21:00, giờ kết thúc sau giờ bắt đầu.')
+  }
+  if (!isIsoDate(input.fromDate) || !isIsoDate(input.toDate)) throw invalid('Ngày nghỉ không hợp lệ.')
   if (input.toDate < input.fromDate) throw invalid('Đến ngày phải từ ngày bắt đầu trở đi.')
   return withUser(auth.userId, async (tx) => {
     const [row] = await tx<{ id: string }[]>`
-      insert into leave_requests (branch_id, user_id, from_date, to_date, reason, create_request_id)
+      insert into leave_requests (branch_id, user_id, from_date, to_date, reason, create_request_id, start_time, end_time)
       values (${branch.id}, ${auth.userId}, ${input.fromDate}::date, ${input.toDate}::date, ${input.reason.trim()},
-              ${input.createRequestId})
+              ${input.createRequestId}, ${startTime ?? null}::time, ${endTime ?? null}::time)
       on conflict (user_id, create_request_id) do nothing
       returning id`
     // Bấm hai lần cùng mã: trả đơn đã lưu
@@ -56,6 +88,17 @@ export async function createLeave(
       )[0]?.id
     if (!id) throw invalid('Không lưu được đơn nghỉ. Tải lại trang.')
     const [r] = await tx<Row[]>`${LEAVE_SELECT(tx)} where l.id = ${id}`
+    if (
+      !row &&
+      r &&
+      (r.branchId !== branch.id ||
+        r.fromDate !== input.fromDate ||
+        r.toDate !== input.toDate ||
+        r.startTime !== (startTime ?? null) ||
+        r.endTime !== (endTime ?? null) ||
+        r.reason !== input.reason.trim())
+    )
+      throw invalid('Mã yêu cầu đã dùng cho đơn nghỉ khác. Tải lại trang.')
     return leaveView(auth, r!)
   })
 }

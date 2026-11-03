@@ -547,45 +547,60 @@ describe('Tạo đơn từ lịch (module §13 test 26–28)', () => {
     expect((await getAppointment(auth('trang'), appointment.id)).status).toBe('completed')
   })
 
-  it('28, S06 — lịch 2 khách: Tạo đơn ra luôn 2 đơn ngang nhau; bấm lại không ra thêm', async () => {
+  it('S57 — Nhung tạo khách 1, Chin tạo khách 2; không trùng và không đóng lịch sớm', async () => {
     const { appointment } = await createAppointment(auth('trang'), apptInput(2))
     const rq = rid()
-    const a = await createOrderFromAppointment(auth('trang'), appointment.id, {
+    const a = await createOrderFromAppointment(auth('nhung'), appointment.id, {
       createRequestId: rq,
-      guests: [{ guestNo: 2, name: null, phone: null }],
+      guestNo: 1,
     })
-    expect(a.orders).toHaveLength(2)
-    expect(a.orders.map((o) => o.appointment?.guestNo)).toEqual([1, 2])
-    expect(a.orders[0]!.customer?.name).toBe('Thu Hà')
-    // Khách 2 để trống tên: không tạo hồ sơ, đơn ghi "Khách đi cùng Thu Hà"
-    expect(a.orders[1]!.customer).toBeNull()
-    expect(a.orders[1]!.guestLabel).toBe('Khách đi cùng Thu Hà')
-    // Gửi lại cùng mã: trả đúng 2 đơn cũ
-    const again = await createOrderFromAppointment(auth('trang'), appointment.id, { createRequestId: rq })
-    expect(again.orders.map((o) => o.id)).toEqual(a.orders.map((o) => o.id))
-    // Bấm lại (mã mới): đủ đơn rồi → mở đơn có sẵn, không tạo thêm
-    const b = await createOrderFromAppointment(auth('trang'), appointment.id, { createRequestId: rid() })
-    expect(b.order.id).toBe(a.orders[0]!.id)
-    // Người khác (không thấy đơn của Trang) bấm tạo đơn → 409, không tạo thêm
+    expect(a.orders).toHaveLength(1)
+    expect(a.order.appointment?.guestNo).toBe(1)
     expect(
-      (await err(createOrderFromAppointment(auth('chin'), appointment.id, { createRequestId: rid() })))
-        .status,
-    ).toBe(409)
-    const detail = await getAppointment(auth('nhung'), appointment.id)
-    expect(detail.orders.map((o) => o.guestNo)).toEqual([1, 2])
-
-    // Một đơn xác nhận, đơn kia còn làm → lịch vẫn Đang làm; huỷ đơn kia → lịch Hoàn thành
-    const [o1, o2] = a.orders as [(typeof a.orders)[0], (typeof a.orders)[0]]
-    const s1 = await updateOrder(auth('trang'), o1.id, {
-      version: o1.version,
-      customerId: o1.customer!.id,
+      (await createOrderFromAppointment(auth('nhung'), appointment.id, { createRequestId: rq, guestNo: 1 }))
+        .order.id,
+    ).toBe(a.order.id)
+    expect(
+      (
+        await err(
+          createOrderFromAppointment(auth('nhung'), appointment.id, { createRequestId: rq, guestNo: 2 }),
+        )
+      ).status,
+    ).toBe(422)
+    const s1 = await updateOrder(auth('nhung'), a.order.id, {
+      version: a.order.version,
+      customerId: a.order.customer!.id,
       serviceDate: today,
       items: [svc('CB02', ['trang'])],
       discounts: [],
     })
     await confirmOrder(auth('nhung'), s1.id, s1.version)
     expect((await getAppointment(auth('nhung'), appointment.id)).status).toBe('in_progress')
-    await cancelOrder(auth('nhung'), o2.id, o2.version, 'Khách thứ hai không làm')
+    const results = await Promise.allSettled([
+      createOrderFromAppointment(auth('chin'), appointment.id, { createRequestId: rid(), guestNo: 2 }),
+      createOrderFromAppointment(auth('trang'), appointment.id, { createRequestId: rid(), guestNo: 2 }),
+    ])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    const detail = await getAppointment(auth('nhung'), appointment.id)
+    expect(detail.orders.map((o) => o.guestNo)).toEqual([1, 2])
+    const o2 = detail.orders.find((o) => o.guestNo === 2)!
+    expect(
+      (
+        await err(
+          updateOrder(auth('trang'), a.order.id, {
+            version: s1.version,
+            customerId: a.order.customer!.id,
+            serviceDate: today,
+            items: [svc('CB02', ['trang'])],
+            discounts: [],
+          }),
+        )
+      ).status,
+    ).toBe(403)
+    await cancelOrder(auth('nhung'), o2.id, 1, 'Khách thứ hai không làm')
+    expect((await getAppointment(auth('nhung'), appointment.id)).status).toBe('in_progress')
+    const cur = await getAppointment(auth('nhung'), appointment.id)
+    await updateAppointment(auth('nhung'), appointment.id, { version: cur.version, guestCount: 1 })
     expect((await getAppointment(auth('nhung'), appointment.id)).status).toBe('completed')
   })
 
@@ -594,6 +609,7 @@ describe('Tạo đơn từ lịch (module §13 test 26–28)', () => {
     const bad = await err(
       createOrderFromAppointment(auth('trang'), appointment.id, {
         createRequestId: rid(),
+        guestNo: 2,
         guests: [{ guestNo: 2, name: 'Lan', phone: '12ab' }],
       }),
     )
@@ -601,23 +617,21 @@ describe('Tạo đơn từ lịch (module §13 test 26–28)', () => {
     expect((await getAppointment(auth('nhung'), appointment.id)).orders).toHaveLength(0)
     const res = await createOrderFromAppointment(auth('trang'), appointment.id, {
       createRequestId: rid(),
+      guestNo: 2,
       guests: [
         { guestNo: 2, name: 'Lan', phone: '0911 222 444' },
         { guestNo: 3, name: '', phone: null },
       ],
     })
-    expect(res.orders.map((o) => o.customer?.name ?? o.guestLabel)).toEqual([
-      'Thu Hà',
-      'Lan',
-      'Khách đi cùng Thu Hà',
-    ])
-    expect(res.orders[1]!.customer?.phone).toBe('0911222444')
+    expect(res.orders.map((o) => o.customer?.name ?? o.guestLabel)).toEqual(['Lan'])
+    expect(res.orders[0]!.customer?.phone).toBe('0911222444')
   })
 
   it('S08 — số đơn luôn bằng số khách: tăng số khách thì Tạo đơn ra thêm đơn; giảm dưới khách đã có đơn → chặn', async () => {
     const { appointment } = await createAppointment(auth('nhung'), apptInput(2))
     const first = await createOrderFromAppointment(auth('nhung'), appointment.id, { createRequestId: rid() })
-    expect(first.orders).toHaveLength(2)
+    expect(first.orders).toHaveLength(1)
+    await createOrderFromAppointment(auth('chin'), appointment.id, { createRequestId: rid(), guestNo: 2 })
     const d = await getAppointment(auth('nhung'), appointment.id)
     const up = await updateAppointment(auth('nhung'), appointment.id, { version: d.version, guestCount: 3 })
     const more = await createOrderFromAppointment(auth('nhung'), appointment.id, { createRequestId: rid() })

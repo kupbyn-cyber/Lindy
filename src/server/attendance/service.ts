@@ -63,6 +63,8 @@ type LeaveRow = {
   userId: string
   userName: string | null
   fromDate: string
+  startTime: string | null
+  endTime: string | null
   toDate: string
   reason: string
   status: LeaveStatus
@@ -75,7 +77,7 @@ type LeaveRow = {
 }
 
 export const LEAVE_SELECT = (tx: Tx) => tx`
-  select l.id, l.branch_id, l.user_id, u.display_name as user_name, l.from_date::text, l.to_date::text, l.reason,
+  select l.id, l.branch_id, l.user_id, u.display_name as user_name, l.from_date::text, l.to_date::text, to_char(l.start_time, 'HH24:MI') as start_time, to_char(l.end_time, 'HH24:MI') as end_time, l.reason,
          l.status, l.requested_at, ud.display_name as decided_by_name, l.decided_at,
          uc.display_name as cancelled_by_name, l.decide_note, l.version
   from leave_requests l
@@ -96,6 +98,14 @@ export function leaveView(auth: Auth, r: LeaveRow) {
     fromDate: r.fromDate,
     toDate: r.toDate,
     days,
+    startTime: r.startTime,
+    endTime: r.endTime,
+    minutes:
+      r.startTime && r.endTime
+        ? Number(r.endTime.slice(0, 2)) * 60 +
+          Number(r.endTime.slice(3)) -
+          (Number(r.startTime.slice(0, 2)) * 60 + Number(r.startTime.slice(3)))
+        : null,
     reason: r.reason,
     status: r.status,
     requestedAt: new Date(r.requestedAt).toISOString(),

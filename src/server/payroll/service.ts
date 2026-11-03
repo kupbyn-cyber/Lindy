@@ -32,6 +32,8 @@ type ViewRow = {
   kpiBonus: string
   bonus: string
   deduction: string
+  hourlyLeaveMinutes: number
+  hourlyLeaveDeduction: string
   carryIn: string
   grossPay: string
   advances: string
@@ -64,6 +66,8 @@ function lineOf(r: ViewRow, name: string) {
     kpiBonus: n(r.kpiBonus),
     bonus: n(r.bonus),
     deduction: n(r.deduction),
+    hourlyLeaveMinutes: r.hourlyLeaveMinutes ?? 0,
+    hourlyLeaveDeduction: n(r.hourlyLeaveDeduction),
     carryIn: n(r.carryIn),
     grossPay: n(r.grossPay),
     advances: n(r.advances),
@@ -86,7 +90,11 @@ async function settingsOf(tx: Tx, branchId: string) {
 }
 
 async function viewRows(tx: Tx, branchId: string, first: string) {
-  const rows = await tx<ViewRow[]>`select * from app.payroll_view(${branchId}, ${first}::date)`
+  const rows = await tx<ViewRow[]>`
+    select p.*, coalesce(h.hourly_leave_minutes, 0) as hourly_leave_minutes,
+           coalesce(h.hourly_leave_deduction, 0) as hourly_leave_deduction
+    from app.payroll_view(${branchId}, ${first}::date) p
+    left join app.payroll_hourly(${branchId}, ${first}::date) h on h.user_id = p.user_id`
   const who = new Map(
     (
       await tx<{ userId: string; displayName: string }[]>`

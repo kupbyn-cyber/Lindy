@@ -2,7 +2,7 @@
 // Mỗi test dùng ngày riêng trong quá khứ để số liệu không lẫn với file test khác chạy song song.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { ItemInput } from '../../src/lib/order-math'
-import { addDays, toLocalDate } from '../../src/lib/time'
+import { addDays, addMonths, toLocalDate } from '../../src/lib/time'
 import { createCustomer } from '../../src/server/customers/service'
 import { closeSql } from '../../src/server/db/client'
 import type { AppError } from '../../src/server/http/errors'
@@ -82,8 +82,7 @@ describe('Báo cáo ngày (PRD §11)', () => {
 
 describe('Báo cáo tháng', () => {
   it('doanh thu theo ngày cộng lại bằng tổng tháng; theo dịch vụ, theo thợ; khách mới và quay lại', async () => {
-    const base = addDays(today, -125)
-    const month = base.slice(0, 7)
+    const month = addMonths(today.slice(0, 7), -12)
     const d1 = `${month}-03`
     const d2 = `${month}-17`
     const old = (await createCustomer(auth('nhung'), { name: 'Khách cũ báo cáo', phone: null })).customer

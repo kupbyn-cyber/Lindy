@@ -25,6 +25,16 @@ export const LeaveBody = z.strictObject({
   createRequestId: z.uuid('Thiếu mã yêu cầu.'),
   fromDate: isoDate('Chọn từ ngày.'),
   toDate: isoDate('Chọn đến ngày.'),
+  startTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Giờ không hợp lệ.')
+    .nullable()
+    .optional(),
+  endTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Giờ không hợp lệ.')
+    .nullable()
+    .optional(),
   reason: z.string().trim().min(1, 'Ghi lý do nghỉ.').max(300, 'Tối đa 300 ký tự.'),
 })
 

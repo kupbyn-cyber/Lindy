@@ -1,6 +1,4 @@
-// UI16 (phần chi) — Thu chi (Đợt 3B-1, bước 3.13; PRD §7.3, §13C; Q19, Q20).
-// Mọi người đề nghị chi và xem phiếu của mình. Nhung duyệt đến 1.000.000đ/phiếu trừ 4 nhóm; trên mức hoặc 4 nhóm Linh
-// duyệt. "Đã chi" (Nhung, Linh) mới ghi tiền ra khỏi tài khoản. Nút hiện theo quyền; server và DB vẫn kiểm lại.
+// S58: Linh duyệt chi; Nhung, Linh ghi Đã chi sau khi được duyệt.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
@@ -42,11 +40,11 @@ const STATUS: Record<ExpenseView['status'], { label: string; tone: ChipTone }> =
   cancelled: { label: 'Đã huỷ', tone: REQUEST_TONE.cancelled },
 }
 
-const LIMIT = 1_000_000
+const _LIMIT = 1_000_000
 
 function Page() {
   const can = useCan()
-  const approver = can('expense.approve_within_limit') || can('expense.approve_above_limit')
+  const approver = can('expense.approve_above_limit')
   const [filter, setFilter] = useState<Filter>(approver ? 'pending' : 'all')
   const [creating, setCreating] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -139,8 +137,7 @@ function CreateSheet(props: { open: boolean; onClose: () => void; categories: Da
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const key = useRef('')
-  const cat = props.categories.find((c) => c.code === category)
-  const owner = !!cat?.ownerOnly || (amount ?? 0) > LIMIT
+  const _cat = props.categories.find((c) => c.code === category)
 
   async function save() {
     setBusy(true)
@@ -206,9 +203,7 @@ function CreateSheet(props: { open: boolean; onClose: () => void; categories: Da
         maxLength={300}
         onChange={(e) => setNote(e.target.value)}
       />
-      <p className="caption m-0 text-ink-muted">
-        {owner ? 'Phiếu này Linh duyệt.' : 'Nhung hoặc Linh duyệt.'}
-      </p>
+      <p className="caption m-0 text-ink-muted">Chỉ Linh duyệt khoản chi.</p>
       {error ? <Note tone="danger">{error}</Note> : null}
     </Sheet>
   )

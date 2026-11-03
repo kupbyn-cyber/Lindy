@@ -124,6 +124,7 @@ function DetailPage() {
   const [actionError, setActionError] = useState<string | null>(null)
   // Tên, SĐT khách đi cùng khi tạo đơn lịch nhiều khách (S06)
   const [askGuests, setAskGuests] = useState(false)
+  const [selectedGuest, setSelectedGuest] = useState(1)
   const [guests, setGuests] = useState<{ guestNo: number; name: string; phone: string }[]>([])
 
   if (q.isLoading) return <p className="body px-4 text-ink-muted">Đang tải…</p>
@@ -194,14 +195,16 @@ function DetailPage() {
     }
   }
 
-  // Khách chưa có đơn (S08: số đơn luôn bằng số khách)
+  // Khách chưa có đơn (S57: mỗi lần tạo một đơn).
   const taken = new Set(activeOrders.map((o) => o.guestNo))
   const missing = Array.from({ length: d.guestCount }, (_, i) => i + 1).filter((n) => !taken.has(n))
   const companionLabel = `Khách đi cùng ${d.name}`
 
-  // Tạo đơn từ lịch (module §10, S06): tạo đủ đơn cho mọi khách chưa có đơn; lịch tự sang Đang làm.
-  // Một đơn → mở đơn để chọn dịch vụ; nhiều đơn → ở lại lịch, mở từng đơn ở danh sách bên dưới.
-  async function createOrders(list: { guestNo: number; name: string; phone: string }[]) {
+  // S57: chọn khách, tạo một đơn rồi mở để chọn dịch vụ.
+  async function createOrders(
+    list: { guestNo: number; name: string; phone: string }[],
+    guestNo = selectedGuest,
+  ) {
     setOrderBusy(true)
     setOrderError(null)
     if (!orderRequest.current) orderRequest.current = crypto.randomUUID()
@@ -209,6 +212,7 @@ function DetailPage() {
       const res = await api<{ orders: { id: string }[] }>(`/api/appointments/${d.id}/create-order`, {
         body: {
           createRequestId: orderRequest.current,
+          guestNo,
           guests: list.map((g) => ({
             guestNo: g.guestNo,
             name: g.name.trim() || null,
@@ -225,6 +229,11 @@ function DetailPage() {
         toast(`Đã tạo ${res.orders.length} đơn. Mở từng đơn để chọn dịch vụ.`)
       }
     } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        await qc.invalidateQueries({ queryKey: ['appointments'] })
+        setAskGuests(false)
+        orderRequest.current = ''
+      }
       setOrderError(errorText(e))
     } finally {
       setOrderBusy(false)
@@ -234,10 +243,12 @@ function DetailPage() {
   function onCreateOrder() {
     setOrderError(null)
     const others = missing.filter((n) => n > 1)
-    if (others.length === 0) {
-      void createOrders([])
+    if (d.guestCount === 1) {
+      void createOrders([], 1)
       return
     }
+    setSelectedGuest(missing[0]!)
+    orderRequest.current = ''
     setGuests(others.map((n) => ({ guestNo: n, name: '', phone: '' })))
     setAskGuests(true)
   }
@@ -444,15 +455,28 @@ function DetailPage() {
 
       <Sheet
         open={askGuests}
-        title={`Tạo ${missing.length} đơn cho ${d.guestCount} khách`}
-        onClose={() => setAskGuests(false)}
+        title={`Tạo đơn · Khách ${selectedGuest}`}
+        onClose={() => {
+          if (!orderBusy) setAskGuests(false)
+        }}
         footer={
           <Button block variant="primary" loading={orderBusy} onClick={() => void createOrders(guests)}>
-            Tạo {missing.length} đơn
+            Tạo đơn khách {selectedGuest}
           </Button>
         }
       >
-        {missing.includes(1) ? (
+        <SegmentedControl
+          ariaLabel="Chọn khách tạo đơn"
+          options={missing.map((n) => ({ value: String(n), label: `Khách ${n}` }))}
+          value={String(selectedGuest)}
+          onChange={(v) => {
+            if (orderBusy) return
+            setSelectedGuest(Number(v))
+            orderRequest.current = ''
+            setOrderError(null)
+          }}
+        />
+        {selectedGuest === 1 ? (
           <div className="flex flex-col gap-1 rounded-[var(--radius-md)] border border-line p-3">
             <span className="label text-ink-muted">Khách 1 · người đặt</span>
             <span className="body-strong">
@@ -461,34 +485,40 @@ function DetailPage() {
             </span>
           </div>
         ) : null}
-        {guests.map((g, i) => (
-          <div
-            key={g.guestNo}
-            className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-line p-3"
-          >
-            <span className="label text-ink-muted">Khách {g.guestNo}</span>
-            <TextField
-              label="Tên"
-              placeholder={companionLabel}
-              value={g.name}
-              maxLength={100}
-              onChange={(e) =>
-                setGuests((old) => old.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-              }
-            />
-            <TextField
-              label="SĐT"
-              type="tel"
-              inputMode="tel"
-              autoComplete="off"
-              value={g.phone}
-              maxLength={30}
-              onChange={(e) =>
-                setGuests((old) => old.map((x, j) => (j === i ? { ...x, phone: e.target.value } : x)))
-              }
-            />
-          </div>
-        ))}
+        {guests
+          .filter((g) => g.guestNo === selectedGuest)
+          .map((g) => (
+            <div
+              key={g.guestNo}
+              className="flex flex-col gap-2 rounded-[var(--radius-md)] border border-line p-3"
+            >
+              <span className="label text-ink-muted">Khách {g.guestNo}</span>
+              <TextField
+                label="Tên"
+                placeholder={companionLabel}
+                value={g.name}
+                maxLength={100}
+                onChange={(e) =>
+                  setGuests((old) =>
+                    old.map((x) => (x.guestNo === g.guestNo ? { ...x, name: e.target.value } : x)),
+                  )
+                }
+              />
+              <TextField
+                label="SĐT"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                value={g.phone}
+                maxLength={30}
+                onChange={(e) =>
+                  setGuests((old) =>
+                    old.map((x) => (x.guestNo === g.guestNo ? { ...x, phone: e.target.value } : x)),
+                  )
+                }
+              />
+            </div>
+          ))}
         {orderError ? <Note tone="danger">{orderError}</Note> : null}
       </Sheet>
 

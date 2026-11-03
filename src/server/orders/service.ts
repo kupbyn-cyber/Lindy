@@ -1226,14 +1226,14 @@ function guestRequestId(base: string, guestNo: number) {
 export type GuestInput = { guestNo: number; name?: string | null; phone?: string | null }
 
 /**
- * Tạo đơn từ lịch (S06, S08): tạo luôn đơn cho mọi khách của lịch chưa có đơn, mỗi khách một đơn ngang nhau.
+ * S57: tạo một đơn cho khách được chọn (mặc định khách đầu tiên chưa có đơn).
  * Khách 1 là người đặt (gắn hồ sơ như cũ). Khách khác: có tên → tạo/gắn hồ sơ; để trống → đơn ghi
  * "Khách đi cùng <tên người đặt>", không tạo hồ sơ. Bấm lại (cùng mã) không ra thêm đơn (test 28).
  */
 export async function createOrderFromAppointment(
   auth: Auth,
   appointmentId: string,
-  input: { createRequestId: string; guests?: GuestInput[] },
+  input: { createRequestId: string; guestNo?: number; guests?: GuestInput[] },
 ) {
   if (!isUuid(appointmentId)) throw notFound('Không tìm thấy lịch.')
   return withUser(auth.userId, async (tx) => {
@@ -1269,7 +1269,11 @@ export async function createOrderFromAppointment(
       where o.created_by = ${auth.userId} and o.create_request_id = any(${reqIds}::uuid[])
       order by o.guest_no nulls first`
     if (mine.length) {
-      if (mine.some((m) => m.appointmentId !== appointmentId))
+      if (
+        mine.some(
+          (m) => m.appointmentId !== appointmentId || (input.guestNo != null && m.guestNo !== input.guestNo),
+        )
+      )
         throw invalid('Mã yêu cầu đã dùng cho đơn khác. Tải lại trang.')
       const orders = await details(mine.map((m) => m.id))
       return { orders, order: orders[0]!, replayed: true }
@@ -1284,6 +1288,11 @@ export async function createOrderFromAppointment(
     ).filter((o) => o.status !== 'cancelled')
     const taken = new Set(linked.map((o) => o.guestNo))
     const missing = Array.from({ length: a.guestCount }, (_, i) => i + 1).filter((n) => !taken.has(n))
+    if (input.guestNo != null) {
+      if (!Number.isInteger(input.guestNo) || input.guestNo < 1 || input.guestNo > a.guestCount)
+        throw invalid('Khách không thuộc lịch này.')
+      if (taken.has(input.guestNo)) throw conflict('Khách này đã có đơn. Tải lại lịch để xem.')
+    }
     if (missing.length === 0) {
       // Đủ đơn rồi: mở đơn đầu tiên người bấm xem được (bấm hai lần không ra hai đơn)
       const v = linked.find((o) => o.visible)
@@ -1294,13 +1303,17 @@ export async function createOrderFromAppointment(
       throw conflict(`Lịch đã có đủ đơn cho ${a.guestCount} khách.`)
     }
 
+    const guestNo = input.guestNo ?? missing[0]!
+    if (!Number.isInteger(guestNo) || guestNo < 1 || guestNo > a.guestCount)
+      throw invalid('Khách không thuộc lịch này.')
+    if (!missing.includes(guestNo)) throw conflict('Khách này đã có đơn. Tải lại lịch để xem.')
     const today = toLocalDate(new Date(), await branchTz(tx, a.branchId))
     const empty = computeOrder(
       { items: [], discounts: [] },
       { service: () => undefined, combo: () => undefined },
     )
     const created: string[] = []
-    for (const n of missing) {
+    for (const n of [guestNo]) {
       let customerId: string | null = null
       let label: string | null = null
       if (n === 1) {

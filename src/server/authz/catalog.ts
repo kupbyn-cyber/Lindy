@@ -95,7 +95,6 @@ export const ROLES: Record<string, { name: string; permissions: Permission[] }> 
       'cashbook.manage',
       'order.refund',
       'expense.request',
-      'expense.approve_within_limit',
       'attendance.approve',
       'attendance.own',
       'advance.request',

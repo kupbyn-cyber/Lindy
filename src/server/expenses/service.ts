@@ -1,7 +1,4 @@
-// Đề nghị chi và duyệt chi (Đợt 3B-1, bước 3.12; PRD §7.3, §13C; Q19, Q20; invariant 9, 14).
-// Mọi người đề nghị chi. Nhung duyệt đến 1.000.000đ/phiếu trừ 4 nhóm (tiền nhà; lương, thưởng; máy móc thiết bị;
-// sửa chữa); trên mức hoặc 4 nhóm thì Linh. Người lập đủ quyền duyệt thì phiếu duyệt luôn; Nhung tự duyệt phiếu của
-// mình → Cần xem lại của Linh. Tiền chỉ ra khỏi tài khoản khi Nhung, Linh bấm "Đã chi" (bút toán do DB ghi).
+// S58: mọi người đề nghị; Linh duyệt mọi khoản chi; Nhung, Linh ghi Đã chi.
 import { addDays, isIsoDate, toLocalDate } from '~/lib/time'
 import type { Auth } from '../auth/context'
 import { hasPerm, requireBranch } from '../auth/context'
@@ -143,7 +140,7 @@ export async function listExpenses(
       counts: { pending: n(counts?.pending), approved: n(counts?.approved) },
       can: {
         approveAny: hasPerm(auth, branch.id, 'expense.approve_above_limit'),
-        approveWithin: hasPerm(auth, branch.id, 'expense.approve_within_limit'),
+        approveWithin: false,
         pay: hasPerm(auth, branch.id, 'cashbook.manage'),
       },
     }
@@ -206,8 +203,8 @@ export async function actOnExpense(
     if (e.status === target) return v
     if (!v.can[action]) {
       throw forbidden(
-        action === 'approve' && e.requiredLevel === 'owner'
-          ? 'Phiếu trên 1.000.000đ hoặc thuộc nhóm tiền nhà, lương thưởng, máy móc, sửa chữa: chỉ Linh duyệt.'
+        action === 'approve' || action === 'reject'
+          ? 'Chỉ Linh được duyệt hoặc từ chối khoản chi.'
           : action === 'pay'
             ? 'Chỉ Nhung, Linh ghi "Đã chi".'
             : 'Không có quyền làm việc này với phiếu ở trạng thái hiện tại.',

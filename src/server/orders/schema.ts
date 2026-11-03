@@ -144,6 +144,7 @@ export const VoidTicketBody = z.strictObject({
 // Tạo đơn từ lịch (S06): tên, SĐT từng khách đi cùng (khách 2–4); để trống thì ghi "Khách đi cùng …"
 export const FromAppointmentBody = z.strictObject({
   createRequestId: z.uuid('Thiếu mã yêu cầu.'),
+  guestNo: z.number().int().min(1).max(4).optional(),
   guests: z
     .array(
       z.strictObject({

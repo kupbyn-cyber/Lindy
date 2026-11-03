@@ -10,6 +10,7 @@ import {
   getSettings,
   listAppointments,
   transitionAppointment,
+  updateAppointment,
 } from '../../src/server/appointments/service'
 import { closeSql, withUser } from '../../src/server/db/client'
 import { RecordDepositBody } from '../../src/server/deposits/schema'
@@ -427,7 +428,14 @@ describe('Module 34, PRD 36 — báo huỷ 11 tiếng trước hoặc không đ�
 describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
   // Tạo đơn từ lịch ra đủ đơn cho mọi khách (S06); ghi tiền cho từng đơn theo thứ tự khách
   async function ordersFrom(apptId: string, amounts: number[]) {
-    const { orders } = await createOrderFromAppointment(auth('trang'), apptId, { createRequestId: rid() })
+    const orders = []
+    for (let guestNo = 1; guestNo <= amounts.length; guestNo++) {
+      const result = await createOrderFromAppointment(auth('trang'), apptId, {
+        createRequestId: rid(),
+        guestNo,
+      })
+      orders.push(result.order)
+    }
     const saved = []
     for (const [i, amount] of amounts.entries()) {
       const order = orders[i]!
@@ -557,10 +565,16 @@ describe('Module 35, PRD 35, 54 — khách có cọc đến làm', () => {
   it('cọc dư sau khi lịch Hoàn thành (khách 2 không làm) → gợi ý hoàn phần còn lại', async () => {
     const a = await newAppt('trang', { guests: 2, date: today })
     const dep = await heldDeposit(a.id, 200_000)
-    const { saved, orders } = await ordersFrom(a.id, [120_000])
+    const { saved } = await ordersFrom(a.id, [120_000])
     const o = saved[0]!
     await markDone(auth('trang'), o.id, o.version)
-    await cancelOrder(auth('nhung'), orders[1]!.id, orders[1]!.version, 'Khách 2 không làm')
+    const second = await createOrderFromAppointment(auth('trang'), a.id, {
+      createRequestId: rid(),
+      guestNo: 2,
+    })
+    await cancelOrder(auth('nhung'), second.order.id, second.order.version, 'Khách 2 không làm')
+    const current = await getAppointment(auth('nhung'), a.id)
+    await updateAppointment(auth('nhung'), a.id, { version: current.version, guestCount: 1 })
     const d = await getAppointment(auth('nhung'), a.id)
     expect(d.status).toBe('completed')
     expect(d.deposit).toMatchObject({ heldAmount: 100_000, suggestion: 'refund' })

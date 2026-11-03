@@ -4,14 +4,9 @@
 export type ExpenseStatus = 'requested' | 'approved' | 'rejected' | 'paid' | 'cancelled'
 export type ExpenseLevel = 'manager' | 'owner'
 
-/** Nhung duyệt đến 1.000.000đ/phiếu, trừ 4 nhóm luôn cần Linh. */
-export const EXPENSE_LIMIT = 1_000_000
-
-export function canApproveLevel(perms: string[], level: ExpenseLevel) {
-  return (
-    perms.includes('expense.approve_above_limit') ||
-    (level === 'manager' && perms.includes('expense.approve_within_limit'))
-  )
+// S58: mọi khoản chi chỉ chủ quán duyệt.
+export function canApproveLevel(perms: string[], _level: ExpenseLevel) {
+  return perms.includes('expense.approve_above_limit')
 }
 
 export type ExpenseCan = { approve: boolean; reject: boolean; cancel: boolean; pay: boolean; review: boolean }

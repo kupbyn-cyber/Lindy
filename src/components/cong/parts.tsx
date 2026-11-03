@@ -7,6 +7,7 @@ import {
   ConfirmDialog,
   IconButton,
   Note,
+  SegmentedControl,
   Sheet,
   StatusChip,
   TextArea,
@@ -68,6 +69,9 @@ export function LeaveSheet(props: { open: boolean; onClose: () => void; today: s
   const [from, setFrom] = useState(props.today)
   const [to, setTo] = useState(props.today)
   const [reason, setReason] = useState('')
+  const [hourly, setHourly] = useState(false)
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('10:00')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const key = useRef('')
@@ -78,13 +82,26 @@ export function LeaveSheet(props: { open: boolean; onClose: () => void; today: s
     if (!key.current) key.current = crypto.randomUUID()
     try {
       const l = await api<LeaveView>('/api/leave', {
-        body: { createRequestId: key.current, fromDate: from, toDate: to < from ? from : to, reason },
+        body: {
+          createRequestId: key.current,
+          fromDate: from,
+          toDate: hourly ? from : to < from ? from : to,
+          reason,
+          startTime: hourly ? startTime : null,
+          endTime: hourly ? endTime : null,
+        },
       })
       key.current = ''
       setReason('')
       await qc.invalidateQueries({ queryKey: ['attendance'] })
       void qc.invalidateQueries({ queryKey: ['orders', 'overview'] })
-      toast(l.status === 'approved' ? 'Đã lưu ngày nghỉ (đã duyệt).' : 'Đã gửi đơn nghỉ, chờ Nhung duyệt.')
+      void qc.invalidateQueries({ queryKey: ['payroll'] })
+      void qc.invalidateQueries({ queryKey: ['appointments', 'off'] })
+      toast(
+        l.status === 'approved'
+          ? 'Đã lưu ngày nghỉ (đã duyệt).'
+          : 'Đã gửi đơn nghỉ, chờ Nhung hoặc Linh duyệt.',
+      )
       props.onClose()
     } catch (e) {
       setError(errorText(e))
@@ -110,6 +127,12 @@ export function LeaveSheet(props: { open: boolean; onClose: () => void; today: s
         </Button>
       }
     >
+      <SegmentedControl
+        ariaLabel="Loại nghỉ"
+        options={['Cả ngày', 'Theo giờ']}
+        value={hourly ? 'Theo giờ' : 'Cả ngày'}
+        onChange={(v) => setHourly(v === 'Theo giờ')}
+      />
       <div className="grid grid-cols-2 gap-2">
         <TextField
           label="Từ ngày"
@@ -120,14 +143,38 @@ export function LeaveSheet(props: { open: boolean; onClose: () => void; today: s
             if (to < e.target.value) setTo(e.target.value)
           }}
         />
-        <TextField
-          label="Đến hết ngày"
-          type="date"
-          min={from}
-          value={to}
-          onChange={(e) => setTo(e.target.value)}
-        />
+        {!hourly ? (
+          <TextField
+            label="Đến hết ngày"
+            type="date"
+            min={from}
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        ) : null}
       </div>
+      {hourly ? (
+        <div className="grid grid-cols-2 gap-2">
+          <TextField
+            label="Từ giờ"
+            type="time"
+            min="09:00"
+            max="21:00"
+            step={60}
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+          />
+          <TextField
+            label="Đến giờ"
+            type="time"
+            min="09:00"
+            max="21:00"
+            step={60}
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+          />
+        </div>
+      ) : null}
       <TextField
         label="Lý do"
         placeholder="Về quê, khám bệnh…"
@@ -136,8 +183,9 @@ export function LeaveSheet(props: { open: boolean; onClose: () => void; today: s
         onChange={(e) => setReason(e.target.value)}
       />
       <p className="caption m-0 text-ink-muted">
-        Nghỉ có phép hay không phép đều tính là ngày nghỉ; vượt số ngày được hưởng thì trừ 1 ngày lương mỗi
-        ngày, không phạt thêm.
+        {hourly
+          ? 'Nghỉ theo giờ trừ riêng vào lương cứng, dù còn ngày nghỉ được hưởng.'
+          : 'Nghỉ có phép hay không phép đều tính là ngày nghỉ; vượt số ngày được hưởng thì trừ 1 ngày lương mỗi ngày, không phạt thêm.'}
       </p>
       {error ? <Note tone="danger">{error}</Note> : null}
     </Sheet>
@@ -162,6 +210,8 @@ export function LeaveList(props: { items: LeaveView[]; showName?: boolean }) {
       await api(`/api/leave/${l.id}/${a}`, { body: { version: l.version, note: note.trim() || null } })
       await qc.invalidateQueries({ queryKey: ['attendance'] })
       void qc.invalidateQueries({ queryKey: ['orders', 'overview'] })
+      void qc.invalidateQueries({ queryKey: ['payroll'] })
+      void qc.invalidateQueries({ queryKey: ['appointments', 'off'] })
       toast(a === 'approve' ? 'Đã duyệt ngày nghỉ.' : a === 'reject' ? 'Đã từ chối.' : 'Đã huỷ đơn nghỉ.')
       setAct(null)
       setNote('')
@@ -182,7 +232,11 @@ export function LeaveList(props: { items: LeaveView[]; showName?: boolean }) {
             <span className="body-strong">
               {props.showName ? `${l.name} · ` : ''}
               {dateSpan(l.fromDate, l.toDate)}
-              {l.days > 1 ? ` (${l.days} ngày)` : ''}
+              {l.startTime
+                ? ` · ${l.startTime}–${l.endTime} (${l.minutes} phút)`
+                : l.days > 1
+                  ? ` (${l.days} ngày)`
+                  : ''}
             </span>
             <StatusChip tone={LEAVE_TONE[l.status]}>{LEAVE_LABEL[l.status]}</StatusChip>
           </div>

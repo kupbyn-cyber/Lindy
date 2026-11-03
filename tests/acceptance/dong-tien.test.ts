@@ -96,7 +96,8 @@ beforeAll(async () => {
     note: 'Bông, cồn',
   })
   expenseId = e.id
-  await actOnExpense(auth('nhung'), e.id, 'pay', { version: e.version, method: 'cash' })
+  const approved = await actOnExpense(auth('linh'), e.id, 'approve', { version: e.version })
+  await actOnExpense(auth('nhung'), e.id, 'pay', { version: approved.version, method: 'cash' })
   await createTransfer(auth('nhung'), {
     branchId: cs4,
     idempotencyKey: rid(),
@@ -206,14 +207,10 @@ describe('3.19 — ảnh chứng từ (S48)', () => {
 })
 
 describe('3.21 — Cần xem lại của Linh', () => {
-  it('gom phiếu chi Nhung tự duyệt, phiếu hoàn của Nhung; Tổng quan đếm đúng; Nhung không xem được', async () => {
+  it('phiếu chi Linh duyệt không cần xem lại; phiếu hoàn của Nhung vẫn có; Tổng quan đếm đúng', async () => {
     const q = await reviewQueue(auth('linh'), { branchId: cs4 })
-    expect(q.items.map((i) => [i.kind, i.id])).toEqual(
-      expect.arrayContaining([
-        ['expense', expenseId],
-        ['refund', refundId],
-      ]),
-    )
+    expect(q.items.map((i) => [i.kind, i.id])).toEqual(expect.arrayContaining([['refund', refundId]]))
+    expect(q.items.some((i) => i.kind === 'expense' && i.id === expenseId)).toBe(false)
     const ov = await overview(auth('linh'), { branchId: cs4, period: 'day' })
     expect(ov.attention.reviewTotal).toBe(q.total)
     expect((await err(reviewQueue(auth('nhung'), { branchId: cs4 }))).status).toBe(403)

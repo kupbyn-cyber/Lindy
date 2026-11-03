@@ -1,5 +1,5 @@
 // Form tạo/sửa lịch (bước 1.12) trong bottom sheet. Không có ô chọn thợ (D17).
-// Tạo nhanh: chạm khung giờ hoặc chip giờ → nhập tên → Lưu (S52). Cảnh báo không chặn lưu (§8).
+// Tạo nhanh: chạm khung giờ → nhập tên → Lưu (S52, S54). Cảnh báo không chặn lưu (§8).
 // Mùa cọc (Đợt 3, module §5.1, §6): form tạo lịch hiện phần cọc và số gợi ý; chưa nhận cọc vẫn lưu được (K16).
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -18,7 +18,7 @@ import { ApiError, api } from '~/lib/api'
 import { addMinutes, type Detail, type ListItem, type Settings, type Warnings } from '~/lib/appointments'
 import { formatVND } from '~/lib/money'
 import { movePhoneOutOfName, nameLooksMessy, normalizePhone } from '~/lib/phone'
-import { hhmmToMinutes, minutesToHHMM } from '~/lib/time'
+import { hhmmToMinutes } from '~/lib/time'
 import { CustomerPicker } from '../don-hang/pickers'
 
 type Values = {
@@ -40,14 +40,6 @@ const DAY_END = 24 * 60
 /** "1h30" */
 const durationLabel = (min: number) =>
   `${Math.floor(min / 60)}h${min % 60 ? String(min % 60).padStart(2, '0') : ''}`
-
-/** Tám mốc 15 phút từ giờ mở form, không qua nửa đêm. */
-function startChips(from: string) {
-  const m = hhmmToMinutes(from)
-  return Array.from({ length: 8 }, (_, i) => m + i * 15)
-    .filter((x) => x < DAY_END)
-    .map(minutesToHHMM)
-}
 
 function fromDetail(d: Detail): Values {
   return {
@@ -87,9 +79,7 @@ export function AppointmentForm(props: {
   const [warnings, setWarnings] = useState<Warnings | null>(null)
   const [picking, setPicking] = useState(false)
   // Lịch thường chỉ cần tên và giờ: ngày, giờ lẻ, dịch vụ, ghi chú mở khi cần (S52)
-  const [timeOpen, setTimeOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
-  const [chipFrom, setChipFrom] = useState('09:00')
   // SĐT vừa lấy ra khỏi ô tên khách (S40)
   const [moved, setMoved] = useState<string | null>(null)
   const requestId = useRef<string>('')
@@ -108,9 +98,7 @@ export function AppointmentForm(props: {
     setWarnings(null)
     setEndTouched(false)
     setMoved(null)
-    setTimeOpen(!!props.editing)
     setMoreOpen(!!props.editing?.serviceSummary || !!props.editing?.notes)
-    if (props.initial) setChipFrom(props.initial.startTime)
     if (props.editing) {
       setV(fromDetail(props.editing))
       setVersion(props.editing.version)
@@ -365,54 +353,31 @@ export function AppointmentForm(props: {
           </Button>
         </div>
         {isEdit ? null : (
-          <>
-            <div className="lo-field">
-              <span className="lo-field-label label">Bắt đầu</span>
-              <div className="lo-chips">
-                {startChips(chipFrom).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    className={cx('lo-toggle', 'label', v.startTime === t && 'is-on')}
-                    aria-pressed={v.startTime === t}
-                    onClick={() => pickStart(t)}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
+          <div className="lo-field">
+            <span className="lo-field-label label">Thời lượng</span>
+            <div className="lo-chips">
+              {[...new Set([...DURATIONS, props.defaultDurationMin])]
+                .sort((a, b) => a - b)
+                .map((m) => {
+                  const on = hhmmToMinutes(v.endTime) - hhmmToMinutes(v.startTime) === m
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      className={cx('lo-toggle', 'label', on && 'is-on')}
+                      aria-pressed={on}
+                      // Không vừa trong ngày thì tắt: lịch không vắt qua nửa đêm
+                      disabled={hhmmToMinutes(v.startTime) + m > DAY_END - 1}
+                      onClick={() => pickDuration(m)}
+                    >
+                      {durationLabel(m)}
+                    </button>
+                  )
+                })}
             </div>
-            <div className="lo-field">
-              <span className="lo-field-label label">Thời lượng</span>
-              <div className="lo-chips">
-                {[...new Set([...DURATIONS, props.defaultDurationMin])]
-                  .sort((a, b) => a - b)
-                  .map((m) => {
-                    const on = hhmmToMinutes(v.endTime) - hhmmToMinutes(v.startTime) === m
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        className={cx('lo-toggle', 'label', on && 'is-on')}
-                        aria-pressed={on}
-                        // Không vừa trong ngày thì tắt: lịch không vắt qua nửa đêm
-                        disabled={hhmmToMinutes(v.startTime) + m > DAY_END - 1}
-                        onClick={() => pickDuration(m)}
-                      >
-                        {durationLabel(m)}
-                      </button>
-                    )
-                  })}
-              </div>
-            </div>
-          </>
+          </div>
         )}
-        {!timeOpen ? (
-          <Button variant="quiet" className="self-start" onClick={() => setTimeOpen(true)}>
-            Ngày khác, giờ khác
-          </Button>
-        ) : null}
-        <div className={cx('grid grid-cols-[1.3fr_1fr_1fr] gap-2', !timeOpen && 'hidden')}>
+        <div className="grid grid-cols-[1.3fr_1fr_1fr] gap-2">
           <TextField
             label="Ngày"
             type="date"

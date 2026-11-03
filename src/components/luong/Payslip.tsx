@@ -95,7 +95,16 @@ export function Payslip(props: { month: string; userId: string }) {
           />
         ) : null}
         {l.bonus ? <Row label="Thưởng thêm" value={l.bonus} /> : null}
-        {l.deduction ? <Row label="Khấu trừ" value={-l.deduction} /> : null}
+        {l.hourlyLeaveMinutes ? (
+          <Row
+            label="Trừ nghỉ theo giờ"
+            value={-l.hourlyLeaveDeduction}
+            hint={`${l.hourlyLeaveMinutes} phút · lương cứng / công chuẩn / 12 giờ`}
+          />
+        ) : null}
+        {l.deduction > l.hourlyLeaveDeduction ? (
+          <Row label="Khấu trừ" value={-(l.deduction - l.hourlyLeaveDeduction)} />
+        ) : null}
         {l.carryIn ? <Row label="Tạm ứng vượt lương tháng trước" value={-l.carryIn} /> : null}
         <div className="border-t border-line pt-1">
           <Row label="Lương phải trả" value={l.grossPay} strong />
