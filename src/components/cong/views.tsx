@@ -2,7 +2,18 @@
 // tháng. Số liệu và quyền do server tính; ở đây chỉ hiện.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Button, cx, Note, SegmentedControl, Sheet, StatusChip, TextArea, useToast } from '~/components/ui'
+import {
+  Button,
+  cx,
+  Icon,
+  IconButton,
+  Note,
+  SegmentedControl,
+  Sheet,
+  StatusChip,
+  TextArea,
+  useToast,
+} from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { DAY_LABEL, DAY_SHORT, DAY_TONE, type DayCounts, type DayStatus } from '~/lib/attendance'
 import { useCan } from '~/lib/me'
@@ -93,22 +104,54 @@ export function MyMonthView(props: { month: string; onMonth: (m: string) => void
   )
 }
 
+/** Ảnh vào ca (S59–S61): tải khi mở, không lưu đệm */
+function CheckInPhoto(props: { id: string; className?: string }) {
+  return (
+    <img
+      src={`/api/attendance/photo/${props.id}`}
+      alt="Ảnh vào ca"
+      className={cx(
+        'mx-auto block h-auto w-auto max-w-full rounded-[var(--radius-md)] border border-line',
+        props.className ?? 'max-h-[60dvh]',
+      )}
+    />
+  )
+}
+
+/** Dòng phụ của một ngày: giờ, tự duyệt, ảnh đã xoá, ngày đóng cửa, ghi chú */
+const dayMeta = (d: DayView) => [
+  times(d),
+  d.autoApproved ? 'tự duyệt' : '',
+  d.photo?.purged ? 'ảnh đã xoá sau 35 ngày' : '',
+  d.closedReason,
+  d.note,
+]
+
 function DayRow(props: { d: DayView; today: string }) {
   const { d } = props
+  const [photo, setPhoto] = useState(false)
+  const label = `${weekdayShort(d.date)} ${formatIsoDate(d.date).slice(0, 5)}`
+  const meta = dayMeta(d).filter(Boolean).join(' · ')
   return (
     <div className="flex items-center gap-2 border-t border-line py-2">
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="body">
-          {weekdayShort(d.date)} {formatIsoDate(d.date).slice(0, 5)}
+          {label}
           {d.date === props.today ? ' · hôm nay' : ''}
         </span>
-        {times(d) || d.note || d.closedReason ? (
-          <span className="caption text-ink-muted">
-            {[times(d), d.closedReason, d.note].filter(Boolean).join(' · ')}
-          </span>
-        ) : null}
+        {meta ? <span className="caption text-ink-muted">{meta}</span> : null}
       </span>
+      {d.photo && !d.photo.purged ? (
+        <IconButton label="Xem ảnh vào ca" onClick={() => setPhoto(true)}>
+          <Icon name="camera" />
+        </IconButton>
+      ) : null}
       <StatusChip tone={DAY_TONE[d.status]}>{DAY_LABEL[d.status]}</StatusChip>
+      {d.photo && photo ? (
+        <Sheet open title={`Ảnh vào ca · ${label}`} onClose={() => setPhoto(false)}>
+          <CheckInPhoto id={d.photo.id} />
+        </Sheet>
+      ) : null}
     </div>
   )
 }
@@ -174,6 +217,7 @@ export function DayBoardView(props: { date?: string; onDate: (d: string) => void
               <span className="lo-row-meta caption">
                 {[
                   times(p) || (p.status === 'closed' ? '' : 'Chưa vào ca'),
+                  p.autoApproved ? 'tự duyệt' : '',
                   p.hasLeave ? 'có đơn nghỉ đã duyệt' : '',
                   p.note,
                 ]
@@ -266,7 +310,15 @@ function DecideSheet(props: {
         {p.checkIn ? `Vào ca ${times(p)}` : 'Không có giờ vào ca'}
         {p.hasLeave ? ' · có đơn nghỉ đã duyệt' : ''}
         {current ? ` · đang ghi: ${DAY_LABEL[current].toLowerCase()}` : ''}
+        {p.autoApproved ? ' (tự duyệt khi vào ca có ảnh)' : ''}
       </p>
+      {p.photo ? (
+        p.photo.purged ? (
+          <p className="caption m-0 text-ink-muted">Ảnh đã xoá sau 35 ngày.</p>
+        ) : (
+          <CheckInPhoto id={p.photo.id} className="max-h-[40dvh]" />
+        )
+      ) : null}
       <SegmentedControl
         ariaLabel="Công ngày này"
         options={[

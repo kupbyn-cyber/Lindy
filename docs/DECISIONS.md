@@ -266,3 +266,13 @@ Nguồn: `docs/surveys/04-phieu-chinh-sua.md`. Kế hoạch: `docs/plans/2026-10
 | S58 | Chỉ Linh duyệt/từ chối khoản chi, mọi số tiền. Nhung vẫn duyệt lịch nghỉ và ghi đã chi sau duyệt. Thay quyền quản lý duyệt chi trong hạn mức. |
 
 Kế hoạch và phản biện: docs/plans/2026-11-03-nghi-gio-don-tung-khach.md.
+
+## S59–S61 — Vào ca bằng ảnh có giờ (anh duyệt brief 04/11/2026)
+
+| Mã | Quyết định |
+|---|---|
+| S59 | **Vào ca bằng ảnh có giờ máy chủ, tự duyệt công.** Bấm Vào ca mở camera ngay trong app (kiểu Timemark): đồng hồ giờ máy chủ chạy từng giây trên khung hình, ảnh đóng dấu giờ, không chọn được ảnh có sẵn. Không dùng AI, không so mặt, không kiểm wifi/GPS. Vào ca có ảnh → ngày đó **tự thành Đi làm**, không cần Nhung/Linh duyệt (thay PRD §8 "Nhung duyệt công" cho ngày có ảnh). Không chụp được ảnh → **Vào ca không ảnh**, ngày đó chờ duyệt như cũ. Linh, Nhung vẫn đổi được ngày đã tự duyệt (có lý do, có lịch sử). Ra ca giữ nút bấm, không chụp. |
+| S60 | **Ai xem ảnh vào ca:** Linh, Nhung xem ảnh của mọi người; nhân viên chỉ xem ảnh của mình. Kiểm ở API và DB. |
+| S61 | **Ảnh vào ca nén ≤ 150KB, tự xoá vĩnh viễn sau 35 ngày** tính từ ngày vào ca. Ngoại lệ có chủ đích của quy tắc "không xoá vĩnh viễn": chỉ xoá dữ liệu ảnh, dòng chấm công, giờ vào, trạng thái giữ nguyên. Ảnh chứng từ (K19) không đổi, vẫn không xoá. |
+
+Brief: docs/vibe/vao-ca-chup-anh/brief.md. Kế hoạch: docs/plans/2026-11-04-vao-ca-chup-anh.md. Anh duyệt thêm (04/11/2026): **không tự duyệt** ngày quán đóng cửa, ngày có nghỉ cả ngày đã duyệt, tháng đã khoá lương (vẫn ghi giờ và ảnh, Nhung/Linh quyết); **file sao lưu Linh tải không gồm ảnh vào ca**.

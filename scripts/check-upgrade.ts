@@ -338,6 +338,21 @@ try {
     )
       throw new Error('Chấm công sai.')
 
+    // Vào ca có ảnh (0034): ngày công cũ không mang nhãn tự duyệt; đã vào ca hôm nay thì không gửi thêm ảnh được;
+    // việc nền xoá ảnh quá 35 ngày chạy được bằng quyền app_worker
+    const { checkInWithPhoto, purgeOldCheckInPhotos } = await import('../src/server/attendance/photo')
+    const [aa] = await db<{ n: number }[]>`select count(*)::int as n from attendance_days where auto_approved`
+    const photoErr = await checkInWithPhoto(
+      auth,
+      undefined,
+      new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]),
+    )
+      .then(() => null)
+      .catch((e: Error) => e.message)
+    const purged = await purgeOldCheckInPhotos({ force: true })
+    log(`Vào ca có ảnh: ${aa!.n} ngày tự duyệt cũ; gửi ảnh lần hai → "${photoErr}"; xoá ảnh cũ ${purged}`)
+    if (aa!.n !== 0 || !photoErr?.includes('đã vào ca') || purged !== 0) throw new Error('Vào ca có ảnh sai.')
+
     // Lương (0017): sổ doanh thu tính lương ghi bù đơn cũ đã xác nhận; lương tạm tính; tạm ứng Linh tự lập → chi tiền mặt
     const { payslip } = await import('../src/server/payroll/service')
     const { createAdvance, actOnAdvance } = await import('../src/server/payroll/advances')

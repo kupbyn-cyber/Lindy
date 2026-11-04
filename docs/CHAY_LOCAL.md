@@ -87,6 +87,18 @@ Mở http://localhost:3000. `bun run dev` tự bật PostgreSQL nhúng trước 
 5. Tổng quan của Nhung, Linh có **Cần xử lý · chấm công**: ngày công chưa duyệt (trước hôm nay), đơn nghỉ chờ duyệt.
 6. Thiếu hồ sơ (S39): `linh@lindy.test` → **Thêm → Tài khoản → Thêm** một tài khoản thử → hộp mật khẩu tạm nhắc nhập hồ sơ, nút **Đã ghi lại, nhập hồ sơ ngay** mở thẳng hồ sơ ở Nhân viên. Danh sách tài khoản có nhãn **Thiếu hồ sơ**; Cần xử lý của Linh có dòng tên người đó. Đăng nhập tài khoản thử (email `@lindy.test` thì `bun scripts/dev-passwords.ts` đặt mật khẩu dev): Tổng quan hiện "Chưa có hồ sơ nhân viên…".
 
+## Thử vào ca bằng ảnh (S59–S61)
+
+Camera trong app chỉ chạy trên `localhost` hoặc HTTPS; header `Permissions-Policy` và CSP chỉ áp ở bản build nên thử camera trên bản build.
+
+1. `trang@lindy.test` → **Tổng quan → Vào ca**: màn camera mở, đồng hồ giờ máy chủ chạy từng giây; **Chụp** → xem lại → **Vào ca**. Thẻ hiện "Vào ca 8:57 · Đi làm", không cần duyệt. **Lịch → Chấm công → Của tôi**: ngày hôm nay có nút ảnh, dòng phụ "tự duyệt".
+2. Từ chối quyền camera (hoặc máy không có camera) → hộp báo kèm nút **Vào ca không ảnh** → ngày đó Chưa duyệt, Nhung duyệt như cũ.
+3. `nhung@lindy.test` → **Lịch → Chấm công → Duyệt công** → chạm Trang: thấy ảnh, nhãn tự duyệt; đổi sang Nghỉ không phép cần lý do, mất nhãn tự duyệt.
+4. Ngày quán đóng cửa, ngày có nghỉ cả ngày đã duyệt, tháng đã khoá lương: vẫn vào ca có ảnh nhưng không tự duyệt.
+5. Ảnh quá 35 ngày: việc nền (mỗi giờ) xoá dữ liệu ảnh, dòng công giữ, màn hiện "ảnh đã xoá sau 35 ngày". Test: `tests/acceptance/vao-ca-anh.test.ts`. File sao lưu Linh tải không gồm ảnh vào ca.
+
+Thử nhanh bằng Chrome headless: thêm cờ `--use-fake-device-for-media-stream --use-fake-ui-for-media-stream` để có camera giả.
+
 ## Thử tab Khách và Thêm (S40)
 
 1. Đăng nhập lần lượt `linh@`, `nhung@`, `trang@lindy.test` → **Thêm**: mục chia nhóm Hằng ngày, Tiền và báo cáo, Nhân sự, Cài đặt quán, Dữ liệu, Cá nhân; nhóm không có mục theo quyền thì ẩn. Mục có việc chờ hiện số giống thẻ Cần xử lý.

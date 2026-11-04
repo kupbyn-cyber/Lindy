@@ -1,6 +1,7 @@
 // Tiến trình nền chạy trong server (bật bằng RUN_WORKER, mặc định bật): gửi push, việc định kỳ.
 // Chỉ khởi động một lần mỗi tiến trình; an toàn khi chạy nhiều tiến trình nhờ FOR UPDATE SKIP LOCKED và dedupe_key.
 import { notifyOverdue } from './appointments/overdue'
+import { purgeOldCheckInPhotos } from './attendance/photo'
 import { getSql } from './db/client'
 import { env } from './env'
 import { processDueDeliveries } from './notifications/push'
@@ -43,6 +44,10 @@ export function ensureWorker() {
   state.started = true
   state.jobs.push(async () => {
     await notifyOverdue()
+  })
+  // Ảnh vào ca quá 35 ngày (S61): tự giãn còn mỗi giờ một lần
+  state.jobs.push(async () => {
+    await purgeOldCheckInPhotos()
   })
   void sql
     .listen('lindy_push', () => void pushTick())

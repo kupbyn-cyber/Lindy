@@ -99,6 +99,7 @@ import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$
 import { Route as ApiAdvancesIdActionRouteImport } from './routes/api/advances/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
 import { Route as ApiAttachmentsIdActionRouteImport } from './routes/api/attachments/$id.$action'
+import { Route as ApiAttendancePhotoIdRouteImport } from './routes/api/attendance/photo.$id'
 import { Route as ApiClosedDaysIdActionRouteImport } from './routes/api/closed-days/$id.$action'
 import { Route as ApiCustomersIdCompensationsRouteImport } from './routes/api/customers/$id.compensations'
 import { Route as ApiDepositsIdActionRouteImport } from './routes/api/deposits/$id.$action'
@@ -567,6 +568,11 @@ const ApiAttachmentsIdActionRoute = ApiAttachmentsIdActionRouteImport.update({
   path: '/$action',
   getParentRoute: () => ApiAttachmentsIdRoute,
 } as any)
+const ApiAttendancePhotoIdRoute = ApiAttendancePhotoIdRouteImport.update({
+  id: '/api/attendance/photo/$id',
+  path: '/api/attendance/photo/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiClosedDaysIdActionRoute = ApiClosedDaysIdActionRouteImport.update({
   id: '/api/closed-days/$id/$action',
   path: '/api/closed-days/$id/$action',
@@ -735,6 +741,7 @@ export interface FileRoutesByFullPath {
   '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
+  '/api/attendance/photo/$id': typeof ApiAttendancePhotoIdRoute
   '/api/closed-days/$id/$action': typeof ApiClosedDaysIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
@@ -841,6 +848,7 @@ export interface FileRoutesByTo {
   '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
+  '/api/attendance/photo/$id': typeof ApiAttendancePhotoIdRoute
   '/api/closed-days/$id/$action': typeof ApiClosedDaysIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
@@ -949,6 +957,7 @@ export interface FileRoutesById {
   '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
   '/api/attachments/$id/$action': typeof ApiAttachmentsIdActionRoute
+  '/api/attendance/photo/$id': typeof ApiAttendancePhotoIdRoute
   '/api/closed-days/$id/$action': typeof ApiClosedDaysIdActionRoute
   '/api/customers/$id/compensations': typeof ApiCustomersIdCompensationsRoute
   '/api/deposits/$id/$action': typeof ApiDepositsIdActionRoute
@@ -1057,6 +1066,7 @@ export interface FileRouteTypes {
     | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/attachments/$id/$action'
+    | '/api/attendance/photo/$id'
     | '/api/closed-days/$id/$action'
     | '/api/customers/$id/compensations'
     | '/api/deposits/$id/$action'
@@ -1163,6 +1173,7 @@ export interface FileRouteTypes {
     | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/attachments/$id/$action'
+    | '/api/attendance/photo/$id'
     | '/api/closed-days/$id/$action'
     | '/api/customers/$id/compensations'
     | '/api/deposits/$id/$action'
@@ -1270,6 +1281,7 @@ export interface FileRouteTypes {
     | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
     | '/api/attachments/$id/$action'
+    | '/api/attendance/photo/$id'
     | '/api/closed-days/$id/$action'
     | '/api/customers/$id/compensations'
     | '/api/deposits/$id/$action'
@@ -1349,6 +1361,7 @@ export interface RootRouteChildren {
   ApiTipsIndexRoute: typeof ApiTipsIndexRoute
   ApiAccountsIdActionRoute: typeof ApiAccountsIdActionRoute
   ApiAdvancesIdActionRoute: typeof ApiAdvancesIdActionRoute
+  ApiAttendancePhotoIdRoute: typeof ApiAttendancePhotoIdRoute
   ApiClosedDaysIdActionRoute: typeof ApiClosedDaysIdActionRoute
   ApiDepositsIdActionRoute: typeof ApiDepositsIdActionRoute
   ApiExpensesIdActionRoute: typeof ApiExpensesIdActionRoute
@@ -1995,6 +2008,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAttachmentsIdActionRouteImport
       parentRoute: typeof ApiAttachmentsIdRoute
     }
+    '/api/attendance/photo/$id': {
+      id: '/api/attendance/photo/$id'
+      path: '/api/attendance/photo/$id'
+      fullPath: '/api/attendance/photo/$id'
+      preLoaderRoute: typeof ApiAttendancePhotoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/closed-days/$id/$action': {
       id: '/api/closed-days/$id/$action'
       path: '/api/closed-days/$id/$action'
@@ -2284,6 +2304,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTipsIndexRoute: ApiTipsIndexRoute,
   ApiAccountsIdActionRoute: ApiAccountsIdActionRoute,
   ApiAdvancesIdActionRoute: ApiAdvancesIdActionRoute,
+  ApiAttendancePhotoIdRoute: ApiAttendancePhotoIdRoute,
   ApiClosedDaysIdActionRoute: ApiClosedDaysIdActionRoute,
   ApiDepositsIdActionRoute: ApiDepositsIdActionRoute,
   ApiExpensesIdActionRoute: ApiExpensesIdActionRoute,

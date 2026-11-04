@@ -1,5 +1,6 @@
 // Thẻ Vào ca / Ra ca trên Tổng quan (Đợt 4A, bước 4.5): ≤ 2 lần chạm. Chưa có hồ sơ nhân viên thì thẻ báo rõ thay vì
 // ẩn (S39). Giờ do server ghi; bấm lại giữ giờ đầu tiên. Ra ca hỏi lại vì không sửa được giờ đã ghi.
+// Vào ca mở màn chụp ảnh có giờ (S59): có ảnh thì tự duyệt Đi làm.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -10,6 +11,7 @@ import { useCan } from '~/lib/me'
 import { LABEL_TONE } from '~/lib/status-tone'
 import { toLocalTime } from '~/lib/time'
 import type { MyToday } from '~/server/attendance/service'
+import { CheckInCamera } from './CheckInCamera'
 
 export function AttendanceCard() {
   const can = useCan()
@@ -22,6 +24,7 @@ export function AttendanceCard() {
     enabled: allowed,
   })
   const [confirmOut, setConfirmOut] = useState(false)
+  const [camera, setCamera] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,15 +42,25 @@ export function AttendanceCard() {
   if (!q.data.day) return null
   const d = q.data.day
 
-  async function run(action: 'check-in' | 'check-out') {
+  function checkedIn(next: MyToday) {
+    qc.setQueryData(['attendance', 'today'], next)
+    void qc.invalidateQueries({ queryKey: ['attendance'] })
+    const t = next.day?.checkIn
+    toast(
+      `Đã vào ca${t ? ` lúc ${toLocalTime(t)}` : ''}${next.day?.autoApproved ? ' · đã duyệt Đi làm' : ''}.`,
+    )
+    setCamera(false)
+  }
+
+  async function checkOut() {
     setBusy(true)
     setError(null)
     try {
-      const next = await api<MyToday>(`/api/attendance/${action}`, { body: {} })
+      const next = await api<MyToday>('/api/attendance/check-out', { body: {} })
       qc.setQueryData(['attendance', 'today'], next)
       void qc.invalidateQueries({ queryKey: ['attendance'] })
-      const t = action === 'check-in' ? next.day?.checkIn : next.day?.checkOut
-      toast(`${action === 'check-in' ? 'Đã vào ca' : 'Đã ra ca'}${t ? ` lúc ${toLocalTime(t)}` : ''}.`)
+      const t = next.day?.checkOut
+      toast(`Đã ra ca${t ? ` lúc ${toLocalTime(t)}` : ''}.`)
       setConfirmOut(false)
     } catch (e) {
       setError(errorText(e))
@@ -80,12 +93,7 @@ export function AttendanceCard() {
             ) : null}
           </div>
           {!d.checkIn && q.data.canCheckIn ? (
-            <Button
-              block
-              variant={d.hasLeave ? undefined : 'primary'}
-              loading={busy}
-              onClick={() => void run('check-in')}
-            >
+            <Button block variant={d.hasLeave ? undefined : 'primary'} onClick={() => setCamera(true)}>
               Vào ca
             </Button>
           ) : null}
@@ -97,12 +105,13 @@ export function AttendanceCard() {
         </>
       )}
       {error && !confirmOut ? <Note tone="danger">{error}</Note> : null}
+      {camera ? <CheckInCamera onDone={checkedIn} onClose={() => setCamera(false)} /> : null}
       <ConfirmDialog
         open={confirmOut}
         title="Ra ca bây giờ?"
         confirmLabel="Ra ca"
         busy={busy}
-        onConfirm={() => void run('check-out')}
+        onConfirm={() => void checkOut()}
         onCancel={() => setConfirmOut(false)}
       >
         <p className="body m-0 text-ink-muted">Giờ ra ca ghi một lần, không sửa lại được.</p>

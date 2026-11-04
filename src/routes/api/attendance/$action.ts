@@ -1,10 +1,12 @@
 // POST /api/attendance/check-in | check-out — Vào ca / Ra ca của chính mình (giờ do DB ghi)
+// POST /api/attendance/check-in-photo?branchId= — Vào ca có ảnh (thân request là ảnh JPEG ≤ 150KB), tự duyệt (S59)
 // POST /api/attendance/decide — Nhung, Linh quyết một ngày công; approve-all — duyệt mọi người đã vào ca ngày đó
 import { createFileRoute } from '@tanstack/react-router'
+import { checkInWithPhoto, MAX_CHECKIN_PHOTO_BYTES } from '~/server/attendance/photo'
 import { ApproveAllBody, BranchBody, DecideBody } from '~/server/attendance/schema'
 import { approveCheckedIn, checkIn, checkOut, decideDay } from '~/server/attendance/service'
 import { requireAuth } from '~/server/auth/context'
-import { notFound } from '~/server/http/errors'
+import { invalid, notFound } from '~/server/http/errors'
 import { handle, limitWrites, readBody } from '~/server/http/route'
 
 export const Route = createFileRoute('/api/attendance/$action')({
@@ -17,6 +19,13 @@ export const Route = createFileRoute('/api/attendance/$action')({
           switch (params.action) {
             case 'check-in':
               return Response.json(await checkIn(auth, (await readBody(request, BranchBody)).branchId))
+            case 'check-in-photo': {
+              const len = Number(request.headers.get('content-length') ?? 0)
+              if (len > MAX_CHECKIN_PHOTO_BYTES) throw invalid('Ảnh quá 150KB. Chụp lại.')
+              const branchId = new URL(request.url).searchParams.get('branchId') ?? undefined
+              const bytes = new Uint8Array(await request.arrayBuffer())
+              return Response.json(await checkInWithPhoto(auth, branchId, bytes))
+            }
             case 'check-out':
               return Response.json(await checkOut(auth, (await readBody(request, BranchBody)).branchId))
             case 'decide':

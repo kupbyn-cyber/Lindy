@@ -29,17 +29,36 @@ async function grid(tx: Tx, branchId: string, from: string, to: string) {
     from app.attendance_grid(${branchId}, ${from}::date, ${to}::date)`
 }
 
-const dayOf = (r: GridRow) => ({
-  date: r.workDate,
-  status: r.status,
-  /** Quyết định của Nhung, Linh trên ngày này (null = chưa quyết; nghỉ đã duyệt qua đơn không tính) */
-  decided: r.decidedStatus,
-  checkIn: iso(r.checkInAt),
-  checkOut: iso(r.checkOutAt),
-  note: r.note,
-  hasLeave: !!r.leaveId,
-  closedReason: r.closedReason,
-})
+type DayExtra = { autoApproved: boolean; photoId: string | null; purged: boolean }
+
+/** Nhãn tự duyệt và ảnh vào ca (S59–S61), theo người và ngày; RLS lọc như dòng công. */
+async function extras(tx: Tx, branchId: string, from: string, to: string) {
+  const rows = await tx<({ userId: string; workDate: string } & DayExtra)[]>`
+    select a.user_id, a.work_date::text, a.auto_approved, p.id as photo_id, p.purged_at is not null as purged
+    from attendance_days a left join attendance_photos p on p.attendance_day_id = a.id
+    where a.branch_id = ${branchId} and a.work_date between ${from}::date and ${to}::date
+      and (a.auto_approved or p.id is not null)`
+  return new Map(rows.map((r) => [`${r.userId}|${r.workDate}`, r]))
+}
+
+const dayOf = (r: GridRow, x?: Map<string, DayExtra>) => {
+  const e = x?.get(`${r.userId}|${r.workDate}`)
+  return {
+    date: r.workDate,
+    status: r.status,
+    /** Quyết định của Nhung, Linh trên ngày này (null = chưa quyết; nghỉ đã duyệt qua đơn không tính) */
+    decided: r.decidedStatus,
+    /** Tự duyệt khi vào ca có ảnh; Nhung, Linh quyết lại thì mất nhãn */
+    autoApproved: !!e?.autoApproved,
+    /** Ảnh vào ca; purged = đã xoá sau 35 ngày */
+    photo: e?.photoId ? { id: e.photoId, purged: e.purged } : null,
+    checkIn: iso(r.checkInAt),
+    checkOut: iso(r.checkOutAt),
+    note: r.note,
+    hasLeave: !!r.leaveId,
+    closedReason: r.closedReason,
+  }
+}
 
 export type DayView = ReturnType<typeof dayOf>
 
@@ -132,11 +151,16 @@ export async function myToday(auth: Auth, branchId?: string) {
   return withUser(auth.userId, async (tx) => {
     const { today } = await todayOf(tx, branch.id)
     const [row] = (await grid(tx, branch.id, today, today)).filter((r) => r.userId === auth.userId)
+    const [clock] = await tx<{ now: Date; tz: string }[]>`select now(), app.branch_tz(${branch.id}) as tz`
     return {
       today,
+      /** Giờ máy chủ lúc trả lời: màn chụp vào ca chạy đồng hồ theo giờ này, không theo đồng hồ điện thoại */
+      serverNow: new Date(clock!.now).toISOString(),
+      timezone: clock!.tz,
+      name: auth.displayName,
       // Chưa có hồ sơ: không hiện thẻ Vào ca
       hasProfile: !!row,
-      day: row ? dayOf(row) : null,
+      day: row ? dayOf(row, await extras(tx, branch.id, today, today)) : null,
       canCheckIn: !!row && row.status !== 'out',
     }
   })
@@ -171,9 +195,10 @@ export async function myMonth(auth: Auth, input: { branchId?: string; month?: st
   return withUser(auth.userId, async (tx) => {
     const { today, lockedUntil } = await todayOf(tx, branch.id)
     const m = monthOf(input.month, today)
+    const x = await extras(tx, branch.id, m.first, m.last)
     const days = (await grid(tx, branch.id, m.first, m.last))
       .filter((r) => r.userId === auth.userId)
-      .map(dayOf)
+      .map((r) => dayOf(r, x))
     const [profile] = await tx<{ startDate: string; endDate: string | null }[]>`
       select start_date::text, end_date::text from staff_profiles
       where branch_id = ${branch.id} and user_id = ${auth.userId}`
@@ -210,13 +235,14 @@ export async function dayBoard(auth: Auth, input: { branchId?: string; date?: st
     const date = input.date && isIsoDate(input.date) && input.date <= today ? input.date : today
     const who = await names(tx, branch.id)
     const rows = (await grid(tx, branch.id, date, date)).filter((r) => r.status !== 'out')
+    const x = await extras(tx, branch.id, date, date)
     const pendingLeaves = await tx<LeaveRow[]>`
       ${LEAVE_SELECT(tx)}
       where l.branch_id = ${branch.id} and l.status = 'requested'
       order by l.from_date
       limit 100`
     const people = rows
-      .map((r) => ({ userId: r.userId, name: who.get(r.userId) ?? '—', ...dayOf(r) }))
+      .map((r) => ({ userId: r.userId, name: who.get(r.userId) ?? '—', ...dayOf(r, x) }))
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
     return {
       date,
@@ -278,6 +304,7 @@ export async function monthSheet(auth: Auth, input: { branchId?: string; month?:
     const who = await names(tx, branch.id)
     // RLS: thợ chỉ thấy dòng của mình
     const rows = (await grid(tx, branch.id, m.first, m.last)).filter((r) => all || r.userId === auth.userId)
+    const x = await extras(tx, branch.id, m.first, m.last)
     const policies = await tx<{ userId: string; leaveDays: number }[]>`
       select distinct on (user_id) user_id, leave_days from staff_policy_versions
       where branch_id = ${branch.id} and effective_month <= ${m.first}::date
@@ -285,7 +312,7 @@ export async function monthSheet(auth: Auth, input: { branchId?: string; month?:
     const byUser = new Map<string, DayView[]>()
     for (const r of rows) {
       const list = byUser.get(r.userId) ?? []
-      list.push(dayOf(r))
+      list.push(dayOf(r, x))
       byUser.set(r.userId, list)
     }
     const people = [...byUser.entries()]

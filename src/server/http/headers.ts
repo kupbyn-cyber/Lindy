@@ -21,7 +21,8 @@ export function applySecurityHeaders(headers: Headers, opts: { path: string; dev
   headers.set('X-Content-Type-Options', 'nosniff')
   headers.set('Referrer-Policy', 'same-origin')
   headers.set('X-Frame-Options', 'DENY')
-  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  // Camera của chính app cho màn chụp vào ca (S59); trang khác nhúng vào không dùng được
+  headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()')
   const isStatic =
     /\.(js|css|png|svg|ico|woff2?|webmanifest)$/.test(opts.path) || opts.path.startsWith('/assets/')
   if (!isStatic && !headers.has('Cache-Control')) headers.set('Cache-Control', 'no-store')
