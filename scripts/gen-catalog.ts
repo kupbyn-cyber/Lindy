@@ -52,6 +52,11 @@ const services = parseCsv(readFileSync(join(root, 'data/services.csv'), 'utf8'))
     throw new Error(`Giá sai ở ${r.code}`)
   // C12: dịch vụ có cứng móng bảo hành 7 ngày; data ghi warranty_days = 7 cho đúng các dòng này.
   const hasHardening = Number(r.warranty_days) === 7
+  // S64: hàng bán (Kìm) — không giảm giá, không chia cho thợ, không tính hoa hồng, KPI
+  if (r.retail !== undefined && r.retail !== '' && r.retail !== '1')
+    throw new Error(`Cột retail sai ở ${r.code}`)
+  const isRetail = r.retail === '1'
+  if (isRetail && r.price_mode !== 'list') throw new Error(`Hàng bán ${r.code} phải có một giá`)
   return {
     code: r.code!,
     category: r.category!,
@@ -61,6 +66,7 @@ const services = parseCsv(readFileSync(join(root, 'data/services.csv'), 'utf8'))
     priceMin: min,
     priceMax: max,
     hasHardening,
+    isRetail,
     sortOrder: (i + 1) * 10,
   }
 })
@@ -86,6 +92,8 @@ export type SeedService = {
   priceMin: number
   priceMax: number
   hasHardening: boolean
+  /** S64: hàng bán — không giảm giá, không chia cho thợ */
+  isRetail: boolean
   sortOrder: number
 }
 

@@ -25,12 +25,17 @@ describe('Tìm dịch vụ', () => {
   })
 
   it('từ khoá trống trả cả danh mục; không khớp trả rỗng', () => {
-    expect(searchCatalog(items, '  ')).toHaveLength(32)
+    expect(searchCatalog(items, '  ')).toHaveLength(33)
     expect(names('xyzxyz')).toEqual([])
-    expect(names('%')).toHaveLength(32)
+    expect(names('%')).toHaveLength(33)
   })
 
   it('tìm theo nhóm', () => {
     expect(names('mi')).toEqual(expect.arrayContaining(['Uốn mi Collagen', 'Uốn mi phủ đen']))
+  })
+
+  it('S64 — gõ "kim" không dấu hoặc tên nhóm "san pham" ra Kìm', () => {
+    expect(names('kim')).toContain('Kìm')
+    expect(names('san pham')).toEqual(['Kìm'])
   })
 })

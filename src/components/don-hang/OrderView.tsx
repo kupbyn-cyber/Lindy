@@ -362,7 +362,9 @@ export function OrderView(props: {
                       it.staff.length > 1 ? `${s.name} ${formatVND(s.allocatedNetAmount)}` : s.name,
                     )
                     .join(' · ')
-                : (it.unallocatedReason ?? 'Chưa chọn thợ')}
+                : it.isRetail
+                  ? 'Hàng bán, không chia thợ'
+                  : (it.unallocatedReason ?? 'Chưa chọn thợ')}
               {it.discountAmount > 0 ? ` · gốc ${formatVND(it.grossAmount)}` : ''}
             </span>
             {it.outOfRange ? (

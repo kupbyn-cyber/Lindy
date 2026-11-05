@@ -1,4 +1,4 @@
-﻿code,category,name,price_mode,unit,price_min,price_max,warranty_days,note
+﻿code,category,name,price_mode,unit,price_min,price_max,warranty_days,note,retail
 CB01,Cơ bản,Cắt sửa,list,lần,40000,40000,3,
 CB02,Cơ bản,Sơn gel trơn,list,lần,70000,70000,3,"Là ""sơn trơn"" trong combo (C08)"
 CB03,Cơ bản,Cứng móng (2 lớp),list,lần,50000,50000,7,Có cứng móng: bảo hành 7 ngày (C12)
@@ -27,3 +27,4 @@ CS02,Chăm sóc,"Tẩy da chết, chà gót chân",custom,lần,80000,100000,3,"
 CS03,Chăm sóc,Lấy khoé,custom,lần,30000,70000,3,
 MI01,Mi,Uốn mi Collagen,list,lần,180000,180000,3,
 MI02,Mi,Uốn mi phủ đen,list,lần,220000,220000,3,
+SP01,Sản phẩm,Kìm,list,cái,110000,110000,0,"Hàng bán: không giảm giá, không chia % (S64)",1

@@ -86,6 +86,7 @@ function CatalogPage() {
                     <span className="lo-row-meta caption">
                       {s.code}
                       {s.hasHardening ? ' · cứng móng (BH 7 ngày)' : ''}
+                      {s.isRetail ? ' · hàng bán: không giảm giá, không chia %' : ''}
                     </span>
                   </span>
                   <span className="lo-row-side">

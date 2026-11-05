@@ -7,6 +7,8 @@
 // - Mức duyệt mỗi dòng = tổng % (giảm của dòng + giảm cả bill): ≤ 10% thợ, ≤ 20% Nhung, > 20% Linh (C15).
 // - Một thợ nhận cả dòng; nhiều thợ nhập tay, tổng phải bằng tiền thuần của dòng (C10).
 // - Cơ sở hoa hồng = phần được chia + phần giảm quán chịu (ưu đãi bù khiếu nại), chia theo tỷ lệ (invariant 12).
+// - Hàng bán (Kìm, S64): bán đúng giá, không nhận giảm dòng, không nằm trong gốc và phần chia của giảm cả bill,
+//   không chia cho thợ (không hoa hồng). DB kiểm lại khi commit (_order_check, order_required_level).
 import { formatVND } from './money'
 import { addDays } from './time'
 
@@ -52,6 +54,8 @@ export type CatalogService = {
   priceMin: number
   priceMax: number
   hasHardening: boolean
+  /** S64: hàng bán — không giảm giá, không chia cho thợ */
+  isRetail: boolean
   isActive: boolean
 }
 
@@ -138,6 +142,8 @@ export type ComputedItem = {
   shopBorneAmount: number
   outOfRange: boolean
   hasHardening: boolean
+  /** S64: hàng bán (Kìm) */
+  isRetail: boolean
   /** Tổng % giảm tính bậc duyệt (không gồm belowAmount). */
   tierPercent: number
   level: Level
@@ -220,6 +226,8 @@ export function computeOrder(
       const unitPrice = it.unitPrice ?? s.priceMin
       if (!isInt(unitPrice) || unitPrice < 1 || unitPrice > MAX_LINE_AMOUNT)
         errors.push(`${lineNo(i)}: giá không hợp lệ.`)
+      else if (s.isRetail && unitPrice !== s.priceMin)
+        errors.push(`${lineNo(i)}: ${s.name} bán đúng giá ${formatVND(s.priceMin)}, không sửa giá.`)
       const q = isInt(quantity) ? quantity : 1
       const refUnit = Math.max(unitPrice, s.priceMin)
       const below = unitPrice < s.priceMin ? (s.priceMin - unitPrice) * q : 0
@@ -245,6 +253,7 @@ export function computeOrder(
         lineDiscountAmount: below,
         outOfRange: unitPrice > s.priceMax,
         hasHardening: s.hasHardening,
+        isRetail: s.isRetail,
       }
     }
     if (it.type === 'combo') {
@@ -276,6 +285,9 @@ export function computeOrder(
     if (it.grossAmount > MAX_LINE_AMOUNT) errors.push(`${lineNo(i)}: một dòng tối đa 10.000.000đ.`)
   }
   const billGross = items.reduce((a, it) => a + it.grossAmount, 0)
+  // S64: giảm cả bill chỉ tính trên các dòng không phải hàng bán
+  const discountWeights = items.map((it) => (it.isRetail ? 0 : it.grossAmount))
+  const discountBase = discountWeights.reduce((a, b) => a + b, 0)
 
   // 2. Khoản giảm
   const discounts: ComputedDiscount[] = []
@@ -289,13 +301,21 @@ export function computeOrder(
       errors.push(`${label}: dòng áp giảm không tồn tại.`)
       continue
     }
+    if (!onOrder && target!.isRetail) {
+      errors.push(`${label}: ${target!.name} là hàng bán, không áp dụng giảm giá.`)
+      continue
+    }
+    if (onOrder && discountBase === 0 && items.some((it) => it.isRetail)) {
+      errors.push(`${label}: bill chỉ có hàng bán, không áp dụng giảm giá.`)
+      continue
+    }
     const key = `${d.scope}:${d.kind}`
     if (d.kind !== 'manual' && seen.has(key)) {
       errors.push(`${label}: mỗi loại giảm chỉ áp một lần trên một dòng hoặc cả bill.`)
       continue
     }
     seen.add(key)
-    const base = onOrder ? billGross : target!.grossAmount
+    const base = onOrder ? discountBase : target!.grossAmount
     let percent: number | null = PRESET_PERCENT[d.kind] ?? null
     let amount = 0
     let reason = DISCOUNT_LABEL[d.kind]
@@ -320,7 +340,7 @@ export function computeOrder(
     if (percent != null) amount = Math.round((base * percent) / 100)
     if (amount > base) errors.push(`${label}: số tiền giảm lớn hơn giá.`)
     const pct = percent ?? (base > 0 ? (amount * 100) / base : 0)
-    if (onOrder) for (const i of tier.keys()) tier[i] = tier[i]! + pct
+    if (onOrder) for (const i of tier.keys()) tier[i] = tier[i]! + (items[i]!.isRetail ? 0 : pct)
     else tier[d.scope as number] = tier[d.scope as number]! + pct
     discounts.push({
       scope: d.scope,
@@ -336,10 +356,7 @@ export function computeOrder(
   // 3. Dồn giảm vào dòng
   for (const d of discounts) {
     if (d.scope === 'order') {
-      const shares = splitProportional(
-        d.amount,
-        items.map((it) => it.grossAmount),
-      )
+      const shares = splitProportional(d.amount, discountWeights)
       shares.forEach((s, i) => {
         const it = items[i]!
         it.orderDiscountAmount += s
@@ -378,6 +395,12 @@ export function computeOrder(
     requiredLevel = maxLevel(requiredLevel, it.level)
 
     const staff = src.staff ?? []
+    if (it.isRetail) {
+      // S64: hàng bán không chia cho thợ, không cần chọn thợ
+      if (staff.length > 0) errors.push(`${lineNo(i)}: ${it.name} là hàng bán, không chia cho thợ.`)
+      it.unallocatedReason = null
+      continue
+    }
     const ids = staff.map((s) => s.userId)
     if (new Set(ids).size !== ids.length) errors.push(`${lineNo(i)}: một thợ chỉ chọn một lần.`)
     if (staff.length === 1) {
@@ -453,6 +476,7 @@ function blankItem(type: ItemInput['type'], unallocatedReason: string | null): C
     shopBorneAmount: 0,
     outOfRange: false,
     hasHardening: false,
+    isRetail: false,
     tierPercent: 0,
     level: 'none',
     allocations: [],

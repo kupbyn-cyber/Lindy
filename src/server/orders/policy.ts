@@ -1,4 +1,4 @@
-// Luật quyền đơn hàng (PRD §4; K09–K11). Dùng để ẩn/hiện nút và kiểm trước ở server;
+// Luật quyền đơn hàng (PRD §4; K09–K11; S62, S63). Dùng để ẩn/hiện nút và kiểm trước ở server;
 // trigger orders_guard, payments_guard trong DB kiểm lại cùng luật (bước 2.7).
 import { type Level, levelAtLeast, levelOf } from '~/lib/order-math'
 
@@ -13,6 +13,8 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 
 export type OrderCan = {
   edit: boolean
+  /** S63: sửa làm thành tiền thấp đi, đổi ngày làm dịch vụ. Sau Làm xong chỉ Linh, Quản lý (order.confirm). */
+  reduceTotal: boolean
   done: boolean
   confirm: boolean
   /** Lý do chưa xác nhận được (giảm giá chờ người cấp cao hơn duyệt). */
@@ -40,12 +42,16 @@ export function orderCan(
     approvalValid: boolean
     needsOwnerReview: boolean
     reviewedAt: unknown
+    /** Hôm nay (giờ cơ sở) chưa qua ngày làm dịch vụ (S62) */
+    serviceDayOpen: boolean
   },
 ): OrderCan {
   const has = (p: string) => perms.includes(p)
   const open = o.status === 'in_progress' || o.status === 'awaiting_confirmation'
   const needsApproval = levelAtLeast(o.requiredLevel, 'manager') && !o.approvalValid
   const mine = levelOf(perms)
+  const manager = has('order.confirm')
+  const creator = o.createdBy === userId && has('order.create_draft')
   // S41: mọi tài khoản xác nhận được bill của đơn mình xem được (K09); giảm giá chờ duyệt vẫn chặn theo cấp
   const canConfirmRole = (has('order.confirm') || has('order.confirm_bill')) && open
   const confirmBlocked =
@@ -55,11 +61,13 @@ export function orderCan(
         : 'Giảm giá cần Nhung duyệt trước.'
       : null
   return {
-    // K14: đơn Đang làm chỉ người tạo và Nhung, Linh sửa [P39]; K10: sau Làm xong chỉ Nhung, Linh;
-    // đơn đã xác nhận sửa có lý do (D04, bước 2.19)
+    // K14: đơn Đang làm chỉ người tạo và Nhung, Linh sửa [P39]. S62 (thay K10): sau Làm xong người tạo còn sửa
+    // trong ngày làm dịch vụ, qua ngày chỉ Nhung, Linh; đơn đã xác nhận sửa có lý do (D04, bước 2.19)
     edit:
-      (o.status === 'in_progress' && o.createdBy === userId && has('order.create_draft')) ||
-      (o.status !== 'cancelled' && has('order.confirm')),
+      (o.status === 'in_progress' && creator) ||
+      ((o.status === 'awaiting_confirmation' || o.status === 'confirmed') && creator && o.serviceDayOpen) ||
+      (o.status !== 'cancelled' && manager),
+    reduceTotal: o.status === 'in_progress' || manager,
     done: o.status === 'in_progress' && has('order.create_draft'),
     confirm: canConfirmRole && !confirmBlocked,
     confirmBlocked,

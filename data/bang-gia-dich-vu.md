@@ -62,6 +62,12 @@ Ký hiệu trên menu: `k` = nghìn đồng; `/n` = mỗi ngón; `/c` = mỗi c�
 | Uốn mi Collagen | 180.000đ |
 | Uốn mi phủ đen | 220.000đ |
 
+## Sản phẩm (hàng bán, S64)
+
+| Món | Giá |
+|---|---|
+| Kìm | 110.000đ/cái — không giảm giá, không chia % cho ai |
+
 ## Combo nail
 
 | Combo | Giá | Gồm | Menu ghi |

@@ -276,3 +276,13 @@ Kế hoạch và phản biện: docs/plans/2026-11-03-nghi-gio-don-tung-khach.md
 | S61 | **Ảnh vào ca nén ≤ 150KB, tự xoá vĩnh viễn sau 35 ngày** tính từ ngày vào ca. Ngoại lệ có chủ đích của quy tắc "không xoá vĩnh viễn": chỉ xoá dữ liệu ảnh, dòng chấm công, giờ vào, trạng thái giữ nguyên. Ảnh chứng từ (K19) không đổi, vẫn không xoá. |
 
 Brief: docs/vibe/vao-ca-chup-anh/brief.md. Kế hoạch: docs/plans/2026-11-04-vao-ca-chup-anh.md. Anh duyệt thêm (04/11/2026): **không tự duyệt** ngày quán đóng cửa, ngày có nghỉ cả ngày đã duyệt, tháng đã khoá lương (vẫn ghi giờ và ảnh, Nhung/Linh quyết); **file sao lưu Linh tải không gồm ảnh vào ca**.
+
+## S62–S64 — Người tạo sửa đơn, chặn giảm thành tiền, món Kìm (anh duyệt brief và kế hoạch 05/11/2026)
+
+| Mã | Quyết định |
+|---|---|
+| S62 | **Người tạo đơn sửa được đơn của mình trong ngày làm dịch vụ** (đến 23:59 ngày làm dịch vụ trên đơn, giờ cơ sở), kể cả sau Làm xong (Chờ xác nhận, Đã xác nhận). Sửa đơn đã xác nhận vẫn bắt buộc lý do, lưu trước/sau (D04). Qua ngày chỉ Nhung, Linh sửa. Thợ được chia phần mà không phải người tạo vẫn chỉ xem. Đơn ghi ngày hôm qua thì sau Làm xong người tạo không sửa được. Thay K10, K14 phần sau Làm xong. |
+| S63 | **Sau Làm xong chỉ Linh và Quản lý (`order.confirm`) sửa làm thành tiền thấp đi** hoặc đổi ngày làm dịch vụ; người khác bị chặn, báo "Thành tiền giảm từ … xuống …, cần Nhung hoặc Linh sửa." (giao diện, API, trigger DB). "Thành tiền cũ" là thành tiền ngay trước lần sửa. Khi Đang làm vẫn thêm, bớt món tự do. Người tạo sửa đơn đã xác nhận mà **tiền chia của một thợ bị giảm** (chuyển sang người khác, bị bỏ) thì đơn vào **Cần xem lại** của Linh; thêm món, tăng giá thì không. Nhung sửa đơn có phần của mình giữ P31 (mọi lần vào Cần xem lại). Dòng Cần xem lại ghi "<người> sửa đơn đã xác nhận: <lý do>". |
+| S64 | **Món Kìm (SP01, nhóm Sản phẩm, 110.000đ/cái) là hàng bán:** không nhận giảm giá (giảm dòng bị chặn; giảm cả bill chỉ tính và chia trên các dòng khác, bill chỉ có kìm không giảm được), bán đúng giá, không chọn thợ, không hoa hồng, **không vào doanh thu tính KPI của Nhung**, vẫn vào doanh thu quán, báo cáo, lợi nhuận. Cờ `services.is_retail` (chưa có nút sửa cờ); dòng đơn nhớ cờ lúc bán, DB tự đặt. Phiếu hoàn đơn có kìm: phần trừ hoa hồng thợ chia theo tỷ lệ cả đơn như cũ; phần trừ KPI theo tỷ lệ phần không phải hàng bán. Đơn cũ, tháng đã khoá không đổi số. |
+
+Brief: docs/vibe/sua-don-va-kim/brief.md. Kế hoạch: docs/plans/2026-11-05-sua-don-va-kim.md. Migration 0035.

@@ -91,7 +91,7 @@ export function Payslip(props: { month: string; userId: string }) {
           <Row
             label={`Thưởng KPI quản lý ${pct(l.kpiBps)}`}
             value={l.kpiBonus}
-            hint={`Doanh thu quán ${formatVND(l.shopRevenue ?? 0)}`}
+            hint={`Doanh thu tính KPI ${formatVND(l.shopRevenue ?? 0)} (không gồm hàng bán)`}
           />
         ) : null}
         {l.bonus ? <Row label="Thưởng thêm" value={l.bonus} /> : null}

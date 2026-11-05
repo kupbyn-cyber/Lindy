@@ -212,12 +212,14 @@ describe('S20 — máy gửi số tiền, cột hệ thống hoặc trường l�
   })
 })
 
-describe('S21 — thợ không sửa đơn sau Làm xong (K10)', () => {
-  it('API 403; SQL lỗi; Nhung sửa được', async () => {
+describe('S21, S62, S63 — sau Làm xong: người tạo sửa trong ngày, không giảm thành tiền', () => {
+  it('API 403 khi giảm thành tiền hoặc không phải người tạo; SQL lỗi; Nhung sửa được', async () => {
     const o = await newOrder('trang', [svc('CB02', ['trang'])])
     // Đơn Chờ xác nhận (S41: chỉ còn khi chờ duyệt giảm giá hoặc có từ trước)
     await toAwaiting(owner, o.id)
     const done = await getOrder(auth('trang'), o.id)
+    expect(done.can.edit).toBe(true)
+    expect(done.can.reduceTotal).toBe(false)
     const body = {
       version: done.version,
       customerId: null,
@@ -225,18 +227,44 @@ describe('S21 — thợ không sửa đơn sau Làm xong (K10)', () => {
       items: [svc('CB01', ['trang'])],
       discounts: [],
     }
-    expect((await err(updateOrder(auth('trang'), o.id, body))).status).toBe(403)
+    // Sơn gel 70.000đ → Cắt sửa 40.000đ: thành tiền giảm → chỉ Nhung, Linh
+    const lower = await err(updateOrder(auth('trang'), o.id, body))
+    expect(lower.status).toBe(403)
+    expect(lower.message).toMatch(/Thành tiền giảm từ 70\.000đ xuống 40\.000đ/)
+    // Chin không phải người tạo → không sửa được (RLS: không thấy đơn)
+    expect([403, 404]).toContain((await err(updateOrder(auth('chin'), o.id, body))).status)
+    // SQL: người tạo hạ tổng tiền → trigger chặn (S63)
     await expectPgError(
-      withUser(uid('trang'), (tx) => tx`update orders set content_rev = content_rev + 1 where id = ${o.id}`),
+      withUser(
+        uid('trang'),
+        (tx) => tx`update orders set content_rev = content_rev + 1, gross_amount = gross_amount - 30000,
+                     net_amount = net_amount - 30000 where id = ${o.id}`,
+      ),
+      '42501',
+    )
+    // SQL: người tạo đổi ngày làm dịch vụ sau Làm xong → trigger chặn
+    await expectPgError(
+      withUser(
+        uid('trang'),
+        (tx) =>
+          tx`update orders set content_rev = content_rev + 1, service_date = service_date - 1 where id = ${o.id}`,
+      ),
       '42501',
     )
     const edited = await updateOrder(auth('nhung'), o.id, body)
     expect(edited.items[0]!.name).toBe('Cắt sửa')
     const confirmed = await confirmOrder(auth('nhung'), o.id, edited.version)
-    // Đơn đã xác nhận: thợ không sửa được; Nhung sửa phải có lý do (D04, bước 2.19)
-    const changed = { ...body, version: confirmed.version, items: [svc('CB02', ['trang'])] }
-    expect((await err(updateOrder(auth('trang'), o.id, changed))).status).toBe(403)
-    expect((await err(updateOrder(auth('nhung'), o.id, changed))).status).toBe(422)
+    // Đơn đã xác nhận: người tạo sửa trong ngày phải có lý do (D04); thêm món (tăng tiền) thì được
+    const more = {
+      ...body,
+      version: confirmed.version,
+      items: [svc('CB01', ['trang']), svc('CB02', ['trang'])],
+    }
+    expect((await err(updateOrder(auth('trang'), o.id, more))).status).toBe(422)
+    expect((await err(updateOrder(auth('nhung'), o.id, more))).status).toBe(422)
+    const added = await updateOrder(auth('trang'), o.id, { ...more, adjustReason: 'Quên ghi sơn gel' })
+    expect(added.netAmount).toBe(110000)
+    expect(added.needsOwnerReview).toBe(false)
   })
 })
 

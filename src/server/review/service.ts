@@ -55,11 +55,13 @@ export async function reviewQueue(auth: Auth, input: { branchId?: string } = {})
         netAmount: string
         who: string | null
         adjusted: boolean
+        adjustReason: string | null
         at: Date
       }[]
     >`
       select o.id, o.code, o.status, o.net_amount,
              coalesce(ua.display_name, uc.display_name, ux.display_name) as who, o.adjusted_by is not null as adjusted,
+             o.adjust_reason,
              coalesce(o.cancelled_at, o.adjusted_at, o.confirmed_at, o.updated_at) as at
       from orders o
       left join users uc on uc.id = o.confirmed_by
@@ -76,7 +78,7 @@ export async function reviewQueue(auth: Auth, input: { branchId?: string } = {})
           o.status === 'cancelled'
             ? `${o.who ?? ''} huỷ đơn đã xác nhận`
             : o.adjusted
-              ? `${o.who ?? ''} sửa đơn đã xác nhận có phần của mình`
+              ? `${o.who ?? ''} sửa đơn đã xác nhận: ${o.adjustReason ?? ''}`
               : `${o.who ?? ''} tự xác nhận đơn có phần của mình`,
         amount: n(o.netAmount),
         at: when(o.at),

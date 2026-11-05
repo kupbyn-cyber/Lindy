@@ -1,7 +1,8 @@
 // Màn tạo/sửa đơn (UI04, bước 2.13). Tích chọn dịch vụ, app tự điền tiền (C09); số lượng theo ngón/hình/cái;
 // giá khoảng tự điền giá thấp nhất (C14); chọn thợ từng dòng, nhiều thợ nhập tay số tiền (C10); giảm giá theo
 // bậc (C15, K12). Tổng tính ngay trên máy bằng cùng hàm với server; server tính lại khi lưu [P26].
-// "Nháp" là đơn đang soạn trên máy, chưa lưu (K11).
+// "Nháp" là đơn đang soạn trên máy, chưa lưu (K11). S62, S63: sau Làm xong người tạo sửa trong ngày, chỉ thêm được,
+// không giảm thành tiền, không đổi ngày. S64: hàng bán (Kìm) không chọn thợ, không sửa giá, không nhận giảm giá.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Minus, Plus, X } from 'lucide-react'
@@ -132,6 +133,10 @@ export function OrderEditor(props: {
   const defaultStaff = staffList.some((s) => s.id === me.userId) ? [{ userId: me.userId }] : []
   const myLevel = levelOf(branch?.perms ?? [])
   const canPickAnyDate = can('order.confirm')
+  // S63: sau Làm xong người không phải Linh, Nhung không giảm thành tiền, không đổi ngày làm dịch vụ
+  const keepTotal = !!props.order && !props.order.can.reduceTotal
+  const isRetail = (serviceId: string) => !!lookup.service(serviceId)?.isRetail
+  const staffFor = (p: Picked) => (p.kind === 'service' && isRetail(p.id) ? [] : defaultStaff)
 
   // Chọn dịch vụ ngay trong màn đơn chỉ cho đơn Đang làm; đơn đã Làm xong một chạm là đổi tiền nên giữ bảng chọn (S52)
   const inlinePicker = props.order?.status === 'in_progress'
@@ -167,7 +172,7 @@ export function OrderEditor(props: {
                 serviceId: p.id,
                 quantity: 1,
                 unitPrice: null,
-                staff: defaultStaff,
+                staff: staffFor(p),
               }
             : { key: newKey(), type: 'combo', comboId: p.id, staff: defaultStaff },
       ),
@@ -184,9 +189,10 @@ export function OrderEditor(props: {
 
   /** Dòng còn nguyên mặc định: chưa sửa giá, số lượng, thợ, chưa có khoản giảm. Bỏ dòng này không mất gì. */
   function pristine(line: Line, index: number) {
+    const expected = line.type === 'service' && isRetail(line.serviceId) ? [] : defaultStaff
     const sameStaff =
-      line.staff.length === defaultStaff.length &&
-      line.staff.every((s) => defaultStaff.some((x) => x.userId === s.userId))
+      line.staff.length === expected.length &&
+      line.staff.every((s) => expected.some((x) => x.userId === s.userId))
     const noDiscount = !draft.discounts.some((x) => x.scope === index)
     if (line.type === 'service')
       return sameStaff && noDiscount && line.unitPrice == null && line.quantity === 1 && !line.belowReason
@@ -288,6 +294,12 @@ export function OrderEditor(props: {
   }
 
   const lineNames = draft.items.map((_, i) => computed.items[i]?.name || `Dòng ${i + 1}`)
+  // S64: giảm giá chỉ áp được cho dòng không phải hàng bán
+  const discountLines = lineNames.flatMap((label, index) =>
+    computed.items[index]?.isRetail ? [] : [{ index, label }],
+  )
+  const belowOld =
+    keepTotal && computed.errors.length === 0 && computed.netAmount < (props.order?.netAmount ?? 0)
   const awaiting = props.order?.status === 'awaiting_confirmation'
   const levelNote = LEVEL_NOTE[computed.requiredLevel]
   const selfApproves = levelNote && levelAtLeast(myLevel, computed.requiredLevel)
@@ -339,7 +351,12 @@ export function OrderEditor(props: {
             {draft.customer ? 'Đổi' : 'Chọn khách'}
           </Button>
         </div>
-        {canPickAnyDate ? (
+        {keepTotal ? (
+          <div className="flex items-center justify-between gap-2">
+            <span className="label">Ngày làm dịch vụ</span>
+            <span className="body">{formatIsoDate(draft.serviceDate)}</span>
+          </div>
+        ) : canPickAnyDate ? (
           <TextField
             label="Ngày làm dịch vụ"
             type="date"
@@ -479,7 +496,7 @@ export function OrderEditor(props: {
               </button>
             </Note>
           ))}
-        <Button icon="plus" disabled={draft.items.length === 0} onClick={() => setSheet('discount')}>
+        <Button icon="plus" disabled={discountLines.length === 0} onClick={() => setSheet('discount')}>
           Thêm giảm giá
         </Button>
       </section>
@@ -516,8 +533,10 @@ export function OrderEditor(props: {
             onChange={(e) => setAdjustReason(e.target.value)}
           />
           <Note>
-            Doanh thu ngày {props.order ? formatIsoDate(props.order.serviceDate) : ''} đổi theo. Thành tiền
-            mới không được nhỏ hơn số đã thu.
+            Doanh thu ngày {props.order ? formatIsoDate(props.order.serviceDate) : ''} đổi theo.{' '}
+            {keepTotal
+              ? 'Chỉ thêm được, không giảm thành tiền; cần giảm thì nhờ Nhung hoặc Linh.'
+              : 'Thành tiền mới không được nhỏ hơn số đã thu.'}
           </Note>
         </div>
       ) : null}
@@ -528,6 +547,12 @@ export function OrderEditor(props: {
             {e}
           </Note>
         ))}
+        {belowOld ? (
+          <Note tone="danger">
+            Thành tiền giảm từ {formatVND(props.order?.netAmount ?? 0)} xuống {formatVND(computed.netAmount)},
+            cần Nhung hoặc Linh sửa.
+          </Note>
+        ) : null}
         {error ? <Note tone="danger">{error}</Note> : null}
       </div>
 
@@ -541,7 +566,7 @@ export function OrderEditor(props: {
           block
           variant={awaiting || confirmedEdit ? 'primary' : 'secondary'}
           loading={busy === 'save'}
-          disabled={!!busy || computed.errors.length > 0 || !catalog.data}
+          disabled={!!busy || computed.errors.length > 0 || !catalog.data || belowOld}
           onClick={() => void save(false)}
         >
           Lưu
@@ -583,7 +608,7 @@ export function OrderEditor(props: {
       />
       <DiscountSheet
         open={sheet === 'discount'}
-        lines={lineNames}
+        lines={discountLines}
         onClose={() => setSheet(null)}
         onApply={(x) => setDraft((d) => ({ ...d, discounts: [...d.discounts, x] }))}
       />
@@ -624,6 +649,7 @@ function LineCard(props: {
   const staffCollapsed = props.compactStaff && line.staff.length === 1 && !staffOpen
   if (!c) return null
   const isService = line.type === 'service'
+  const retail = c.isRetail
   const perUnit = isService && c.unit !== 'lần'
   const priceShown = isService ? (line.unitPrice ?? c.listMin) : c.unitPrice
   const multi = line.staff.length > 1
@@ -637,7 +663,11 @@ function LineCard(props: {
             {props.index + 1}. {c.name || '—'}
           </span>
           {/* Giá cố định chưa sửa thì dòng giá bên dưới đã nói đủ */}
-          {isService && c.priceMode !== 'custom' && !perUnit && !props.priceEditing ? null : (
+          {retail ? (
+            <span className="caption text-ink-muted">
+              Hàng bán {formatVND(c.listMin)}/{c.unit} · không giảm giá, không chia thợ
+            </span>
+          ) : isService && c.priceMode !== 'custom' && !perUnit && !props.priceEditing ? null : (
             <span className="caption text-ink-muted">
               {line.type === 'combo'
                 ? 'Combo · giá niêm yết'
@@ -693,7 +723,9 @@ function LineCard(props: {
               </div>
             </div>
           ) : null}
-          {c.priceMode === 'custom' || props.priceEditing ? (
+          {retail ? (
+            <span className="body justify-self-end">{formatVND(c.grossAmount)}</span>
+          ) : c.priceMode === 'custom' || props.priceEditing ? (
             <MoneyInput
               label={perUnit ? `Giá mỗi ${c.unit}` : 'Giá'}
               value={priceShown}
@@ -741,7 +773,7 @@ function LineCard(props: {
         </span>
       ) : null}
 
-      <div className="flex flex-col gap-2">
+      <div className={cx('flex flex-col gap-2', retail && 'hidden')}>
         {staffCollapsed ? (
           <div className="flex items-center justify-between gap-2">
             <span className="label">

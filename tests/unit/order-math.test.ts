@@ -346,6 +346,67 @@ describe('Bảo hành, thu tiền, quyền', () => {
   })
 })
 
+describe('Hàng bán: Kìm 110.000đ (S64)', () => {
+  const kim = (extra: Partial<ItemInput> = {}) =>
+    svc('SP01', [], { quantity: 1, ...extra } as Partial<ItemInput>)
+  const lam200 = (): ItemInput => ({
+    type: 'custom',
+    name: 'Sơn gel',
+    amount: 200000,
+    staff: [{ userId: 'trang' }],
+  })
+
+  it('Kìm 2 cái = 220.000đ, không cần chọn thợ, không chia cho ai', () => {
+    const o = run([kim({ quantity: 2 } as Partial<ItemInput>)])
+    expect(o.errors).toEqual([])
+    expect(o.doneProblems).toEqual([])
+    expect(o.netAmount).toBe(220000)
+    expect(o.items[0]!.isRetail).toBe(true)
+    expect(o.items[0]!.allocations).toEqual([])
+  })
+
+  it('Sơn gel 200.000đ + Kìm 110.000đ, giảm cả bill 10% → 290.000đ; kìm không bị giảm; thợ tự áp được', () => {
+    const o = run([lam200(), kim()], [{ scope: 'order', kind: 'preset_10' }])
+    expect(o.errors).toEqual([])
+    expect(o.netAmount).toBe(290000)
+    expect(o.discounts[0]!.amount).toBe(20000)
+    expect(o.items[1]!.discountAmount).toBe(0)
+    expect(o.items[1]!.netAmount).toBe(110000)
+    expect(o.items[1]!.tierPercent).toBe(0)
+    expect(o.requiredLevel).toBe('staff')
+    expect(byStaff(o)).toEqual({ trang: 180000 })
+  })
+
+  it('giảm số tiền cả bill chỉ chia vào dòng không phải kìm; 15% vẫn cần Nhung', () => {
+    const amt = run(
+      [lam200(), kim()],
+      [{ scope: 'order', kind: 'manual', amount: 30000, reason: 'Khách quen' }],
+    )
+    expect(amt.errors).toEqual([])
+    expect(amt.items[0]!.orderDiscountAmount).toBe(30000)
+    expect(amt.items[1]!.orderDiscountAmount).toBe(0)
+    expect(amt.requiredLevel).toBe('manager')
+    const pct = run(
+      [lam200(), kim()],
+      [{ scope: 'order', kind: 'manual', percent: 15, reason: 'Khách quen' }],
+    )
+    expect(pct.netAmount).toBe(170000 + 110000)
+    expect(pct.requiredLevel).toBe('manager')
+  })
+
+  it('không giảm trên dòng kìm, không gán thợ, không sửa giá; bill chỉ có kìm không giảm được', () => {
+    expect(run([lam200(), kim()], [{ scope: 1, kind: 'preset_5' }]).errors[0]).toMatch(
+      /hàng bán, không áp dụng giảm giá/,
+    )
+    expect(run([svc('SP01', ['trang'])]).errors[0]).toMatch(/hàng bán, không chia cho thợ/)
+    expect(run([kim({ unitPrice: 100000 } as Partial<ItemInput>)]).errors[0]).toMatch(
+      /bán đúng giá 110\.000đ/,
+    )
+    expect(run([kim({ unitPrice: 150000 } as Partial<ItemInput>)]).errors[0]).toMatch(/không sửa giá/)
+    expect(run([kim()], [{ scope: 'order', kind: 'preset_5' }]).errors[0]).toMatch(/bill chỉ có hàng bán/)
+  })
+})
+
 function byStaff(o: ReturnType<typeof run>) {
   const m: Record<string, number> = {}
   for (const it of o.items)

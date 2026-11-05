@@ -91,12 +91,41 @@ async function tableExists(sql: Sql, name: string) {
 
 /** Danh mục ban đầu (PRD §6.8): chỉ thêm mã chưa có, không ghi đè giá Linh đã sửa trong app. */
 async function seedCatalog(sql: Sql, orgId: string) {
+  // DB chưa chạy migration 0035 (giả lập bản cũ khi kiểm nâng cấp) thì chưa có hàng bán: bỏ qua món hàng bán
+  const [col] = await sql<{ exists: boolean }[]>`
+    select exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'services' and column_name = 'is_retail') as exists`
+  const hasRetail = !!col?.exists
   for (const s of SEED_SERVICES) {
+    if (s.isRetail && !hasRetail) continue
+    if (!hasRetail) {
+      await sql`
+        insert into services (organization_id, code, category, name, price_mode, unit, price_min, price_max,
+                              has_hardening, sort_order)
+        values (${orgId}, ${s.code}, ${s.category}, ${s.name}, ${s.priceMode}, ${s.unit}, ${s.priceMin},
+                ${s.priceMax}, ${s.hasHardening}, ${s.sortOrder})
+        on conflict (organization_id, code) do nothing`
+      continue
+    }
+    if (s.isRetail) {
+      // S64: Linh đã tự thêm món cùng tên (chưa xoá) thì gắn cờ hàng bán cho món đó, không thêm món trùng.
+      // Chỉ chạy khi DB chưa có mã của món gốc (lần nâng cấp đầu); về sau Linh sửa gì cũng không bị ghi đè.
+      const [own] = await sql<{ id: string }[]>`
+        select id from services
+        where organization_id = ${orgId} and code <> ${s.code} and lower(btrim(name)) = lower(${s.name})
+          and deleted_at is null
+          and not exists (select 1 from services x where x.organization_id = ${orgId} and x.code = ${s.code})
+        order by created_at limit 1`
+      if (own) {
+        await sql`update services set is_retail = true where id = ${own.id}`
+        continue
+      }
+    }
     await sql`
       insert into services (organization_id, code, category, name, price_mode, unit, price_min, price_max,
-                            has_hardening, sort_order)
+                            has_hardening, is_retail, sort_order)
       values (${orgId}, ${s.code}, ${s.category}, ${s.name}, ${s.priceMode}, ${s.unit}, ${s.priceMin},
-              ${s.priceMax}, ${s.hasHardening}, ${s.sortOrder})
+              ${s.priceMax}, ${s.hasHardening}, ${s.isRetail}, ${s.sortOrder})
       on conflict (organization_id, code) do nothing`
   }
   for (const c of SEED_COMBOS) {

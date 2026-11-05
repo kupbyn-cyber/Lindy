@@ -81,6 +81,8 @@ export type OrderRow = {
   guestNo: number | null
   /** Tên hiển thị khi khách đi cùng không có hồ sơ */
   guestLabel: string | null
+  /** S62: hôm nay (giờ cơ sở) chưa qua ngày làm dịch vụ — người tạo còn sửa được sau Làm xong */
+  serviceDayOpen: boolean
 }
 
 const orderCols = (tx: Tx) => tx`
@@ -90,7 +92,8 @@ const orderCols = (tx: Tx) => tx`
   o.discount_approved_level, o.discount_approval_hash, o.done_by, o.done_at, o.confirmed_by, o.confirmed_at,
   o.cancelled_by, o.cancelled_at, o.cancel_reason, o.needs_owner_review, o.reviewed_by, o.reviewed_at,
   o.warranty_until::text as warranty_until, o.adjusted_by, o.adjusted_at, o.adjust_reason, o.created_by, o.created_at,
-  o.updated_by, o.updated_at, o.version, o.create_request_hash, o.guest_no, o.guest_label`
+  o.updated_by, o.updated_at, o.version, o.create_request_hash, o.guest_no, o.guest_label,
+  o.service_date >= (now() at time zone app.branch_tz(o.branch_id))::date as service_day_open`
 
 export async function loadRow(tx: Tx, id: string, lock = false) {
   if (!isUuid(id)) throw notFound('Không tìm thấy đơn.')
@@ -122,6 +125,8 @@ type ItemRow = {
   shopBorneAmount: number
   outOfRange: boolean
   hasHardening: boolean
+  /** S64: hàng bán (Kìm) — DB đặt theo danh mục lúc bán */
+  isRetail: boolean
   unallocatedReason: string | null
 }
 type DiscountRow = {
@@ -148,7 +153,7 @@ async function loadContent(tx: Tx, o: { id: string; contentRev: number }): Promi
            list_max::int as list_max, unit_price::int as unit_price, quantity, gross_amount::int as gross_amount,
            below_amount::int as below_amount, below_reason, discount_amount::int as discount_amount,
            net_amount::int as net_amount, shop_borne_amount::int as shop_borne_amount, out_of_range, has_hardening,
-           unallocated_reason
+           is_retail, unallocated_reason
     from order_items where order_id = ${o.id} and rev = ${o.contentRev} order by position`
   const discounts = await tx<DiscountRow[]>`
     select position, scope_position, kind, percent, amount::int as amount, reason, applied_by, ticket_id
@@ -206,7 +211,7 @@ export type Catalog = {
 export async function loadCatalog(tx: Tx): Promise<Catalog> {
   const services = await tx<Catalog['services']>`
     select id, code, name, category, price_mode, unit, price_min::int as price_min, price_max::int as price_max,
-           has_hardening, is_active, deleted_at is not null as is_deleted
+           has_hardening, is_retail, is_active, deleted_at is not null as is_deleted
     from services order by sort_order, code`
   const combos = await tx<Catalog['combos']>`
     select c.id, c.code, c.name, c.group_name, c.price::int as price, h.has_hardening, c.is_active,
@@ -294,6 +299,8 @@ export type OrderItemView = {
   belowReason: string | null
   outOfRange: boolean
   hasHardening: boolean
+  /** S64: hàng bán (Kìm) — không giảm giá, không chia cho thợ */
+  isRetail: boolean
   unallocatedReason: string | null
   staff: { userId: string; name: string; allocatedNetAmount: number; commissionBaseAmount: number }[]
 }
@@ -469,6 +476,7 @@ function canFor(auth: Auth, o: OrderRow) {
     approvalValid: approvalValid(o),
     needsOwnerReview: o.needsOwnerReview,
     reviewedAt: o.reviewedAt,
+    serviceDayOpen: o.serviceDayOpen,
   })
 }
 
@@ -476,7 +484,7 @@ function problemsOf(c: Content) {
   const out: string[] = []
   if (c.items.length === 0) out.push('Đơn chưa có dịch vụ nào.')
   for (const it of c.items) {
-    if (!it.unallocatedReason && !c.allocs.some((a) => a.itemPosition === it.position))
+    if (!it.isRetail && !it.unallocatedReason && !c.allocs.some((a) => a.itemPosition === it.position))
       out.push(`Dòng ${it.position + 1} (${it.name}) chưa chọn thợ.`)
   }
   return out
@@ -660,6 +668,7 @@ export async function detailOf(tx: Tx, auth: Auth, o: OrderRow): Promise<OrderDe
       belowReason: it.belowReason,
       outOfRange: it.outOfRange,
       hasHardening: it.hasHardening,
+      isRetail: it.isRetail,
       unallocatedReason: it.unallocatedReason,
       staff: content.allocs
         .filter((a) => a.itemPosition === it.position)
@@ -922,6 +931,16 @@ async function prepare(
   return computed
 }
 
+/** S63: có thợ bị giảm tổng tiền chia so với bản đang lưu (tiền chia bị chuyển sang người khác hoặc bị bỏ). */
+function shareDropped(before: AllocRow[], after: ComputedOrder) {
+  const now = new Map<string, number>()
+  for (const it of after.items)
+    for (const a of it.allocations) now.set(a.userId, (now.get(a.userId) ?? 0) + a.allocatedNetAmount)
+  const was = new Map<string, number>()
+  for (const a of before) was.set(a.staffUserId, (was.get(a.staffUserId) ?? 0) + a.allocatedNetAmount)
+  return [...was].some(([userId, amount]) => (now.get(userId) ?? 0) < amount)
+}
+
 /** Người lưu đủ mức duyệt thì lưu luôn là đã duyệt (C15). */
 function selfApproves(auth: Auth, branchId: string, required: Level) {
   return levelAtLeast(required, 'manager') && levelAtLeast(levelOf(permsOf(auth, branchId)), required)
@@ -982,11 +1001,13 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
     const can = canFor(auth, row)
     if (!can.edit) {
       throw forbidden(
-        row.status === 'awaiting_confirmation'
-          ? 'Đơn đã bấm Làm xong, chỉ Nhung, Linh sửa được.'
-          : row.status === 'in_progress'
-            ? 'Chỉ người tạo đơn hoặc Nhung, Linh sửa được đơn. Báo người tạo nếu cần đổi.'
-            : 'Đơn đã xác nhận hoặc đã huỷ, không sửa được.',
+        row.status === 'in_progress'
+          ? 'Chỉ người tạo đơn hoặc Nhung, Linh sửa được đơn. Báo người tạo nếu cần đổi.'
+          : row.status === 'cancelled'
+            ? 'Đơn đã huỷ, không sửa được.'
+            : row.createdBy === auth.userId
+              ? 'Đã qua ngày làm dịch vụ, chỉ Nhung, Linh sửa được đơn này.'
+              : 'Đơn đã bấm Làm xong, chỉ người tạo đơn (trong ngày làm dịch vụ) hoặc Nhung, Linh sửa được.',
       )
     }
     const computed = await prepare(tx, auth, row.branchId, input, {
@@ -1009,6 +1030,16 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
       )
     }
     if (same) return detailOf(tx, auth, row)
+
+    // S63: sau Làm xong chỉ Linh, Quản lý sửa làm thành tiền thấp đi hoặc đổi ngày làm dịch vụ (DB kiểm lại)
+    if (!can.reduceTotal) {
+      if (computed.netAmount < row.netAmount)
+        throw forbidden(
+          `Thành tiền giảm từ ${formatVND(row.netAmount)} xuống ${formatVND(computed.netAmount)}, cần Nhung hoặc Linh sửa.`,
+        )
+      if (input.serviceDate !== row.serviceDate)
+        throw forbidden('Sau Làm xong chỉ Nhung, Linh đổi được ngày làm dịch vụ.')
+    }
 
     const approve = selfApproves(auth, row.branchId, computed.requiredLevel)
     // Sửa đơn đã xác nhận (D04, bước 2.19): lý do bắt buộc; không nhỏ hơn số đã thu (hoàn tiền ở Đợt 3);
@@ -1033,9 +1064,12 @@ export async function updateOrder(auth: Auth, id: string, input: UpdateOrderInpu
             ? 'Mức giảm trên 20% cần Linh sửa hoặc duyệt.'
             : 'Mức giảm cần Nhung hoặc Linh duyệt.',
         )
+      // P31: Nhung sửa đơn có phần của mình. S63: người tạo sửa làm giảm tiền chia của một thợ.
       flagReview =
-        computed.items.some((it) => it.allocations.some((a) => a.userId === auth.userId)) &&
-        !hasPerm(auth, row.branchId, 'review_queue.read')
+        !hasPerm(auth, row.branchId, 'review_queue.read') &&
+        (hasPerm(auth, row.branchId, 'order.confirm')
+          ? computed.items.some((it) => it.allocations.some((a) => a.userId === auth.userId))
+          : shareDropped(current.allocs, computed))
     }
     const [updated] = await tx<{ contentRev: number }[]>`
       update orders set

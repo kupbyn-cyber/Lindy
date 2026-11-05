@@ -10,6 +10,8 @@ export type SeedService = {
   priceMin: number
   priceMax: number
   hasHardening: boolean
+  /** S64: hàng bán — không giảm giá, không chia cho thợ */
+  isRetail: boolean
   sortOrder: number
 }
 
@@ -32,6 +34,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 40000,
     priceMax: 40000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 10,
   },
   {
@@ -43,6 +46,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 70000,
     priceMax: 70000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 20,
   },
   {
@@ -54,6 +58,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 50000,
     priceMax: 50000,
     hasHardening: true,
+    isRetail: false,
     sortOrder: 30,
   },
   {
@@ -65,6 +70,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 70000,
     priceMax: 70000,
     hasHardening: true,
+    isRetail: false,
     sortOrder: 40,
   },
   {
@@ -76,6 +82,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 80000,
     priceMax: 80000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 50,
   },
   {
@@ -87,6 +94,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 80000,
     priceMax: 80000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 60,
   },
   {
@@ -98,6 +106,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 20000,
     priceMax: 50000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 70,
   },
   {
@@ -109,6 +118,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 40000,
     priceMax: 40000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 80,
   },
   {
@@ -120,6 +130,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 7000,
     priceMax: 10000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 90,
   },
   {
@@ -131,6 +142,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 8000,
     priceMax: 10000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 100,
   },
   {
@@ -142,6 +154,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 8000,
     priceMax: 10000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 110,
   },
   {
@@ -153,6 +166,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 10000,
     priceMax: 12000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 120,
   },
   {
@@ -164,6 +178,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 8000,
     priceMax: 12000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 130,
   },
   {
@@ -175,6 +190,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 5000,
     priceMax: 30000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 140,
   },
   {
@@ -186,6 +202,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 30000,
     priceMax: 50000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 150,
   },
   {
@@ -197,6 +214,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 4000,
     priceMax: 50000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 160,
   },
   {
@@ -208,6 +226,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 5000,
     priceMax: 20000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 170,
   },
   {
@@ -219,6 +238,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 10000,
     priceMax: 50000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 180,
   },
   {
@@ -230,6 +250,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 4000,
     priceMax: 30000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 190,
   },
   {
@@ -241,6 +262,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 90000,
     priceMax: 90000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 200,
   },
   {
@@ -252,6 +274,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 110000,
     priceMax: 110000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 210,
   },
   {
@@ -263,6 +286,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 220000,
     priceMax: 220000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 220,
   },
   {
@@ -274,6 +298,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 100000,
     priceMax: 100000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 230,
   },
   {
@@ -285,6 +310,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 30000,
     priceMax: 30000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 240,
   },
   {
@@ -296,6 +322,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 80000,
     priceMax: 100000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 250,
   },
   {
@@ -307,6 +334,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 30000,
     priceMax: 70000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 260,
   },
   {
@@ -318,6 +346,7 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 180000,
     priceMax: 180000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 270,
   },
   {
@@ -329,7 +358,20 @@ export const SEED_SERVICES: SeedService[] = [
     priceMin: 220000,
     priceMax: 220000,
     hasHardening: false,
+    isRetail: false,
     sortOrder: 280,
+  },
+  {
+    code: 'SP01',
+    category: 'Sản phẩm',
+    name: 'Kìm',
+    priceMode: 'list',
+    unit: 'cái',
+    priceMin: 110000,
+    priceMax: 110000,
+    hasHardening: false,
+    isRetail: true,
+    sortOrder: 290,
   },
 ]
 

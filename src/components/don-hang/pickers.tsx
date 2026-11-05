@@ -477,7 +477,8 @@ const KINDS: { value: Exclude<DiscountKind, 'complaint_compensation'>; label: st
 
 export function DiscountSheet(props: {
   open: boolean
-  lines: string[]
+  /** Dòng áp được giảm (S64: không gồm hàng bán); index là vị trí dòng trong đơn */
+  lines: { index: number; label: string }[]
   onClose: () => void
   onApply: (d: DiscountInput) => void
 }) {
@@ -538,10 +539,9 @@ export function DiscountSheet(props: {
           onChange={(e) => setScope(e.target.value)}
         >
           <option value="order">Cả bill</option>
-          {props.lines.map((l, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: dòng đơn xác định theo vị trí (giảm giá áp theo vị trí dòng)
-            <option key={`${i}-${l}`} value={String(i)}>
-              Dòng {i + 1}: {l}
+          {props.lines.map((l) => (
+            <option key={`${l.index}-${l.label}`} value={String(l.index)}>
+              Dòng {l.index + 1}: {l.label}
             </option>
           ))}
         </select>

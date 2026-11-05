@@ -377,6 +377,41 @@ try {
     if (adv.status !== 'approved' || sl.line.advances !== 300000 || sl.line.commission <= 0)
       throw new Error('Lương, tạm ứng sai.')
 
+    // Hàng bán, người tạo sửa đơn trong ngày (0035): món Kìm có sau nâng cấp; đồng bộ lại sổ doanh thu tính lương của
+    // mọi đơn đã xác nhận không sinh dòng mới (hoa hồng, KPI cũ không đổi); đơn có kìm: kìm không vào hoa hồng, KPI
+    const { createOrder } = await import('../src/server/orders/service')
+    const [kimRow] = await db<{ id: string; n: number }[]>`
+      select min(id::text) as id, count(*)::int as n from services where is_retail and name = 'Kìm'`
+    const [pr0] = await db<{ n: number }[]>`select count(*)::int as n from payroll_revenue_entries`
+    await db`select app._payroll_sync_order(id) from orders where status = 'confirmed'`
+    const [pr1] = await db<{ n: number }[]>`select count(*)::int as n from payroll_revenue_entries`
+    const ko = await createOrder(auth, {
+      createRequestId: crypto.randomUUID(),
+      customerId: null,
+      serviceDate: today,
+      items: [
+        { type: 'service', serviceId: svc!.id, quantity: 1, staff: [{ userId: linh!.id }] },
+        { type: 'service', serviceId: kimRow!.id, quantity: 1, staff: [] },
+      ],
+      discounts: [],
+    })
+    const kd = await markDone(auth, ko.order.id, ko.order.version)
+    const [ke] = await db<{ shop: string; comm: string }[]>`
+      select coalesce(sum(shop_revenue), 0) as shop, coalesce(sum(commission_base), 0) as comm
+      from payroll_revenue_entries where order_id = ${kd.id}`
+    log(
+      `Hàng bán: ${kimRow!.n} món Kìm; đồng bộ lại sổ lương ${pr0!.n} → ${pr1!.n} dòng; đơn ${kd.codeLabel} ${kd.netAmount}đ (${kd.status}): doanh thu tính KPI ${ke!.shop}đ, cơ sở hoa hồng ${ke!.comm}đ`,
+    )
+    if (
+      kimRow!.n !== 1 ||
+      pr0!.n !== pr1!.n ||
+      kd.status !== 'confirmed' ||
+      kd.netAmount !== 180000 ||
+      Number(ke!.shop) !== 70000 ||
+      Number(ke!.comm) !== 70000
+    )
+      throw new Error('Hàng bán, sổ doanh thu tính lương sai.')
+
     // Báo cáo, xuất dữ liệu, sao lưu (0018): lợi nhuận (Linh), file đơn hàng CSV, bản sao lưu không có mật khẩu
     const { monthReport } = await import('../src/server/reports/service')
     const { exportFile } = await import('../src/server/export/service')
