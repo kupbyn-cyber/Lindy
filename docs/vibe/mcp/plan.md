@@ -61,7 +61,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
   - `bun scripts/migrate.ts up --test` chạy `0036` không lỗi; test ở bước 7 pass
 - Dừng hỏi anh: Không (migration chỉ chạy ở DB local/test; DB thật chạy ở gói 9)
 
-### ☐ Gói 2 — Lõi OAuth (store)
+### ☑ Gói 2 — Lõi OAuth (store)
 - Mục tiêu: toàn bộ logic cấp, đổi, gia hạn, thu hồi, kiểm token, không dính HTTP.
 - File: tạo `src/server/mcp/config.ts`, `src/server/mcp/oauth.ts`, `tests/security/mcp-oauth.test.ts`
 - Các bước:
@@ -226,3 +226,4 @@ Chi tiết: ./review.md
 ## Nhật ký triển khai
 - 10/11 02:55 · Bắt đầu · nhánh vibe/mcp · chuẩn: pass (anh ngủ, chạy gói 1–8, dừng trước gói 9)
 - 10/11 03:05 · ☑ Gói 1 — Migration MCP + dựng `Auth` từ userId · test 454 pass
+- 10/11 03:20 · ☑ Gói 2 — Lõi OAuth (store) · test 465 pass · Lệch plan: hàm `eligibility()` gộp kiểm Chủ + khoá + cờ đổi mật khẩu (thay `isOwner` riêng); `client_label` lưu luôn ở bảng client lúc đăng ký
