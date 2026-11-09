@@ -114,33 +114,39 @@ export async function loadSession(token: string): Promise<SessionInfo | null> {
         where id = ${s.sessionId}`
     }
 
-    const rows = await tx<
-      { branchId: string; name: string; shortLabel: string; roleName: string; perm: string }[]
-    >`
-      select b.id as branch_id, b.name, b.short_label, r.name as role_name, rp.permission_code as perm
-      from user_branch_roles ubr
-      join branches b on b.id = ubr.branch_id
-      join roles r on r.id = ubr.role_id
-      join role_permissions rp on rp.role_id = ubr.role_id
-      where ubr.user_id = ${s.userId} and ubr.revoked_at is null
-      order by b.name`
-    const map = new Map<string, BranchAccess>()
-    for (const r of rows) {
-      let b = map.get(r.branchId)
-      if (!b) {
-        b = { id: r.branchId, name: r.name, shortLabel: r.shortLabel, roleName: r.roleName, perms: [] }
-        map.set(r.branchId, b)
-      }
-      if (!b.perms.includes(r.perm)) b.perms.push(r.perm)
-    }
+    const branches = await loadAccess(tx, s.userId)
     return {
       sessionId: s.sessionId,
       userId: s.userId,
       displayName: s.displayName,
       mustChangePassword: s.mustChangePassword,
-      branches: [...map.values()],
+      branches,
     }
   })
+}
+
+/** Cơ sở và quyền hiệu lực của một người (vai trò chưa thu hồi). Dùng chung cho phiên web và MCP. */
+export async function loadAccess(tx: Tx, userId: string): Promise<BranchAccess[]> {
+  const rows = await tx<
+    { branchId: string; name: string; shortLabel: string; roleName: string; perm: string }[]
+  >`
+    select b.id as branch_id, b.name, b.short_label, r.name as role_name, rp.permission_code as perm
+    from user_branch_roles ubr
+    join branches b on b.id = ubr.branch_id
+    join roles r on r.id = ubr.role_id
+    join role_permissions rp on rp.role_id = ubr.role_id
+    where ubr.user_id = ${userId} and ubr.revoked_at is null
+    order by b.name`
+  const map = new Map<string, BranchAccess>()
+  for (const r of rows) {
+    let b = map.get(r.branchId)
+    if (!b) {
+      b = { id: r.branchId, name: r.name, shortLabel: r.shortLabel, roleName: r.roleName, perms: [] }
+      map.set(r.branchId, b)
+    }
+    if (!b.perms.includes(r.perm)) b.perms.push(r.perm)
+  }
+  return [...map.values()]
 }
 
 /** Thu hồi phiên và tắt đăng ký push gắn với phiên đó. Phát sự kiện để SSE đóng kết nối. */

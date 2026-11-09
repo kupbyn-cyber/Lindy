@@ -1,6 +1,6 @@
 # Kế hoạch: MCP cho LINDY OS
 
-- Trạng thái: Đã phản biện (10/11/2026)
+- Trạng thái: Đang triển khai
 - Brief: ./brief.md
 - Dự án: LINDY OS (`kupbyn-cyber/Lindy`)
 - Nhánh git: vibe/mcp
@@ -45,7 +45,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 
 ## Chi tiết gói
 
-### ☐ Gói 1 — Migration MCP + dựng `Auth` từ userId
+### ☑ Gói 1 — Migration MCP + dựng `Auth` từ userId
 - Mục tiêu: có bảng lưu OAuth và intent ghi; có hàm dựng quyền của một người từ `userId` dùng chung với phiên web.
 - File: tạo `db/migrations/0036_mcp.sql`, `tests/security/mcp-db.test.ts` · sửa `src/server/auth/session.ts`, `src/server/auth/context.ts`
 - Các bước:
@@ -224,4 +224,5 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 Chi tiết: ./review.md
 
 ## Nhật ký triển khai
-<vibe-build ghi vào đây>
+- 10/11 02:55 · Bắt đầu · nhánh vibe/mcp · chuẩn: pass (anh ngủ, chạy gói 1–8, dừng trước gói 9)
+- 10/11 03:05 · ☑ Gói 1 — Migration MCP + dựng `Auth` từ userId · test 454 pass
