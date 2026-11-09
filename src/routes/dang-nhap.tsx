@@ -4,12 +4,23 @@ import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Button, Note, TextField } from '~/components/ui'
 import { ApiError, api } from '~/lib/api'
 import { retryNetworkRead } from '~/lib/network'
+import { safeNext } from '~/lib/safe-next'
 import { getMeFn } from '~/server/me'
 
+type Search = { next?: string }
+
 export const Route = createFileRoute('/dang-nhap')({
-  beforeLoad: async () => {
+  validateSearch: (s: Record<string, unknown>): Search => ({ next: safeNext(s.next) }),
+  beforeLoad: async ({ search }) => {
     const me = await retryNetworkRead(() => getMeFn())
-    if (me) throw redirect({ to: me.mustChangePassword ? '/doi-mat-khau' : '/' })
+    if (!me) return
+    // Đi qua server (không qua router) vì /oauth/authorize là route server
+    if (search.next && !me.mustChangePassword) {
+      if (typeof window === 'undefined') throw redirect({ href: search.next })
+      window.location.assign(search.next)
+      return
+    }
+    throw redirect({ to: me.mustChangePassword ? '/doi-mat-khau' : '/' })
   },
   head: () => ({ meta: [{ title: 'Đăng nhập · LINDY OS' }] }),
   component: LoginPage,
@@ -17,6 +28,7 @@ export const Route = createFileRoute('/dang-nhap')({
 
 function LoginPage() {
   const navigate = useNavigate()
+  const { next } = Route.useSearch()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -36,6 +48,11 @@ function LoginPage() {
       const res = await api<{ mustChangePassword: boolean }>('/api/auth/login', {
         body: { identifier, password },
       })
+      // Còn cờ phải đổi mật khẩu thì vẫn sang đổi mật khẩu; màn Cho phép sẽ báo khi quay lại
+      if (next && !res.mustChangePassword) {
+        window.location.assign(next)
+        return
+      }
       await navigate({ to: res.mustChangePassword ? '/doi-mat-khau' : '/', replace: true })
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Có lỗi xảy ra. Thử lại sau.')

@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as DangNhapRouteImport } from './routes/dang-nhap'
 import { Route as DoiMatKhauRouteImport } from './routes/doi-mat-khau'
+import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
+import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppThongBaoRouteImport } from './routes/_app/thong-bao'
 import { Route as ApiBackupRouteImport } from './routes/api/backup'
@@ -22,6 +24,10 @@ import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiOverviewRouteImport } from './routes/api/overview'
 import { Route as ApiReviewRouteImport } from './routes/api/review'
+import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
+import { Route as OauthRegisterRouteImport } from './routes/oauth.register'
+import { Route as OauthRevokeRouteImport } from './routes/oauth.revoke'
+import { Route as OauthTokenRouteImport } from './routes/oauth.token'
 import { Route as AppDonHangIndexRouteImport } from './routes/_app/don-hang/index'
 import { Route as AppDonHangIdRouteImport } from './routes/_app/don-hang/$id'
 import { Route as AppKhachIndexRouteImport } from './routes/_app/khach/index'
@@ -95,6 +101,7 @@ import { Route as ApiPushTestRouteImport } from './routes/api/push/test'
 import { Route as ApiReportsKindRouteImport } from './routes/api/reports/$kind'
 import { Route as ApiStaffIndexRouteImport } from './routes/api/staff/index'
 import { Route as ApiTipsIndexRouteImport } from './routes/api/tips/index'
+import { Route as DotwellKnownOauthProtectedResourceApiMcpRouteImport } from './routes/[.]well-known.oauth-protected-resource.api.mcp'
 import { Route as ApiAccountsIdActionRouteImport } from './routes/api/accounts/$id.$action'
 import { Route as ApiAdvancesIdActionRouteImport } from './routes/api/advances/$id.$action'
 import { Route as ApiAppointmentsIdActionRouteImport } from './routes/api/appointments/$id.$action'
@@ -130,6 +137,18 @@ const DoiMatKhauRoute = DoiMatKhauRouteImport.update({
   path: '/doi-mat-khau',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownOauthAuthorizationServerRoute =
+  DotwellKnownOauthAuthorizationServerRouteImport.update({
+    id: '/.well-known/oauth-authorization-server',
+    path: '/.well-known/oauth-authorization-server',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOauthProtectedResourceRoute =
+  DotwellKnownOauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -178,6 +197,26 @@ const ApiOverviewRoute = ApiOverviewRouteImport.update({
 const ApiReviewRoute = ApiReviewRouteImport.update({
   id: '/api/review',
   path: '/api/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthRegisterRoute = OauthRegisterRouteImport.update({
+  id: '/oauth/register',
+  path: '/oauth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthRevokeRoute = OauthRevokeRouteImport.update({
+  id: '/oauth/revoke',
+  path: '/oauth/revoke',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthTokenRoute = OauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppDonHangIndexRoute = AppDonHangIndexRouteImport.update({
@@ -548,6 +587,12 @@ const ApiTipsIndexRoute = ApiTipsIndexRouteImport.update({
   path: '/api/tips/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownOauthProtectedResourceApiMcpRoute =
+  DotwellKnownOauthProtectedResourceApiMcpRouteImport.update({
+    id: '/api/mcp',
+    path: '/api/mcp',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
 const ApiAccountsIdActionRoute = ApiAccountsIdActionRouteImport.update({
   id: '/api/accounts/$id/$action',
   path: '/api/accounts/$id/$action',
@@ -655,6 +700,8 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/thong-bao': typeof AppThongBaoRoute
   '/api/backup': typeof ApiBackupRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
@@ -664,6 +711,10 @@ export interface FileRoutesByFullPath {
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/revoke': typeof OauthRevokeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
   '/khach/$id': typeof AppKhachIdRoute
   '/lich/$id': typeof AppLichIdRoute
@@ -737,6 +788,7 @@ export interface FileRoutesByFullPath {
   '/api/print/': typeof ApiPrintIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
   '/api/tips/': typeof ApiTipsIndexRoute
+  '/.well-known/oauth-protected-resource/api/mcp': typeof DotwellKnownOauthProtectedResourceApiMcpRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
@@ -761,6 +813,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/thong-bao': typeof AppThongBaoRoute
   '/api/backup': typeof ApiBackupRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
@@ -770,6 +824,10 @@ export interface FileRoutesByTo {
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/revoke': typeof OauthRevokeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/': typeof AppIndexRoute
   '/don-hang/$id': typeof AppDonHangIdRoute
   '/khach/$id': typeof AppKhachIdRoute
@@ -844,6 +902,7 @@ export interface FileRoutesByTo {
   '/api/print': typeof ApiPrintIndexRoute
   '/api/staff': typeof ApiStaffIndexRoute
   '/api/tips': typeof ApiTipsIndexRoute
+  '/.well-known/oauth-protected-resource/api/mcp': typeof DotwellKnownOauthProtectedResourceApiMcpRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
@@ -870,6 +929,8 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/dang-nhap': typeof DangNhapRoute
   '/doi-mat-khau': typeof DoiMatKhauRoute
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/_app/thong-bao': typeof AppThongBaoRoute
   '/api/backup': typeof ApiBackupRoute
   '/api/booking-settings': typeof ApiBookingSettingsRoute
@@ -879,6 +940,10 @@ export interface FileRoutesById {
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/register': typeof OauthRegisterRoute
+  '/oauth/revoke': typeof OauthRevokeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/_app/': typeof AppIndexRoute
   '/_app/don-hang/$id': typeof AppDonHangIdRoute
   '/_app/khach/$id': typeof AppKhachIdRoute
@@ -953,6 +1018,7 @@ export interface FileRoutesById {
   '/api/print/': typeof ApiPrintIndexRoute
   '/api/staff/': typeof ApiStaffIndexRoute
   '/api/tips/': typeof ApiTipsIndexRoute
+  '/.well-known/oauth-protected-resource/api/mcp': typeof DotwellKnownOauthProtectedResourceApiMcpRoute
   '/api/accounts/$id/$action': typeof ApiAccountsIdActionRoute
   '/api/advances/$id/$action': typeof ApiAdvancesIdActionRoute
   '/api/appointments/$id/$action': typeof ApiAppointmentsIdActionRoute
@@ -980,6 +1046,8 @@ export interface FileRouteTypes {
     | '/'
     | '/dang-nhap'
     | '/doi-mat-khau'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/thong-bao'
     | '/api/backup'
     | '/api/booking-settings'
@@ -989,6 +1057,10 @@ export interface FileRouteTypes {
     | '/api/me'
     | '/api/overview'
     | '/api/review'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/revoke'
+    | '/oauth/token'
     | '/don-hang/$id'
     | '/khach/$id'
     | '/lich/$id'
@@ -1062,6 +1134,7 @@ export interface FileRouteTypes {
     | '/api/print/'
     | '/api/staff/'
     | '/api/tips/'
+    | '/.well-known/oauth-protected-resource/api/mcp'
     | '/api/accounts/$id/$action'
     | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
@@ -1086,6 +1159,8 @@ export interface FileRouteTypes {
   to:
     | '/dang-nhap'
     | '/doi-mat-khau'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/thong-bao'
     | '/api/backup'
     | '/api/booking-settings'
@@ -1095,6 +1170,10 @@ export interface FileRouteTypes {
     | '/api/me'
     | '/api/overview'
     | '/api/review'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/revoke'
+    | '/oauth/token'
     | '/'
     | '/don-hang/$id'
     | '/khach/$id'
@@ -1169,6 +1248,7 @@ export interface FileRouteTypes {
     | '/api/print'
     | '/api/staff'
     | '/api/tips'
+    | '/.well-known/oauth-protected-resource/api/mcp'
     | '/api/accounts/$id/$action'
     | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
@@ -1194,6 +1274,8 @@ export interface FileRouteTypes {
     | '/_app'
     | '/dang-nhap'
     | '/doi-mat-khau'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/_app/thong-bao'
     | '/api/backup'
     | '/api/booking-settings'
@@ -1203,6 +1285,10 @@ export interface FileRouteTypes {
     | '/api/me'
     | '/api/overview'
     | '/api/review'
+    | '/oauth/authorize'
+    | '/oauth/register'
+    | '/oauth/revoke'
+    | '/oauth/token'
     | '/_app/'
     | '/_app/don-hang/$id'
     | '/_app/khach/$id'
@@ -1277,6 +1363,7 @@ export interface FileRouteTypes {
     | '/api/print/'
     | '/api/staff/'
     | '/api/tips/'
+    | '/.well-known/oauth-protected-resource/api/mcp'
     | '/api/accounts/$id/$action'
     | '/api/advances/$id/$action'
     | '/api/appointments/$id/$action'
@@ -1303,6 +1390,8 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   DangNhapRoute: typeof DangNhapRoute
   DoiMatKhauRoute: typeof DoiMatKhauRoute
+  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
+  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   ApiBackupRoute: typeof ApiBackupRoute
   ApiBookingSettingsRoute: typeof ApiBookingSettingsRoute
   ApiDepositSeasonsRoute: typeof ApiDepositSeasonsRoute
@@ -1311,6 +1400,10 @@ export interface RootRouteChildren {
   ApiMeRoute: typeof ApiMeRoute
   ApiOverviewRoute: typeof ApiOverviewRoute
   ApiReviewRoute: typeof ApiReviewRoute
+  OauthAuthorizeRoute: typeof OauthAuthorizeRoute
+  OauthRegisterRoute: typeof OauthRegisterRoute
+  OauthRevokeRoute: typeof OauthRevokeRoute
+  OauthTokenRoute: typeof OauthTokenRoute
   ApiAppointmentsIdRoute: typeof ApiAppointmentsIdRouteWithChildren
   ApiAppointmentsAttentionRoute: typeof ApiAppointmentsAttentionRoute
   ApiAppointmentsCheckRoute: typeof ApiAppointmentsCheckRoute
@@ -1399,6 +1492,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DoiMatKhauRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/oauth-authorization-server': {
+      id: '/.well-known/oauth-authorization-server'
+      path: '/.well-known/oauth-authorization-server'
+      fullPath: '/.well-known/oauth-authorization-server'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/': {
       id: '/_app/'
       path: '/'
@@ -1467,6 +1574,34 @@ declare module '@tanstack/react-router' {
       path: '/api/review'
       fullPath: '/api/review'
       preLoaderRoute: typeof ApiReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/authorize': {
+      id: '/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/oauth/authorize'
+      preLoaderRoute: typeof OauthAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/register': {
+      id: '/oauth/register'
+      path: '/oauth/register'
+      fullPath: '/oauth/register'
+      preLoaderRoute: typeof OauthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/revoke': {
+      id: '/oauth/revoke'
+      path: '/oauth/revoke'
+      fullPath: '/oauth/revoke'
+      preLoaderRoute: typeof OauthRevokeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/token': {
+      id: '/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/oauth/token'
+      preLoaderRoute: typeof OauthTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/don-hang/': {
@@ -1980,6 +2115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTipsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/oauth-protected-resource/api/mcp': {
+      id: '/.well-known/oauth-protected-resource/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/.well-known/oauth-protected-resource/api/mcp'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceApiMcpRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
+    }
     '/api/accounts/$id/$action': {
       id: '/api/accounts/$id/$action'
       path: '/api/accounts/$id/$action'
@@ -2185,6 +2327,21 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface DotwellKnownOauthProtectedResourceRouteChildren {
+  DotwellKnownOauthProtectedResourceApiMcpRoute: typeof DotwellKnownOauthProtectedResourceApiMcpRoute
+}
+
+const DotwellKnownOauthProtectedResourceRouteChildren: DotwellKnownOauthProtectedResourceRouteChildren =
+  {
+    DotwellKnownOauthProtectedResourceApiMcpRoute:
+      DotwellKnownOauthProtectedResourceApiMcpRoute,
+  }
+
+const DotwellKnownOauthProtectedResourceRouteWithChildren =
+  DotwellKnownOauthProtectedResourceRoute._addFileChildren(
+    DotwellKnownOauthProtectedResourceRouteChildren,
+  )
+
 interface ApiAppointmentsIdRouteChildren {
   ApiAppointmentsIdActionRoute: typeof ApiAppointmentsIdActionRoute
 }
@@ -2246,6 +2403,10 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   DangNhapRoute: DangNhapRoute,
   DoiMatKhauRoute: DoiMatKhauRoute,
+  DotwellKnownOauthAuthorizationServerRoute:
+    DotwellKnownOauthAuthorizationServerRoute,
+  DotwellKnownOauthProtectedResourceRoute:
+    DotwellKnownOauthProtectedResourceRouteWithChildren,
   ApiBackupRoute: ApiBackupRoute,
   ApiBookingSettingsRoute: ApiBookingSettingsRoute,
   ApiDepositSeasonsRoute: ApiDepositSeasonsRoute,
@@ -2254,6 +2415,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMeRoute: ApiMeRoute,
   ApiOverviewRoute: ApiOverviewRoute,
   ApiReviewRoute: ApiReviewRoute,
+  OauthAuthorizeRoute: OauthAuthorizeRoute,
+  OauthRegisterRoute: OauthRegisterRoute,
+  OauthRevokeRoute: OauthRevokeRoute,
+  OauthTokenRoute: OauthTokenRoute,
   ApiAppointmentsIdRoute: ApiAppointmentsIdRouteWithChildren,
   ApiAppointmentsAttentionRoute: ApiAppointmentsAttentionRoute,
   ApiAppointmentsCheckRoute: ApiAppointmentsCheckRoute,

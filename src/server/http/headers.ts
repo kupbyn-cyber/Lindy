@@ -15,9 +15,11 @@ const CSP = [
 ].join('; ')
 
 export function applySecurityHeaders(headers: Headers, opts: { path: string; dev: boolean }) {
+  // Trang Cho phép kết nối AI (/oauth/*) tự đặt CSP không có form-action: Chrome áp form-action cả lên chuyển
+  // hướng sau khi POST về claude.ai/chatgpt.com, CSP chung sẽ chặn bước đó (MCP, phản biện L1).
+  const keepOwnCsp = opts.path.startsWith('/oauth/') && headers.has('Content-Security-Policy')
   // Vite dev cần kết nối websocket HMR, nên CSP chỉ áp khi chạy bản build.
-  if (!opts.dev) headers.set('Content-Security-Policy', CSP)
-  else headers.set('Content-Security-Policy', "frame-ancestors 'none'")
+  if (!keepOwnCsp) headers.set('Content-Security-Policy', opts.dev ? "frame-ancestors 'none'" : CSP)
   headers.set('X-Content-Type-Options', 'nosniff')
   headers.set('Referrer-Policy', 'same-origin')
   headers.set('X-Frame-Options', 'DENY')

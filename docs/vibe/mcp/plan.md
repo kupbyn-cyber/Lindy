@@ -74,7 +74,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
   - `verifyAccessToken` trả null cho token của người không phải Chủ (test)
 - Dừng hỏi anh: Không
 
-### ☐ Gói 3 — Route OAuth + màn Cho phép + `next` ở Đăng nhập
+### ☑ Gói 3 — Route OAuth + màn Cho phép + `next` ở Đăng nhập
 - Mục tiêu: Claude/ChatGPT tự tìm, đăng ký và đăng nhập được.
 - File: tạo `src/server/mcp/oauth-http.ts`, `src/server/mcp/http.ts`, `src/server/mcp/metadata.ts`, `src/routes/[.]well-known.oauth-protected-resource.ts`, `src/routes/[.]well-known.oauth-protected-resource.api.mcp.ts`, `src/routes/[.]well-known.oauth-authorization-server.ts`, `src/routes/oauth.register.ts`, `src/routes/oauth.authorize.ts`, `src/routes/oauth.token.ts`, `src/routes/oauth.revoke.ts`, `tests/security/mcp-oauth-http.test.ts` · sửa `src/routes/dang-nhap.tsx`, `src/server/http/headers.ts`, `src/routeTree.gen.ts` (tự sinh), test header sẵn có nếu có
 - Các bước:
@@ -227,3 +227,4 @@ Chi tiết: ./review.md
 - 10/11 02:55 · Bắt đầu · nhánh vibe/mcp · chuẩn: pass (anh ngủ, chạy gói 1–8, dừng trước gói 9)
 - 10/11 03:05 · ☑ Gói 1 — Migration MCP + dựng `Auth` từ userId · test 454 pass
 - 10/11 03:20 · ☑ Gói 2 — Lõi OAuth (store) · test 465 pass · Lệch plan: hàm `eligibility()` gộp kiểm Chủ + khoá + cờ đổi mật khẩu (thay `isOwner` riêng); `client_label` lưu luôn ở bảng client lúc đăng ký
+- 10/11 03:45 · ☑ Gói 3 — Route OAuth + màn Cho phép + `next` ở Đăng nhập · test 474 pass; bản build: trang Cho phép 200 với CSP riêng không `form-action`, chưa đăng nhập → 302 `/dang-nhap?next=`, đã đăng nhập → 307 về `/oauth/authorize` · Lệch plan: `audit.ts` làm sớm ở gói này (authorize/token ghi lịch sử); `safeNext` đặt ở `src/lib/safe-next.ts` (không export từ file route); thêm `safeRun` trong `http.ts` bọc lỗi route
