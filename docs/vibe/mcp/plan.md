@@ -91,7 +91,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
   - chạy `bun run build` rồi `bun run start`, `curl localhost:3000/.well-known/oauth-authorization-server` ra JSON có `registration_endpoint`; trên bản build, `curl -i` trang Cho phép **kèm cookie phiên của Linh** và `client_id`/`redirect_uri` đã đăng ký → 200, header CSP không có `form-action` (phản biện vòng 2 L6)
 - Dừng hỏi anh: Không
 
-### ☐ Gói 4 — Endpoint `/api/mcp` + `lindy_get_me` + lịch sử
+### ☑ Gói 4 — Endpoint `/api/mcp` + `lindy_get_me` + lịch sử
 - Mục tiêu: Claude/ChatGPT gọi được tool đầu tiên.
 - File: tạo `src/server/mcp/handler.ts`, `src/server/mcp/tools.ts`, `src/server/mcp/audit.ts`, `src/routes/api/mcp.ts`, `tests/security/mcp-handler.test.ts` · sửa `src/routeTree.gen.ts` (tự sinh)
 - Các bước:
@@ -228,3 +228,4 @@ Chi tiết: ./review.md
 - 10/11 03:05 · ☑ Gói 1 — Migration MCP + dựng `Auth` từ userId · test 454 pass
 - 10/11 03:20 · ☑ Gói 2 — Lõi OAuth (store) · test 465 pass · Lệch plan: hàm `eligibility()` gộp kiểm Chủ + khoá + cờ đổi mật khẩu (thay `isOwner` riêng); `client_label` lưu luôn ở bảng client lúc đăng ký
 - 10/11 03:45 · ☑ Gói 3 — Route OAuth + màn Cho phép + `next` ở Đăng nhập · test 474 pass; bản build: trang Cho phép 200 với CSP riêng không `form-action`, chưa đăng nhập → 302 `/dang-nhap?next=`, đã đăng nhập → 307 về `/oauth/authorize` · Lệch plan: `audit.ts` làm sớm ở gói này (authorize/token ghi lịch sử); `safeNext` đặt ở `src/lib/safe-next.ts` (không export từ file route); thêm `safeRun` trong `http.ts` bọc lỗi route
+- 10/11 04:05 · ☑ Gói 4 — Endpoint `/api/mcp` + `lindy_get_me` + lịch sử · test 482 pass · Lệch plan: khung tool (`defineTool`, `toToolFailure`, kiểu `ToolDef`) tách ra `src/server/mcp/kit.ts` để file tool không import vòng với `tools.ts` (chỉ còn danh sách đăng ký); thêm `tests/helpers/mcp.ts` (cấp token thật, gọi tool) dùng chung cho gói 5–8

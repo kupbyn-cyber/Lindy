@@ -21,6 +21,7 @@ import { Route as ApiBookingSettingsRouteImport } from './routes/api/booking-set
 import { Route as ApiDepositSeasonsRouteImport } from './routes/api/deposit-seasons'
 import { Route as ApiEventsRouteImport } from './routes/api/events'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiOverviewRouteImport } from './routes/api/overview'
 import { Route as ApiReviewRouteImport } from './routes/api/review'
@@ -182,6 +183,11 @@ const ApiEventsRoute = ApiEventsRouteImport.update({
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMeRoute = ApiMeRouteImport.update({
@@ -708,6 +714,7 @@ export interface FileRoutesByFullPath {
   '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
@@ -821,6 +828,7 @@ export interface FileRoutesByTo {
   '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
@@ -937,6 +945,7 @@ export interface FileRoutesById {
   '/api/deposit-seasons': typeof ApiDepositSeasonsRoute
   '/api/events': typeof ApiEventsRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
@@ -1054,6 +1063,7 @@ export interface FileRouteTypes {
     | '/api/deposit-seasons'
     | '/api/events'
     | '/api/health'
+    | '/api/mcp'
     | '/api/me'
     | '/api/overview'
     | '/api/review'
@@ -1167,6 +1177,7 @@ export interface FileRouteTypes {
     | '/api/deposit-seasons'
     | '/api/events'
     | '/api/health'
+    | '/api/mcp'
     | '/api/me'
     | '/api/overview'
     | '/api/review'
@@ -1282,6 +1293,7 @@ export interface FileRouteTypes {
     | '/api/deposit-seasons'
     | '/api/events'
     | '/api/health'
+    | '/api/mcp'
     | '/api/me'
     | '/api/overview'
     | '/api/review'
@@ -1397,6 +1409,7 @@ export interface RootRouteChildren {
   ApiDepositSeasonsRoute: typeof ApiDepositSeasonsRoute
   ApiEventsRoute: typeof ApiEventsRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   ApiMeRoute: typeof ApiMeRoute
   ApiOverviewRoute: typeof ApiOverviewRoute
   ApiReviewRoute: typeof ApiReviewRoute
@@ -1553,6 +1566,13 @@ declare module '@tanstack/react-router' {
       path: '/api/health'
       fullPath: '/api/health'
       preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/me': {
@@ -2412,6 +2432,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDepositSeasonsRoute: ApiDepositSeasonsRoute,
   ApiEventsRoute: ApiEventsRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiMcpRoute: ApiMcpRoute,
   ApiMeRoute: ApiMeRoute,
   ApiOverviewRoute: ApiOverviewRoute,
   ApiReviewRoute: ApiReviewRoute,
