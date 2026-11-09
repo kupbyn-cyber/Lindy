@@ -1,6 +1,6 @@
 # Brief: MCP cho LINDY OS
 
-- Trạng thái: Nháp
+- Trạng thái: Đã duyệt (10/11/2026)
 - Chế độ: Đầy đủ
 - Dự án: LINDY OS (`kupbyn-cyber/Lindy`)
 
