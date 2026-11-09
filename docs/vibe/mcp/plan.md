@@ -138,7 +138,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
   - `tools/list` có thêm 12 tool trên
 - Dừng hỏi anh: Không
 
-### ☐ Gói 7 — Nền tảng intent ghi + tool ghi lịch hẹn
+### ☑ Gói 7 — Nền tảng intent ghi + tool ghi lịch hẹn
 - Mục tiêu: ghi qua chat an toàn: xem trước, đồng ý, chạy đúng một lần.
 - File: tạo `src/server/mcp/intents.ts`, `src/server/mcp/tools-write-appointments.ts`, `tests/security/mcp-intents.test.ts`, `tests/acceptance/mcp-ghi-lich.test.ts` · sửa `src/server/mcp/tools.ts`
 - Các bước:
@@ -231,3 +231,4 @@ Chi tiết: ./review.md
 - 10/11 04:05 · ☑ Gói 4 — Endpoint `/api/mcp` + `lindy_get_me` + lịch sử · test 482 pass · Lệch plan: khung tool (`defineTool`, `toToolFailure`, kiểu `ToolDef`) tách ra `src/server/mcp/kit.ts` để file tool không import vòng với `tools.ts` (chỉ còn danh sách đăng ký); thêm `tests/helpers/mcp.ts` (cấp token thật, gọi tool) dùng chung cho gói 5–8
 - 10/11 04:25 · ☑ Gói 5 — Tool đọc: lịch, đơn, khách, Cần xem lại · test 487 pass · Lệch plan: tool không kiểm thêm 62 ngày (service `listAppointments` đã chặn khoảng ngày, mô tả tool ghi rõ); test tự tạo một khách + một lịch riêng vì DB test không có sẵn dữ liệu
 - 10/11 04:45 · ☑ Gói 6 — Tool đọc: báo cáo, lợi nhuận, tiền, thu chi, cọc, công, lương, tạm ứng · test 493 pass · Lệch plan: không thêm chuỗi `…đ` vào kết quả (bước 7) — các kết quả có nhiều trường số không phải tiền (khách, lượt, phút), tự gắn dễ sai; thay bằng câu đơn vị tiền trong mô tả mọi tool có tiền + trong `instructions` của máy chủ; ca "đơn chưa xác nhận không vào doanh thu" dựa vào test sẵn có của báo cáo (tool trả nguyên số của `monthReport`, test kiểm khớp)
+- 10/11 05:10 · ☑ Gói 7 — Nền tảng intent ghi + tool ghi lịch hẹn · test 502 pass · Lệch plan: tool thực hiện gọi `limitWrites` như route web; xem trước kiểm thêm cờ `can.edit` / `can.cancel` / `can.reportCustomerCancel` của lịch để báo sớm; `tests/helpers/mcp.ts` nhận cả kết quả tool dạng chữ (challenge quyền)

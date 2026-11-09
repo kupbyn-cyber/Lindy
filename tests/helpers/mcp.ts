@@ -72,5 +72,12 @@ export async function callTool<T = Record<string, unknown>>(
   const { body } = await rpc(token, 'tools/call', { name, arguments: args })
   if (body?.error) return { rpcError: body.error, data: {} as T, isError: true }
   const result = body!.result as unknown as ToolResult
-  return { result, data: JSON.parse(result.content[0]!.text) as T, isError: !!result.isError }
+  const text = result.content[0]!.text
+  let data: T
+  try {
+    data = JSON.parse(text) as T
+  } catch {
+    data = { message: text } as T
+  }
+  return { result, data, isError: !!result.isError }
 }

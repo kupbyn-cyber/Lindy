@@ -4,6 +4,7 @@ import { SCOPE_READ } from './config'
 import { defineTool, type ToolDef } from './kit'
 import { READ_MONEY_TOOLS } from './tools-read-money'
 import { READ_OPS_TOOLS } from './tools-read-ops'
+import { WRITE_APPOINTMENT_TOOLS } from './tools-write-appointments'
 
 const getMe = defineTool({
   name: 'lindy_get_me',
@@ -26,7 +27,7 @@ const getMe = defineTool({
   }),
 })
 
-export const TOOLS: ToolDef[] = [getMe, ...READ_OPS_TOOLS, ...READ_MONEY_TOOLS]
+export const TOOLS: ToolDef[] = [getMe, ...READ_OPS_TOOLS, ...READ_MONEY_TOOLS, ...WRITE_APPOINTMENT_TOOLS]
 
 export function findTool(name: string) {
   return TOOLS.find((t) => t.name === name)
