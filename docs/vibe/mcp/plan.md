@@ -1,6 +1,6 @@
 # Kế hoạch: MCP cho LINDY OS
 
-- Trạng thái: Đã duyệt (10/11/2026)
+- Trạng thái: Đã phản biện (10/11/2026)
 - Brief: ./brief.md
 - Dự án: LINDY OS (`kupbyn-cyber/Lindy`)
 - Nhánh git: vibe/mcp
@@ -18,14 +18,16 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - Tài khoản còn cờ "phải đổi mật khẩu" không dùng được MCP: màn Cho phép báo "Đổi mật khẩu trong app trước", `verifyAccessToken` từ chối (phản biện L9).
 - Access token 1 giờ, refresh 30 ngày xoay vòng, dùng lại refresh cũ hoặc mã cũ ⇒ thu hồi cả grant; mã đăng nhập 5 phút; intent 15 phút — theo CEN (giả định).
 - **Exactly-once khác CEN:** service Lindy tự mở giao dịch `withUser`, nên execute không thể chạy nghiệp vụ trong cùng giao dịch khoá intent như CEN. Cách làm: (1) giao dịch worker khoá intent `for update`, chuyển `pending → executing`; (2) gọi service; (3) giao dịch worker ghi kết quả, `executing → done` (hoặc `failed` kèm lỗi). Gọi lại mã đã `done` → trả kết quả đã lưu. Mã đang `executing` chưa quá 2 phút → báo "đang thực hiện, thử lại sau ít giây", không gọi service; quá 2 phút (tiến trình chết giữa chừng) → báo "không rõ đã ghi chưa, kiểm tra trong app", không tự chạy lại. Lưới an toàn thứ hai là cơ chế chống trùng sẵn có của service: tạo lịch và đề nghị chi nhận `createRequestId` = id intent (service tìm lại theo `create_request_id`); duyệt/sửa/huỷ lịch, nghỉ, tạm ứng, sửa khách có `version` (chạy lần hai lỗi lệch phiên bản); `decideDay` không có `version` nên preview lưu `decidedStatus` hiện tại và execute đọc lại qua `dayBoard`, khác thì báo "đã thay đổi, xem trước lại" (phản biện L6, L7, L8).
-- CSP: middleware `applySecurityHeaders` (`src/server/http/headers.ts`, gọi từ `src/start.ts`) ghi đè CSP mọi response, có `form-action 'self'` làm Chrome chặn chuyển hướng về claude.ai/chatgpt.com sau khi bấm Cho phép. Với đường dẫn bắt đầu bằng `/oauth/` thì đặt CSP riêng không có `form-action` (như CEN `oauth-http.server.ts` `PAGE_HEADERS`: `default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'`) (phản biện L1).
+- CSP: middleware `applySecurityHeaders` (`src/server/http/headers.ts`, gọi từ `src/start.ts`) ghi đè CSP mọi response, có `form-action 'self'` làm Chrome chặn chuyển hướng về claude.ai/chatgpt.com sau khi bấm Cho phép. Với đường dẫn bắt đầu bằng `/oauth/` thì đặt CSP riêng không có `form-action` (như CEN `oauth-http.server.ts` `PAGE_HEADERS`, thêm font của design system: `default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-ancestors 'none'; base-uri 'none'`) (phản biện L1, vòng 2 L7).
 - Rate limit trong bộ nhớ tiến trình như CEN: `/api/mcp` 120/phút/IP + 60/phút/người; `/oauth/token` 30/phút/IP; `/oauth/authorize` 60/phút/IP; `/oauth/register` 10/giờ/IP, trần 500 client. Tool ghi còn qua `limitWrites` sẵn có (giả định). `src/server/mcp/http.ts` export `resetMcpRateLimits()` để test gọi trong `beforeEach`, như `resetWriteLimits()` (phản biện L11).
 - File route mới (`oauth.*.ts`, `[.]well-known.*.ts`, `api/mcp.ts`) cần `src/routeTree.gen.ts` sinh lại (chỉ plugin Vite làm, khi `build` hoặc `dev`) thì typecheck mới qua: ở gói có route mới, chạy `bun run build` **trước** `bun run check`, và commit `routeTree.gen.ts` cùng gói (phản biện L3).
 - Lịch sử: mỗi lần gọi tool ghi 1 dòng `audit_logs` (`action = 'mcp.tool_call'`, `entity_type = 'mcp'`, `details` = `{ tool, outcome, client: 'claude' | 'chatgpt' | 'other', grantId, requestId, errorCode? }`); nhãn client suy từ `redirect_uris` đã đăng ký (claude.ai/claude.com → `claude`, chatgpt.com/openai → `chatgpt`). Thao tác ghi còn có lịch sử nghiệp vụ sẵn có của từng service. Không ghi token, mã, tham số tool (giả định).
 - Màn "Cho phép": trang HTML do server trả (như CEN `oauth-http.server.ts`), dùng màu/chữ lấy từ `src/styles/tokens.css`, chống CSRF bằng mã gắn với phiên; không dựng route React (giả định — ít code hơn, không cần client JS).
 - Đăng nhập khi chưa có phiên: `/oauth/authorize` chuyển sang `/dang-nhap?next=<đường dẫn authorize>`; trang đăng nhập chỉ nhận `next` bắt đầu bằng `/oauth/authorize?` (chống mở chuyển hướng) (giả định).
-- Địa chỉ công khai lấy từ `APP_ORIGIN` sẵn có (`https://lindy.aiduocviec.com`) — không thêm biến môi trường mới (giả định).
-- Tiền trong kết quả tool: giữ số nguyên VND và thêm chuỗi hiển thị `8.450.000đ` ở các trường tổng để AI đọc đúng (giả định). SĐT khách trả đủ (brief).
+- Địa chỉ công khai: `publicOrigin(request)` lấy `APP_ORIGIN` nếu có (`https://lindy.aiduocviec.com` trên Vibe Host), không có thì lấy origin của request, giống `expectedOrigin()` ở `src/server/http/route.ts`. Test truyền origin `http://…` (không đặt `APP_ORIGIN` dạng https, vì sẽ đổi tên cookie sang `__Host-lindy_sid` làm hỏng `sessionOf()` trong `tests/helpers/auth.ts`). Không thêm biến môi trường mới (phản biện vòng 2 L1).
+- Đổi hoặc bị đặt lại mật khẩu thì token MCP cũ mất hiệu lực: `verifyAccessToken` và `refresh` từ chối grant có `created_at < user_credentials.password_changed_at`, giống web thu hồi phiên khi đổi mật khẩu (phản biện vòng 2 L2).
+- Lỗi trả cho AI: `AppError` → `ZodError` → `fromDbError(e)` (luật trong hàm SQL, mã `P0001`/`42501`) → câu chung; dùng lại đúng thứ tự của `errorResponse` ở `src/server/http/route.ts` (phản biện vòng 2 L4).
+- Tiền trong kết quả tool: giữ số nguyên VND và thêm chuỗi hiển thị `8.450.000đ` ở các trường tổng để AI đọc đúng (giả định). SĐT khách: `lindy_get_customer`, chi tiết lịch/đơn trả đủ; `lindy_search_customers` trả SĐT bị che như service sẵn có (`phoneMasked`), mô tả tool ghi rõ muốn xem đủ thì gọi `lindy_get_customer` (phản biện vòng 2 L11).
 - Tên tool tiền tố `lindy_`; tool ghi theo cặp `lindy_preview_<việc>` / `lindy_<việc>` (execute chỉ có tham số `action_token`).
 
 ## Danh sách gói
@@ -38,7 +40,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 | 5 | Tool đọc: lịch, đơn, khách, Cần xem lại | 4 | Không |
 | 6 | Tool đọc: báo cáo, lợi nhuận, tiền, thu chi, cọc, công, lương, tạm ứng | 4 | Không |
 | 7 | Nền tảng intent ghi + tool ghi lịch hẹn | 4 | Không |
-| 8 | Tool ghi còn lại + tài liệu | 7 | Không |
+| 8 | Tool ghi còn lại + tài liệu | 5, 6, 7 | Không |
 | 9 | Đưa lên `main`, triển khai, thử thật | 8 | Có — anh duyệt merge, bấm Triển khai lại, kết nối và thử trên Claude + ChatGPT |
 
 ## Chi tiết gói
@@ -63,10 +65,10 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - Mục tiêu: toàn bộ logic cấp, đổi, gia hạn, thu hồi, kiểm token, không dính HTTP.
 - File: tạo `src/server/mcp/config.ts`, `src/server/mcp/oauth.ts`, `tests/security/mcp-oauth.test.ts`
 - Các bước:
-  1. `config.ts`: `MCP_PATH = '/api/mcp'`, hằng scope, `SUPPORTED_SCOPES = ['lindy:read', 'lindy:write', 'offline_access']`, `WRITE_SCOPES = ['lindy:write']`, `expandRequestedScope()` (thiếu `scope` hoặc chỉ `lindy:read` ± `offline_access` → cả `SUPPORTED_SCOPES`; xin tường minh khác → giữ nguyên nếu hợp lệ), TTL (access 3600s, refresh 30 ngày, code 300s), `MAX_REGISTERED_CLIENTS = 500`, `MCP_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']`, `ALLOWED_REDIRECT_HOSTS` (chatgpt.com, chat.openai.com, platform.openai.com, claude.ai, claude.com, localhost, 127.0.0.1), `clientLabelFromRedirects()`, `publicOrigin()` từ `env('APP_ORIGIN')`, `resourceUrl()`, `protectedResourceMetadataUrl()`.
-  2. `oauth.ts`: chép từ CEN `oauth.server.ts` các hàm `sha256Hex`, `randomToken`, `verifyPkce` (S256), `validateRedirectUri(s)` (https hoặc loopback, host trong danh sách), `parseScope`, `consentCsrfToken`, `safeEqualStrings`; store dùng `withWorker`: `registerClient`, `getClient`, `createGrantAndCode`, `exchangeCode` (PKCE, đúng redirect_uri, mã dùng một lần; dùng lại ⇒ thu hồi grant), `refresh` (xoay vòng; dùng lại refresh cũ ⇒ thu hồi grant; giữ đúng scope grant), `revokeToken`, `verifyAccessToken` (chưa thu hồi/hết hạn, đúng resource, client chưa thu hồi, user `is_active`, không còn cờ phải đổi mật khẩu, **còn vai trò Chủ**) trả `McpPrincipal { userId, grantId, clientId, clientLabel, scope }`; cập nhật `grants.last_used_at` tối đa mỗi phút.
+  1. `config.ts`: `MCP_PATH = '/api/mcp'`, hằng scope, `SUPPORTED_SCOPES = ['lindy:read', 'lindy:write', 'offline_access']`, `WRITE_SCOPES = ['lindy:write']`, `expandRequestedScope()` (thiếu `scope` hoặc chỉ `lindy:read` ± `offline_access` → cả `SUPPORTED_SCOPES`; xin tường minh khác → giữ nguyên nếu hợp lệ), TTL (access 3600s, refresh 30 ngày, code 300s), `MAX_REGISTERED_CLIENTS = 500`, `MCP_PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05']`, `ALLOWED_REDIRECT_HOSTS` (chatgpt.com, chat.openai.com, platform.openai.com, claude.ai, claude.com, localhost, 127.0.0.1), `clientLabelFromRedirects()`, `publicOrigin(request)` (xem Quyết định kỹ thuật), `resourceUrl(origin)`, `protectedResourceMetadataUrl(origin)`.
+  2. `oauth.ts`: chép từ CEN `oauth.server.ts` các hàm `sha256Hex`, `randomToken`, `verifyPkce` (S256), `validateRedirectUri(s)` (https hoặc loopback, host trong danh sách), `parseScope`, `consentCsrfToken`, `safeEqualStrings`; store dùng `withWorker`: `registerClient`, `getClient`, `createGrantAndCode`, `exchangeCode` (PKCE, đúng redirect_uri, mã dùng một lần; dùng lại ⇒ thu hồi grant), `refresh` (xoay vòng; dùng lại refresh cũ ⇒ thu hồi grant; giữ đúng scope grant), `revokeToken`, `verifyAccessToken` (chưa thu hồi/hết hạn, đúng resource, client chưa thu hồi, user `is_active`, không còn cờ phải đổi mật khẩu, grant tạo sau `password_changed_at`, **còn vai trò Chủ**) trả `McpPrincipal { userId, grantId, clientId, clientLabel, scope }`; cập nhật `grants.last_used_at` tối đa mỗi phút.
   3. `isOwner(tx, userId)`: có dòng `user_branch_roles` chưa `revoked_at` nối `roles` có `code = 'owner'` (khớp `ROLES.owner` ở `src/server/authz/catalog.ts`).
-  4. Test: luồng đủ (đăng ký → code → token → verify); PKCE sai bị từ chối; mã dùng hai lần ⇒ grant bị thu hồi; refresh cũ dùng lại ⇒ thu hồi; tài khoản Thợ/Quản lý (seed có Nhung, Chin, Trang) không tạo được grant và token cũ của người bị khoá/mất vai trò Chủ bị từ chối ngay.
+  4. Test: luồng đủ (đăng ký → code → token → verify); PKCE sai bị từ chối; mã dùng hai lần ⇒ grant bị thu hồi; refresh cũ dùng lại ⇒ thu hồi; tài khoản Thợ/Quản lý (seed có Nhung, Chin, Trang) không tạo được grant và token cũ của người bị khoá/mất vai trò Chủ bị từ chối ngay; đổi mật khẩu xong thì access và refresh token cũ bị từ chối.
 - Xong khi:
   - lint + typecheck + test + build pass
   - `verifyAccessToken` trả null cho token của người không phải Chủ (test)
@@ -86,7 +88,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
   8. Test (`beforeEach` gọi `resetMcpRateLimits()`): metadata đúng URL theo `APP_ORIGIN`; `register` từ chối redirect_uri lạ; `authorize` chưa đăng nhập chuyển sang `/dang-nhap?next=`; Thợ bị chặn; Chủ bấm Cho phép nhận `code` về đúng redirect; client không gửi `scope` → grant có `lindy:write`; CSRF sai bị từ chối; `token` đổi được code.
 - Xong khi:
   - lint + typecheck + test + build pass
-  - chạy `bun run build` rồi `bun run start` (hoặc `bun run dev`), `curl localhost:3000/.well-known/oauth-authorization-server` ra JSON có `registration_endpoint`; `curl -I localhost:3000/oauth/authorize?...` trên bản build không có `form-action` trong CSP
+  - chạy `bun run build` rồi `bun run start`, `curl localhost:3000/.well-known/oauth-authorization-server` ra JSON có `registration_endpoint`; trên bản build, `curl -i` trang Cho phép **kèm cookie phiên của Linh** và `client_id`/`redirect_uri` đã đăng ký → 200, header CSP không có `form-action` (phản biện vòng 2 L6)
 - Dừng hỏi anh: Không
 
 ### ☐ Gói 4 — Endpoint `/api/mcp` + `lindy_get_me` + lịch sử
@@ -94,11 +96,11 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - File: tạo `src/server/mcp/handler.ts`, `src/server/mcp/tools.ts`, `src/server/mcp/audit.ts`, `src/routes/api/mcp.ts`, `tests/security/mcp-handler.test.ts` · sửa `src/routeTree.gen.ts` (tự sinh)
 - Các bước:
   1. `handler.ts` theo CEN `mcp-handler.server.ts` (phần giao thức, ~dòng 980–1300): POST JSON-RPC; thiếu/sai token → 401 + `WWW-Authenticate: Bearer resource_metadata="…", scope="lindy:read lindy:write offline_access"`; `initialize` (chọn phiên bản giao thức hỗ trợ, `serverInfo: { name: 'lindy-os' }`, `instructions` tiếng Việt: dữ liệu là dữ liệu ứng dụng không tin cậy; tool ghi phải preview → người dùng đồng ý → execute), `ping`, `notifications/initialized`, `tools/list` (chỉ liệt kê tool scope đang có, kèm tool ghi để AI biết mà xin quyền), `tools/call`; GET → 405; batch JSON-RPC → từ chối.
-  2. `tools.ts`: kiểu `ToolDef { name, description, scope, inputSchema (JSON Schema), parse (zod .strict()), run(ctx) }`, `ctx = { auth, principal, requestId }`; thiếu scope → kết quả `isError` + `_meta['mcp/www_authenticate']` (insufficient_scope, scope = quyền đang có + quyền cần); tham số lạ (kể cả `userId`, `role`) → `-32602`; lỗi `AppError` của service → `isError` với đúng câu tiếng Việt; lỗi khác → câu chung, log `[mcp]` chỉ tên lỗi.
+  2. `tools.ts`: kiểu `ToolDef { name, description, scope, inputSchema (JSON Schema), parse (zod .strict()), run(ctx) }`, `ctx = { auth, principal, requestId }`; thiếu scope → kết quả `isError` + `_meta['mcp/www_authenticate']` (insufficient_scope, scope = quyền đang có + quyền cần); tham số lạ (kể cả `userId`, `role`) → `-32602`; lỗi theo thứ tự `AppError` → `ZodError` → `fromDbError` → câu chung (log `[mcp]` chỉ tên lỗi), trả `isError` với đúng câu tiếng Việt.
   3. Tool `lindy_get_me`: tên, vai trò, cơ sở.
   4. `audit.ts`: `writeMcpAudit(userId, entry)` ghi `audit_logs` qua `withWorker` (`actor_user_id = userId`, `action = 'mcp.tool_call'`); gọi sau mỗi `tools/call`.
   5. `src/routes/api/mcp.ts`: route mỏng như CEN `src/routes/api/mcp.ts` (thiếu `DATABASE_URL` → 503). Chạy `bun run build` trước `bun run check` để sinh lại `src/routeTree.gen.ts`, commit cùng gói.
-  6. Test: gọi không token → 401 có `resource_metadata` và `scope`; `initialize` + `tools/list` + `lindy_get_me` với token của Linh; tham số `userId` bị từ chối; có dòng audit sau mỗi lần gọi.
+  6. Test: gọi không token → 401 có `resource_metadata` và `scope`; `initialize` + `tools/list` + `lindy_get_me` với token của Linh; tham số `userId` bị từ chối; có dòng audit sau mỗi lần gọi; một lỗi `P0001` giả lập trong tool thử trả đúng câu của DB.
 - Xong khi:
   - lint + typecheck + test + build pass
   - `lindy_get_me` trả tên "Linh", vai trò Chủ trong test
@@ -110,7 +112,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - Các bước (scope `lindy:read`; tham số ngày dạng `YYYY-MM-DD`, khoảng ngày tối đa 62 ngày):
   1. `lindy_list_appointments` (from, to, filter, q) → `listAppointments`; `lindy_get_appointment` (id) → `getAppointment` (kèm cọc nếu có); `lindy_list_attention` → `attentionList`.
   2. `lindy_list_orders` → `listOrders` (đối chiếu tham số với `src/routes/api/orders/index.ts`); `lindy_get_order` → `getOrder`.
-  3. `lindy_search_customers` (q) → `searchCustomerList` (q rỗng → `recentCustomers`); `lindy_get_customer` (id) → `getCustomer` (lịch sử đơn).
+  3. `lindy_search_customers` (q) → `searchCustomerList` (q rỗng → `recentCustomers`), SĐT bị che, mô tả chỉ sang `lindy_get_customer`; `lindy_get_customer` (id) → `getCustomer` (lịch sử đơn).
   4. `lindy_review_queue` → `reviewQueue`.
   5. Áp `limitSensitiveReads` cho các tool chi tiết có SĐT như route web đang làm.
   6. Test acceptance: với dữ liệu seed, kết quả tool khớp kết quả gọi service trực tiếp; mô tả tool tiếng Việt, nói rõ đơn vị tiền.
@@ -142,7 +144,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - Các bước:
   1. `intents.ts`: `createIntent({ userId, grantId, actionType, payload, summary })` → mã 32 byte base64url, lưu SHA-256, trả `{ action_token, expires_at, summary }`; `executeIntent({ token, principal, actionType, run })` theo quy trình 3 bước ở mục Quyết định kỹ thuật (khoá `for update`, đúng người, đúng `action_type`, chưa hết hạn, `done` → trả kết quả cũ, `executing` chưa quá 2 phút → lỗi "đang thực hiện, thử lại sau ít giây", `executing` quá 2 phút → lỗi "không rõ", `failed` → trả lỗi cũ); scope `lindy:write` kiểm lại ngay trước khi chạy.
   2. Preview chạy toàn bộ kiểm tra không ghi được trước (zod, quyền qua `hasPerm`, đọc bản ghi hiện tại để lấy `version` và hiện tóm tắt "trước → sau"); `checkWarnings` cho lịch mới để hiện cảnh báo trùng giờ.
-  3. Cặp tool: `lindy_preview_create_appointment` / `lindy_create_appointment` → `createAppointment` với `createRequestId` = id intent (phản biện L6); `lindy_preview_update_appointment` / `lindy_update_appointment` → `updateAppointment`; `lindy_preview_cancel_appointment` / `lindy_cancel_appointment` → `transitionAppointment` hành động `cancel` (có lý do); `lindy_preview_customer_cancel_appointment` / `lindy_customer_cancel_appointment` → `transitionAppointment` `report_customer_cancel` (kiểu `Transition` trong `src/server/appointments/service.ts`).
+  3. Cặp tool: `lindy_preview_create_appointment` / `lindy_create_appointment` → `createAppointment` với `createRequestId` = id intent (phản biện L6); `endTime` không bắt buộc — thiếu thì preview lấy thời lượng mặc định `default_duration_min` trong cài đặt lịch của cơ sở (hàm đọc cài đặt sẵn có ở `src/server/appointments/service.ts`, như form `AppointmentForm.tsx`) và hiện giờ kết thúc trong bản xem trước, không để AI tự đoán (phản biện vòng 2 L8); `lindy_preview_update_appointment` / `lindy_update_appointment` → `updateAppointment`; `lindy_preview_cancel_appointment` / `lindy_cancel_appointment` → `transitionAppointment` hành động `cancel` (có lý do); `lindy_preview_customer_cancel_appointment` / `lindy_customer_cancel_appointment` → `transitionAppointment` `report_customer_cancel` (kiểu `Transition` trong `src/server/appointments/service.ts`).
   4. Mô tả tool ghi nói rõ: "chỉ gọi tool thực hiện khi người dùng đã xem bản xem trước và yêu cầu thực hiện".
   5. Test: preview không tạo lịch; execute tạo đúng 1 lịch; execute lại cùng mã trả kết quả cũ, không thêm lịch; mã hết hạn bị từ chối; mã của grant khác/action khác bị từ chối; execute khi intent đang `executing` (đặt tay trong test) trả "đang thực hiện" và không tạo lịch; token chỉ `lindy:read` gọi preview → challenge `insufficient_scope`.
 - Xong khi:
@@ -155,7 +157,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - File: tạo `src/server/mcp/tools-write-other.ts`, `tests/acceptance/mcp-ghi-khac.test.ts`, `docs/MCP.md` · sửa `src/server/mcp/tools.ts`, `docs/DECISIONS.md`, `CLAUDE.md`, `README.md`
 - Các bước:
   1. `lindy_preview_create_expense` / `lindy_create_expense` → `createExpense` (`createRequestId` = id intent; nhóm chi lấy từ `expense_categories`, gợi ý danh sách mã trong lỗi nếu sai).
-  2. `lindy_preview_decide_attendance` / `lindy_decide_attendance` → `decideDay`; preview lưu trạng thái hiện tại của ngày (đọc qua `dayBoard`), execute đọc lại, khác thì báo "đã thay đổi, xem trước lại" và không ghi (phản biện L7).
+  2. `lindy_preview_decide_attendance` / `lindy_decide_attendance` → `decideDay`; preview gọi `dayBoard` và kiểm `board.date === input.date` (khác — vd ngày tương lai bị đổi thành hôm nay — thì báo lỗi), lưu trường `decided` của đúng `userId`; execute đọc lại, khác thì báo "đã thay đổi, xem trước lại" và không ghi (phản biện L7, vòng 2 L9). Test: bổ sung công thiếu ghi chú trả đúng câu "cần ghi lý do" của DB.
   3. `lindy_preview_decide_leave` / `lindy_decide_leave` → `actOnLeave` (`approve` | `reject` của `LeaveAction`).
   4. `lindy_preview_decide_advance` / `lindy_decide_advance` → `actOnAdvance` (`approve` | `reject` của `AdvanceAction`; **không** có `pay` — để sau).
   5. `lindy_preview_update_customer` / `lindy_update_customer` → `updateCustomer`.
@@ -171,13 +173,14 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - Mục tiêu: chạy trên lindy.aiduocviec.com, kết nối được từ Claude và ChatGPT.
 - File: không sửa code (chỉ ghi nhật ký vào plan)
 - Các bước:
-  1. Chạy lại `bun run build` + `bun run check` trên nhánh, rồi `bun scripts/check-upgrade.ts --from=0035` (mô phỏng nâng cấp DB từ bản đang chạy) theo `docs/BAI_HOC_TRIEN_KHAI.md` (phản biện L5).
+  0. Hỏi anh (hoặc xem trường `migration` trong bản sao lưu tải từ app) bản trên Vibe Host đang ở migration số mấy; tài liệu đợt S62–S64 ghi "chưa triển khai lên Vibe Host", nên lần này có thể đưa lên cùng lúc cả đợt đó — báo anh rõ những đợt nào sẽ lên (phản biện vòng 2 L3).
+  1. Chạy lại `bun run build` + `bun run check` trên nhánh, rồi `bun scripts/check-upgrade.ts --from=<số thật ở bước 0>` (mô phỏng nâng cấp DB từ bản đang chạy) theo `docs/BAI_HOC_TRIEN_KHAI.md` (phản biện L5).
   2. **Hỏi anh** duyệt merge `vibe/mcp` vào `main` và push (lần đầu lên `main` là migration `0036` sẽ chạy trên DB thật khi triển khai).
   3. Anh **sao lưu DB trên Vibe Host** trước, rồi bấm **Triển khai lại**, xem nhật ký có dòng `[release]` chạy `0036` không lỗi, mở `/api/health` → `ready: true`.
   4. Anh tự thử theo "Tiêu chí xong" của brief: `curl https://lindy.aiduocviec.com/.well-known/oauth-protected-resource/api/mcp`; thêm connector trên claude.ai; trên ChatGPT; hỏi lịch hôm nay; phân tích tháng; tạo một lịch thử qua chat (tên khách "THỬ MCP", vào giờ hoặc ngày quán nghỉ, báo trước nhân viên vì app sẽ gửi thông báo "Lịch mới") rồi huỷ nó trong app (phản biện L12); đăng nhập Nhung ở màn Cho phép bị chặn.
 - Xong khi:
   - anh báo các bước thử ở trên đều đạt
-- Dừng hỏi anh: Có — anh duyệt merge/push, bấm Triển khai lại, tự thử trên Claude và ChatGPT
+- Dừng hỏi anh: Có — anh cho biết migration đang chạy trên hosting, duyệt merge/push, bấm Triển khai lại, tự thử trên Claude và ChatGPT
 
 ## Đối chiếu brief
 | Mục trong brief | Gói |
@@ -200,6 +203,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 ## Rủi ro
 - **Script DB local chỉ chạy trên Windows** (`scripts/db-local.ts` gọi `initdb.exe`). Trong môi trường cloud phải tự dựng PostgreSQL 16 hệ thống (`/usr/lib/postgresql/16/bin`, chạy bằng user `postgres`, cổng 5433) rồi ghi `PG_ADMIN_URL` vào `.env` và chạy `db-bootstrap` → `migrate up` → `migrate up --test` → `seed`. Đã làm một lần ngày 10/11 và test pass. Không sửa `db-local.ts` trong đợt này.
 - **Bản sao lưu lộ token** — `app.backup_dump()` loại bảng theo danh sách tên; thiếu bảng mcp thì bản sao lưu chứa `token_hash` và test `backup.test.ts` sẽ đỏ → gói 1 bước 4 + test.
+- **Scope ghi chưa được anh xác nhận** — xem `review.md` mục Còn mở; hỏi lại anh ở gói 9.
 - **Exactly-once không cùng giao dịch như CEN** — tiến trình chết giữa bước 2 và 3 để intent `executing`; phòng bằng chống trùng của service (`createRequestId`, `version`, kiểm lại trạng thái với `decideDay`) và báo "không rõ" thay vì chạy lại.
 - **Chuyển tên miền cũ** (`canonical-host.ts`) — Claude/ChatGPT luôn dùng `lindy.aiduocviec.com`; metadata lấy `APP_ORIGIN` nên không lệch. Kiểm trong gói 3.
 - **Kiểm Origin của `handle()`** chặn request ghi từ trang khác — route OAuth/MCP không dùng `handle()`, phải tự bọc lỗi; không được nới `assertSameOrigin` cho route web.
@@ -216,7 +220,8 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - Không thêm biến môi trường; `APP_ORIGIN` và `TRUST_PROXY` đã có trên Vibe Host.
 
 ## Phản biện
-<vibe-review ghi tóm tắt vào đây>
+2 vòng, 23 lỗi: tự sửa 21, bác bỏ 0, còn 1 câu chờ anh xác nhận (cấp quyền ghi ngay lần kết nối đầu — em đã chọn khi anh ngủ). Sửa chính: CSP trang Cho phép, sinh lại route tree, lợi nhuận lấy từ `monthReport`, thu hồi token khi đổi mật khẩu, lỗi SQL trả đúng câu, kiểm migration thật + sao lưu trước triển khai. Anh dặn phản biện xong chạy `/vibe-build` (10/11, 01:44), nên plan chuyển Đã phản biện.
+Chi tiết: ./review.md
 
 ## Nhật ký triển khai
 <vibe-build ghi vào đây>

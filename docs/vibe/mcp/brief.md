@@ -67,7 +67,7 @@ Anh và Linh muốn xem và thao tác Lindy (lịch, đơn, tiền, nhân sự) 
 - Hạn chót: không có.
 
 ## Giả định
-- Scope gọn hơn CEN vì chỉ một tài khoản: `lindy:read` (mặc định) và `lindy:write` (phải đồng ý thêm khi gọi tool ghi lần đầu), cộng `offline_access`.
+- Scope gọn hơn CEN vì chỉ một tài khoản: `lindy:read`, `lindy:write`, `offline_access`, **cấp cả ba ngay lần kết nối đầu** (màn Cho phép có dòng cảnh báo ghi; mọi thao tác ghi vẫn qua xem trước → đồng ý). Đổi lúc phản biện (bản cũ: `lindy:write` xin thêm khi ghi lần đầu) vì cách xin thêm không chạy ổn trên claude.ai theo kinh nghiệm CEN — **chờ anh xác nhận**.
 - Access token 1 giờ, refresh token 30 ngày xoay vòng; mã ghi hết hạn sau 15 phút — như CEN.
 - Lindy hiện một cơ sở; tool tự lấy cơ sở mặc định, không bắt AI chọn.
 - SĐT khách trả về đầy đủ, vì chỉ Chủ dùng (CEN che SĐT ở Telesale, Lindy không cần).
