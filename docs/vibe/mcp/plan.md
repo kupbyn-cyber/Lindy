@@ -1,6 +1,6 @@
 # Kế hoạch: MCP cho LINDY OS
 
-- Trạng thái: Nháp
+- Trạng thái: Đã duyệt (10/11/2026)
 - Brief: ./brief.md
 - Dự án: LINDY OS (`kupbyn-cyber/Lindy`)
 - Nhánh git: vibe/mcp
