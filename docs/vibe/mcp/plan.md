@@ -121,7 +121,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
   - `tools/list` có đủ 8 tool trên
 - Dừng hỏi anh: Không
 
-### ☐ Gói 6 — Tool đọc: báo cáo, lợi nhuận, tiền, thu chi, cọc, công, lương, tạm ứng
+### ☑ Gói 6 — Tool đọc: báo cáo, lợi nhuận, tiền, thu chi, cọc, công, lương, tạm ứng
 - Mục tiêu: đủ số liệu để AI nhận định kinh doanh.
 - File: tạo `src/server/mcp/tools-read-money.ts`, `tests/acceptance/mcp-doc-so-lieu.test.ts` · sửa `src/server/mcp/tools.ts`
 - Các bước (scope `lindy:read`; mỗi tool gọi đúng service mà route `GET` tương ứng trong `src/routes/api/*` đang gọi):
@@ -230,3 +230,4 @@ Chi tiết: ./review.md
 - 10/11 03:45 · ☑ Gói 3 — Route OAuth + màn Cho phép + `next` ở Đăng nhập · test 474 pass; bản build: trang Cho phép 200 với CSP riêng không `form-action`, chưa đăng nhập → 302 `/dang-nhap?next=`, đã đăng nhập → 307 về `/oauth/authorize` · Lệch plan: `audit.ts` làm sớm ở gói này (authorize/token ghi lịch sử); `safeNext` đặt ở `src/lib/safe-next.ts` (không export từ file route); thêm `safeRun` trong `http.ts` bọc lỗi route
 - 10/11 04:05 · ☑ Gói 4 — Endpoint `/api/mcp` + `lindy_get_me` + lịch sử · test 482 pass · Lệch plan: khung tool (`defineTool`, `toToolFailure`, kiểu `ToolDef`) tách ra `src/server/mcp/kit.ts` để file tool không import vòng với `tools.ts` (chỉ còn danh sách đăng ký); thêm `tests/helpers/mcp.ts` (cấp token thật, gọi tool) dùng chung cho gói 5–8
 - 10/11 04:25 · ☑ Gói 5 — Tool đọc: lịch, đơn, khách, Cần xem lại · test 487 pass · Lệch plan: tool không kiểm thêm 62 ngày (service `listAppointments` đã chặn khoảng ngày, mô tả tool ghi rõ); test tự tạo một khách + một lịch riêng vì DB test không có sẵn dữ liệu
+- 10/11 04:45 · ☑ Gói 6 — Tool đọc: báo cáo, lợi nhuận, tiền, thu chi, cọc, công, lương, tạm ứng · test 493 pass · Lệch plan: không thêm chuỗi `…đ` vào kết quả (bước 7) — các kết quả có nhiều trường số không phải tiền (khách, lượt, phút), tự gắn dễ sai; thay bằng câu đơn vị tiền trong mô tả mọi tool có tiền + trong `instructions` của máy chủ; ca "đơn chưa xác nhận không vào doanh thu" dựa vào test sẵn có của báo cáo (tool trả nguyên số của `monthReport`, test kiểm khớp)
