@@ -237,3 +237,4 @@ Chi tiết: ./review.md
 - 10/11 20:45 · ⏸ Gói 9 — dừng chờ anh: cho biết migration đang chạy trên Vibe Host, xác nhận M03 (quyền ghi ngay lần đầu), duyệt merge `vibe/mcp` → `main`, sao lưu DB rồi bấm Triển khai lại
 - 10/11 20:55 · Gói 9 bước 0: anh không nhớ bản trên hosting; em kiểm qua trình duyệt trên máy anh — bundle đang chạy có chuỗi S63 "Thành tiền giảm từ" (chỉ có từ commit 2084a50), `/api/health` ready, `/api/mcp` 404 ⇒ hosting đang ở `main` 2084a50, migration 0035. Lần triển khai này chỉ thêm MCP (0036); `check-upgrade --from=0035` đã ĐẠT
 - 10/11 21:00 · Anh xác nhận M03 (cấp quyền ghi ngay lần đầu) và duyệt merge `vibe/mcp` → `main`, push
+- 10/11 21:10 · Gói 9: lint + typecheck + test 509 + build pass; push `main` 2084a50 → c86ecd1 (fast-forward). Chờ anh sao lưu DB và bấm Triển khai lại
