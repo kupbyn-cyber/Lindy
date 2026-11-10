@@ -2,7 +2,7 @@
 
 - Ngày: 10/11/2026
 - Số vòng: 2
-- Kết quả: 23 lỗi — tự sửa 21 · anh quyết 2 (cùng một câu về scope ghi; anh đang ngủ nên em tạm chọn, chờ anh xác nhận) · bác bỏ 0
+- Kết quả: 23 lỗi — tự sửa 21 · anh quyết 2 (cùng một câu về scope ghi; em tạm chọn khi anh ngủ, anh xác nhận 10/11) · bác bỏ 0
 - Kết luận của agent: vòng 1 "dùng được sau khi sửa; cần xử lý L1, L3 và anh chốt L2"; vòng 2 "dùng được sau khi sửa"
 
 ## Vòng 1
@@ -37,4 +37,4 @@
 | L11 | Nhỏ | Tiêu chí mơ hồ | 5 | Tìm khách chỉ trả SĐT che, mâu thuẫn "SĐT trả đủ" | Tự sửa: tìm khách giữ SĐT che, chi tiết khách trả đủ |
 
 ## Còn mở
-- **Scope ghi (vòng 1 L2, vòng 2 L5):** em đã chọn cấp quyền ghi ngay lần kết nối đầu (khác giả định cũ của brief). Anh xác nhận hoặc bảo đổi lại trước gói 9; đổi lại chỉ sửa `expandRequestedScope` trong `src/server/mcp/config.ts`.
+Không. Scope ghi (vòng 1 L2, vòng 2 L5): anh xác nhận 10/11/2026 cấp quyền ghi ngay lần kết nối đầu (M03).

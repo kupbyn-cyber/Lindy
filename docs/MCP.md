@@ -24,7 +24,7 @@ Màn **Cho phép** liệt kê quyền xem và quyền ghi. Tài khoản Quản l
 | `lindy:write` | Tool ghi (luôn qua xem trước → đồng ý) |
 | `offline_access` | Giữ kết nối, không phải đăng nhập lại mỗi giờ |
 
-Lần kết nối đầu cấp cả ba (M03). Access token 1 giờ, refresh 30 ngày xoay vòng; dùng lại mã hoặc refresh cũ thì cả kết nối bị thu hồi.
+Lần kết nối đầu cấp cả ba (M03, anh xác nhận 10/11/2026). Access token 1 giờ, refresh 30 ngày xoay vòng; dùng lại mã hoặc refresh cũ thì cả kết nối bị thu hồi.
 
 ## Tool
 

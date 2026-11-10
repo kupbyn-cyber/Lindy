@@ -203,7 +203,6 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 ## Rủi ro
 - **Script DB local chỉ chạy trên Windows** (`scripts/db-local.ts` gọi `initdb.exe`). Trong môi trường cloud phải tự dựng PostgreSQL 16 hệ thống (`/usr/lib/postgresql/16/bin`, chạy bằng user `postgres`, cổng 5433) rồi ghi `PG_ADMIN_URL` vào `.env` và chạy `db-bootstrap` → `migrate up` → `migrate up --test` → `seed`. Đã làm một lần ngày 10/11 và test pass. Không sửa `db-local.ts` trong đợt này.
 - **Bản sao lưu lộ token** — `app.backup_dump()` loại bảng theo danh sách tên; thiếu bảng mcp thì bản sao lưu chứa `token_hash` và test `backup.test.ts` sẽ đỏ → gói 1 bước 4 + test.
-- **Scope ghi chưa được anh xác nhận** — xem `review.md` mục Còn mở; hỏi lại anh ở gói 9.
 - **Exactly-once không cùng giao dịch như CEN** — tiến trình chết giữa bước 2 và 3 để intent `executing`; phòng bằng chống trùng của service (`createRequestId`, `version`, kiểm lại trạng thái với `decideDay`) và báo "không rõ" thay vì chạy lại.
 - **Chuyển tên miền cũ** (`canonical-host.ts`) — Claude/ChatGPT luôn dùng `lindy.aiduocviec.com`; metadata lấy `APP_ORIGIN` nên không lệch. Kiểm trong gói 3.
 - **Kiểm Origin của `handle()`** chặn request ghi từ trang khác — route OAuth/MCP không dùng `handle()`, phải tự bọc lỗi; không được nới `assertSameOrigin` cho route web.
@@ -220,7 +219,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
 - Không thêm biến môi trường; `APP_ORIGIN` và `TRUST_PROXY` đã có trên Vibe Host.
 
 ## Phản biện
-2 vòng, 23 lỗi: tự sửa 21, bác bỏ 0, còn 1 câu chờ anh xác nhận (cấp quyền ghi ngay lần kết nối đầu — em đã chọn khi anh ngủ). Sửa chính: CSP trang Cho phép, sinh lại route tree, lợi nhuận lấy từ `monthReport`, thu hồi token khi đổi mật khẩu, lỗi SQL trả đúng câu, kiểm migration thật + sao lưu trước triển khai. Anh dặn phản biện xong chạy `/vibe-build` (10/11, 01:44), nên plan chuyển Đã phản biện.
+2 vòng, 23 lỗi: tự sửa 21, bác bỏ 0, 1 câu anh quyết: cấp quyền ghi ngay lần kết nối đầu (em chọn khi anh ngủ, anh xác nhận 10/11). Sửa chính: CSP trang Cho phép, sinh lại route tree, lợi nhuận lấy từ `monthReport`, thu hồi token khi đổi mật khẩu, lỗi SQL trả đúng câu, kiểm migration thật + sao lưu trước triển khai. Anh dặn phản biện xong chạy `/vibe-build` (10/11, 01:44), nên plan chuyển Đã phản biện.
 Chi tiết: ./review.md
 
 ## Nhật ký triển khai
@@ -237,3 +236,4 @@ Chi tiết: ./review.md
 - 10/11 20:45 · Kiểm tra cuối: lint + typecheck + test 509 + build pass; chạy thử bản build: đăng ký → Cho phép → token → `initialize` → `tools/list` 39 tool → `lindy_get_me` ra Linh, Chủ; `check-upgrade --from=0035` và `--from=0034` đều NÂNG CẤP ĐẠT
 - 10/11 20:45 · ⏸ Gói 9 — dừng chờ anh: cho biết migration đang chạy trên Vibe Host, xác nhận M03 (quyền ghi ngay lần đầu), duyệt merge `vibe/mcp` → `main`, sao lưu DB rồi bấm Triển khai lại
 - 10/11 20:55 · Gói 9 bước 0: anh không nhớ bản trên hosting; em kiểm qua trình duyệt trên máy anh — bundle đang chạy có chuỗi S63 "Thành tiền giảm từ" (chỉ có từ commit 2084a50), `/api/health` ready, `/api/mcp` 404 ⇒ hosting đang ở `main` 2084a50, migration 0035. Lần triển khai này chỉ thêm MCP (0036); `check-upgrade --from=0035` đã ĐẠT
+- 10/11 21:00 · Anh xác nhận M03 (cấp quyền ghi ngay lần đầu) và duyệt merge `vibe/mcp` → `main`, push

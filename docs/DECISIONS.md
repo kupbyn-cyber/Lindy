@@ -293,7 +293,7 @@ Brief: docs/vibe/sua-don-va-kim/brief.md. Kế hoạch: docs/plans/2026-11-05-su
 |---|---|
 | M01 | **Chỉ tài khoản vai trò Chủ kết nối được AI** qua MCP (`/api/mcp`, OAuth 2.1 + PKCE), dùng từ Claude và ChatGPT. Kiểm ở màn Cho phép và mỗi lần gọi; tài khoản bị khoá, mất vai trò Chủ hoặc còn cờ phải đổi mật khẩu bị từ chối ngay. |
 | M02 | **Anh Đức và Linh dùng chung tài khoản Chủ của Linh.** Lịch sử chỉ tách theo app (Claude/ChatGPT), không tách được người. Tài khoản Chủ riêng cho anh để sau. |
-| M03 | **Kết nối lần đầu cấp cả quyền đọc và quyền ghi** (màn Cho phép có cảnh báo ghi), theo cách CEN WORK đang chạy. Em chọn lúc phản biện khi anh ngủ; **chờ anh xác nhận** (xem `docs/vibe/mcp/review.md`, mục Còn mở). |
+| M03 | **Kết nối lần đầu cấp cả quyền đọc và quyền ghi** (màn Cho phép có cảnh báo ghi), theo cách CEN WORK đang chạy. Mọi thao tác ghi vẫn qua xem trước → đồng ý. Anh xác nhận 10/11/2026. |
 | M04 | **Đổi hoặc bị đặt lại mật khẩu thì mọi kết nối AI cũ mất hiệu lực**, như web thu hồi phiên. |
 | M05 | **Phạm vi bản đầu.** Đọc: lịch, đơn, khách, Cần xem lại, báo cáo, lợi nhuận, sổ tiền, thu chi, cọc, công, lương, tạm ứng. Ghi (luôn xem trước → đồng ý, chạy đúng một lần): tạo/sửa/huỷ lịch, Khách báo huỷ, đề nghị chi, duyệt công ngày, duyệt/từ chối nghỉ, duyệt/từ chối tạm ứng, sửa tên/SĐT khách. Để sau: tạo đơn, thu tiền, cọc, hoàn tiền, chốt quỹ, lương, quản trị. |
 
