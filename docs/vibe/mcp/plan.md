@@ -152,7 +152,7 @@ Thêm vào Lindy một máy chủ MCP tại `/api/mcp`, chép khung của CEN WO
   - test "execute 2 lần ra 1 lịch" pass
 - Dừng hỏi anh: Không
 
-### ☐ Gói 8 — Tool ghi còn lại + tài liệu
+### ☑ Gói 8 — Tool ghi còn lại + tài liệu
 - Mục tiêu: đủ phạm vi ghi của brief; có hướng dẫn kết nối.
 - File: tạo `src/server/mcp/tools-write-other.ts`, `tests/acceptance/mcp-ghi-khac.test.ts`, `docs/MCP.md` · sửa `src/server/mcp/tools.ts`, `docs/DECISIONS.md`, `CLAUDE.md`, `README.md`
 - Các bước:
@@ -232,3 +232,5 @@ Chi tiết: ./review.md
 - 10/11 04:25 · ☑ Gói 5 — Tool đọc: lịch, đơn, khách, Cần xem lại · test 487 pass · Lệch plan: tool không kiểm thêm 62 ngày (service `listAppointments` đã chặn khoảng ngày, mô tả tool ghi rõ); test tự tạo một khách + một lịch riêng vì DB test không có sẵn dữ liệu
 - 10/11 04:45 · ☑ Gói 6 — Tool đọc: báo cáo, lợi nhuận, tiền, thu chi, cọc, công, lương, tạm ứng · test 493 pass · Lệch plan: không thêm chuỗi `…đ` vào kết quả (bước 7) — các kết quả có nhiều trường số không phải tiền (khách, lượt, phút), tự gắn dễ sai; thay bằng câu đơn vị tiền trong mô tả mọi tool có tiền + trong `instructions` của máy chủ; ca "đơn chưa xác nhận không vào doanh thu" dựa vào test sẵn có của báo cáo (tool trả nguyên số của `monthReport`, test kiểm khớp)
 - 10/11 05:10 · ☑ Gói 7 — Nền tảng intent ghi + tool ghi lịch hẹn · test 502 pass · Lệch plan: tool thực hiện gọi `limitWrites` như route web; xem trước kiểm thêm cờ `can.edit` / `can.cancel` / `can.reportCustomerCancel` của lịch để báo sớm; `tests/helpers/mcp.ts` nhận cả kết quả tool dạng chữ (challenge quyền)
+- 10/11 05:20 · ⏸ Gói 8 — test duyệt công/nghỉ/tạm ứng đỏ do DB test thiếu hồ sơ nhân viên và chính sách lương (không phải lỗi tool); phiên dừng giữa chừng
+- 10/11 20:35 · ☑ Gói 8 — Tool ghi còn lại + tài liệu · test 509 pass · Lệch plan: test dựng cơ sở thử riêng "Aa cơ sở thử MCP" (hồ sơ + chính sách lương, thu hồi vai trò khi xong) như `cham-cong.test.ts`; quyết định ghi thành M01–M05 trong `DECISIONS.md` (M03 ghi rõ chờ anh xác nhận)

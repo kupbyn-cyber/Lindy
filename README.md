@@ -19,6 +19,7 @@ App quản lý nội bộ cho **Lindy Nailash Studio** (cơ sở 31/49 Huỳnh T
 3. `docs/DECISIONS.md` — nguồn gốc từng quyết định; quyết định mới ghi tiếp ở đây và thắng mọi tài liệu khác.
 4. `docs/TECH_STACK.md` — đề xuất nền tảng, chờ chốt.
 5. `docs/OPEN_QUESTIONS.md` — việc còn chờ.
+6. `docs/MCP.md` — kết nối Claude, ChatGPT với LINDY OS (MCP).
 6. `design/README.md` — bộ giao diện.
 7. `data/` — bảng giá, combo, nhân sự để nhập vào app.
 

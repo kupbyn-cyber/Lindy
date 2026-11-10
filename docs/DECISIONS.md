@@ -286,3 +286,15 @@ Brief: docs/vibe/vao-ca-chup-anh/brief.md. Kế hoạch: docs/plans/2026-11-04-v
 | S64 | **Món Kìm (SP01, nhóm Sản phẩm, 110.000đ/cái) là hàng bán:** không nhận giảm giá (giảm dòng bị chặn; giảm cả bill chỉ tính và chia trên các dòng khác, bill chỉ có kìm không giảm được), bán đúng giá, không chọn thợ, không hoa hồng, **không vào doanh thu tính KPI của Nhung**, vẫn vào doanh thu quán, báo cáo, lợi nhuận. Cờ `services.is_retail` (chưa có nút sửa cờ); dòng đơn nhớ cờ lúc bán, DB tự đặt. Phiếu hoàn đơn có kìm: phần trừ hoa hồng thợ chia theo tỷ lệ cả đơn như cũ; phần trừ KPI theo tỷ lệ phần không phải hàng bán. Đơn cũ, tháng đã khoá không đổi số. |
 
 Brief: docs/vibe/sua-don-va-kim/brief.md. Kế hoạch: docs/plans/2026-11-05-sua-don-va-kim.md. Migration 0035.
+
+## M01–M05 — MCP cho Claude, ChatGPT (anh duyệt brief và kế hoạch 10/11/2026)
+
+| Mã | Quyết định |
+|---|---|
+| M01 | **Chỉ tài khoản vai trò Chủ kết nối được AI** qua MCP (`/api/mcp`, OAuth 2.1 + PKCE), dùng từ Claude và ChatGPT. Kiểm ở màn Cho phép và mỗi lần gọi; tài khoản bị khoá, mất vai trò Chủ hoặc còn cờ phải đổi mật khẩu bị từ chối ngay. |
+| M02 | **Anh Đức và Linh dùng chung tài khoản Chủ của Linh.** Lịch sử chỉ tách theo app (Claude/ChatGPT), không tách được người. Tài khoản Chủ riêng cho anh để sau. |
+| M03 | **Kết nối lần đầu cấp cả quyền đọc và quyền ghi** (màn Cho phép có cảnh báo ghi), theo cách CEN WORK đang chạy. Em chọn lúc phản biện khi anh ngủ; **chờ anh xác nhận** (xem `docs/vibe/mcp/review.md`, mục Còn mở). |
+| M04 | **Đổi hoặc bị đặt lại mật khẩu thì mọi kết nối AI cũ mất hiệu lực**, như web thu hồi phiên. |
+| M05 | **Phạm vi bản đầu.** Đọc: lịch, đơn, khách, Cần xem lại, báo cáo, lợi nhuận, sổ tiền, thu chi, cọc, công, lương, tạm ứng. Ghi (luôn xem trước → đồng ý, chạy đúng một lần): tạo/sửa/huỷ lịch, Khách báo huỷ, đề nghị chi, duyệt công ngày, duyệt/từ chối nghỉ, duyệt/từ chối tạm ứng, sửa tên/SĐT khách. Để sau: tạo đơn, thu tiền, cọc, hoàn tiền, chốt quỹ, lương, quản trị. |
+
+Brief, kế hoạch, phản biện: docs/vibe/mcp/. Hướng dẫn kết nối: docs/MCP.md. Migration 0036.
