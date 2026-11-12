@@ -79,7 +79,7 @@ Thêm cột `service_chips` (mảng chữ) vào `branch_booking_settings`, trả
   - `bun run dev` trên DB local: mở form Lịch mới: ô Dịch vụ thấy ngay, chạm Tay, Chân, Gel → ô ghi `Tay + Chân + Gel`; chạm Chân lần nữa → `Tay + Gel`; lưu xong ô lịch hiện đúng chuỗi đó
 - Dừng hỏi anh: Không
 
-### ☐ Gói 4 — Trang Cài đặt lịch: sửa bộ chip
+### ☑ Gói 4 — Trang Cài đặt lịch: sửa bộ chip
 - Mục tiêu: Linh thêm, xoá, đổi tên, đổi thứ tự chip không cần sửa code.
 - File: sửa `src/routes/_app/them/cai-dat-lich.tsx`, `src/routes/_app/them/index.tsx` (tách component `src/components/lich/ServiceChipsEditor.tsx` nếu file vượt ~200 dòng)
 - Các bước:
@@ -149,3 +149,4 @@ Chi tiết: ./review.md
 - 12/11 15:50 · ☑ Gói 1 — Dựng DB test, cột service_chips + API + test quyền · lint, typecheck, build pass; test 514/514 · Lệch plan: kiểm '+', độ dài, trùng cả ở updateServiceChips (lỗi 422 rõ), grant execute thêm cho app_worker (đọc cài đặt)
 - 12/11 15:53 · ☑ Gói 2 — Ô lịch Ngày/Tuần hiện dịch vụ thay SĐT · lint, typecheck, build pass; xem bằng Chrome headless 390px trên DB local: Ngày tên → dịch vụ (2 dòng) → giờ, Tuần thêm dòng dịch vụ · Lệch plan: bỏ class block khi line-clamp-2 (block ghi đè -webkit-box làm dịch vụ tràn, đẩy mất giờ)
 - 12/11 15:54 · ☑ Gói 3 — Form lịch: ô Dịch vụ hiện sẵn + hàng chip · lint, typecheck, build pass; unit 28/28; thử Chrome headless (tài khoản thợ): chạm Tay, Chân, Gel → "Tay + Chân + Gel", chạm Chân → "Tay + Gel" · Lệch plan: bỏ role="group" ở hàng chip (biome a11y đòi fieldset), giống hàng Thời lượng
+- 12/11 15:56 · ☑ Gói 4 — Trang Cài đặt lịch: sửa bộ chip · lint, typecheck, build pass; Chrome headless: Linh thêm "Úp móng" → lưu → form lịch có chip; "Tay + Chân" bị chặn; thợ PUT /api/service-chips → 403, không thấy mục · Lệch plan: tách ServiceChipsEditor.tsx ngay (trang sẽ quá 200 dòng); chip đang sửa có id riêng để giữ focus, không dùng index làm key

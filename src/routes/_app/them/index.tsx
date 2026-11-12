@@ -179,7 +179,7 @@ function MorePage() {
           {
             to: '/them/cai-dat-lich',
             label: 'Cài đặt lịch',
-            hint: 'Giờ mở cửa, cọc, ngày đóng cửa',
+            hint: 'Giờ mở cửa, chip dịch vụ, cọc, ngày đóng cửa',
             show: can('booking_settings.manage'),
           },
           {

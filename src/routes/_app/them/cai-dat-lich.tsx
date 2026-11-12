@@ -1,10 +1,11 @@
-// Cài đặt lịch (bước 1.15): chỉ người có booking_settings.manage (Linh). Mùa cọc Tết (Đợt 3, bước 3.4). Ngày quán
-// đóng cửa (Đợt 4, bước 4.4).
+// Cài đặt lịch (bước 1.15): chỉ người có booking_settings.manage (Linh). Chip dịch vụ của form lịch (S65). Mùa cọc
+// Tết (Đợt 3, bước 3.4). Ngày quán đóng cửa (Đợt 4, bước 4.4).
 import { useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useState } from 'react'
 import { ClosedDays } from '~/components/lich/ClosedDays'
 import { DepositSeasons } from '~/components/lich/DepositSeasons'
+import { ServiceChipsEditor } from '~/components/lich/ServiceChipsEditor'
 import { Button, Note, ScreenHeader, TextField, useToast } from '~/components/ui'
 import { api, errorText } from '~/lib/api'
 import { type Settings, useBookingSettings } from '~/lib/appointments'
@@ -25,13 +26,15 @@ function Page() {
   const [dur, setDur] = useState('120')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Đang sửa giờ dở: không nạp lại từ cache (lưu chip dịch vụ cũng làm cache đổi)
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
-    if (!s.data) return
+    if (!s.data || dirty) return
     setOpen(s.data.openTime)
     setClose(s.data.closeTime)
     setDur(String(s.data.defaultDurationMin))
-  }, [s.data])
+  }, [s.data, dirty])
 
   if (!can('booking_settings.manage')) {
     return <Note tone="warning">Chỉ chủ quán đổi được cài đặt lịch.</Note>
@@ -46,6 +49,7 @@ function Page() {
         method: 'PUT',
         body: { openTime: open, closeTime: close, defaultDurationMin: Number(dur) },
       })
+      setDirty(false)
       qc.setQueryData(['booking-settings'], next)
       toast('Đã lưu cài đặt lịch.')
     } catch (err) {
@@ -67,14 +71,20 @@ function Page() {
             type="time"
             step={900}
             value={open}
-            onChange={(e) => setOpen(e.target.value)}
+            onChange={(e) => {
+              setDirty(true)
+              setOpen(e.target.value)
+            }}
           />
           <TextField
             label="Giờ đóng cửa"
             type="time"
             step={900}
             value={close}
-            onChange={(e) => setClose(e.target.value)}
+            onChange={(e) => {
+              setDirty(true)
+              setClose(e.target.value)
+            }}
           />
         </div>
         <TextField
@@ -85,7 +95,10 @@ function Page() {
           max={720}
           step={15}
           value={dur}
-          onChange={(e) => setDur(e.target.value)}
+          onChange={(e) => {
+            setDirty(true)
+            setDur(e.target.value)
+          }}
         />
         <p className="caption m-0 text-ink-muted">
           Lịch đặt ngoài giờ mở cửa vẫn lưu được, kèm cảnh báo. Đổi giờ ở đây áp dụng cho các lần lưu sau.
@@ -95,6 +108,10 @@ function Page() {
           Lưu cài đặt
         </Button>
       </form>
+      <section className="flex flex-col gap-2 border-t border-line pt-3">
+        <h2 className="overline m-0 text-ink-muted">Chip dịch vụ</h2>
+        <ServiceChipsEditor chips={s.data?.serviceChips} />
+      </section>
       <section className="flex flex-col gap-2 border-t border-line pt-3">
         <h2 className="overline m-0 text-ink-muted">Mùa cọc Tết</h2>
         <DepositSeasons />
