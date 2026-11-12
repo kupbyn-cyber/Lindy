@@ -1,6 +1,6 @@
 # Kế hoạch: Hiện dịch vụ trên ô lịch
 
-- Trạng thái: Đang triển khai
+- Trạng thái: Hoàn thành (12/11/2026)
 - Brief: ./brief.md
 - Dự án: LINDY OS (`kupbyn-cyber/lindy`)
 - Nhánh git: vibe/lich-hien-dich-vu
@@ -93,7 +93,7 @@ Thêm cột `service_chips` (mảng chữ) vào `branch_booking_settings`, trả
   - đăng nhập thợ: không thấy mục sửa chip; gọi thẳng `PUT /api/service-chips` nhận 403 (đã có test gói 1)
 - Dừng hỏi anh: Không
 
-### ☐ Gói 5 — Ghi quyết định S65, cập nhật tài liệu, kiểm tra cuối
+### ☑ Gói 5 — Ghi quyết định S65, cập nhật tài liệu, kiểm tra cuối
 - Mục tiêu: tài liệu khớp code, mọi lệnh kiểm tra chạy hết.
 - File: sửa `docs/DECISIONS.md`, `CLAUDE.md`, `docs/modules/LICH_DAT_KHACH_v1_2.md` (chỉ thêm ghi chú trỏ S65 ở mục ô lịch §227 nếu file đang có ghi chú kiểu này; không thì bỏ)
 - Các bước:
@@ -150,3 +150,5 @@ Chi tiết: ./review.md
 - 12/11 15:53 · ☑ Gói 2 — Ô lịch Ngày/Tuần hiện dịch vụ thay SĐT · lint, typecheck, build pass; xem bằng Chrome headless 390px trên DB local: Ngày tên → dịch vụ (2 dòng) → giờ, Tuần thêm dòng dịch vụ · Lệch plan: bỏ class block khi line-clamp-2 (block ghi đè -webkit-box làm dịch vụ tràn, đẩy mất giờ)
 - 12/11 15:54 · ☑ Gói 3 — Form lịch: ô Dịch vụ hiện sẵn + hàng chip · lint, typecheck, build pass; unit 28/28; thử Chrome headless (tài khoản thợ): chạm Tay, Chân, Gel → "Tay + Chân + Gel", chạm Chân → "Tay + Gel" · Lệch plan: bỏ role="group" ở hàng chip (biome a11y đòi fieldset), giống hàng Thời lượng
 - 12/11 15:56 · ☑ Gói 4 — Trang Cài đặt lịch: sửa bộ chip · lint, typecheck, build pass; Chrome headless: Linh thêm "Úp móng" → lưu → form lịch có chip; "Tay + Chân" bị chặn; thợ PUT /api/service-chips → 403, không thấy mục · Lệch plan: tách ServiceChipsEditor.tsx ngay (trang sẽ quá 200 dòng); chip đang sửa có id riêng để giữ focus, không dùng index làm key
+- 12/11 15:58 · ☑ Gói 5 — Ghi S65, cập nhật tài liệu, kiểm tra cuối · Lệch plan: không sửa docs/modules/LICH_DAT_KHACH_v1_2.md (file không có ghi chú trỏ quyết định; §227 vốn đã ghi "dịch vụ rút gọn, không SĐT" khớp S65)
+- 12/11 15:58 · Hoàn thành · 5 gói · lint, typecheck, build pass · test 516/516

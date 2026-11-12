@@ -298,3 +298,11 @@ Brief: docs/vibe/sua-don-va-kim/brief.md. Kế hoạch: docs/plans/2026-11-05-su
 | M05 | **Phạm vi bản đầu.** Đọc: lịch, đơn, khách, Cần xem lại, báo cáo, lợi nhuận, sổ tiền, thu chi, cọc, công, lương, tạm ứng. Ghi (luôn xem trước → đồng ý, chạy đúng một lần): tạo/sửa/huỷ lịch, Khách báo huỷ, đề nghị chi, duyệt công ngày, duyệt/từ chối nghỉ, duyệt/từ chối tạm ứng, sửa tên/SĐT khách. Để sau: tạo đơn, thu tiền, cọc, hoàn tiền, chốt quỹ, lương, quản trị. |
 
 Brief, kế hoạch, phản biện: docs/vibe/mcp/. Hướng dẫn kết nối: docs/MCP.md. Migration 0036.
+
+## S65 — Hiện dịch vụ trên ô lịch, chip dịch vụ (anh duyệt brief và kế hoạch 12/11/2026)
+
+| Mã | Quyết định |
+|---|---|
+| S65 | **Ô lịch màn Ngày, Tuần hiện số khách – tên – dịch vụ – giờ, bỏ SĐT khỏi ô** (thay phần SĐT của S10; chi tiết lịch có SĐT và nút gọi, màn Danh sách vẫn có SĐT; thông báo màn hình khoá không đổi). Màn Ngày: dịch vụ một dòng, ô cao từ 90px được hai dòng; màn Tuần thêm một dòng dịch vụ. **Form lịch hiện sẵn ô Dịch vụ dự kiến** (không ẩn sau nút; nút mở thêm chỉ còn "Thêm ghi chú") với **hàng chip chạm nhanh**: chạm là thêm cuối, chạm lại là bỏ, nối bằng " + ", vẫn gõ tự do, tối đa 200 ký tự. **Linh sửa bộ chip ở Thêm → Cài đặt lịch** (quyền `booking_settings.manage`; thêm, xoá, đổi tên, đổi thứ tự; tối đa 20 chip, mỗi chip 1–30 ký tự, không trùng, không dấu "+"). Mặc định: Tay · Chân · Gel · Móng giả · Design · Mi · Chăm sóc. Chip chỉ là lối điền nhanh, `appointments.service_summary` vẫn là chữ tự do; lịch cũ có dịch vụ lẫn trong tên không tự sửa (S40). |
+
+Lý do: 29/10–12/11/2026 có 166 lịch, chỉ 16 lịch điền ô Dịch vụ, khoảng 121 lịch gõ dịch vụ lẫn vào tên. Brief, kế hoạch, phản biện: docs/vibe/lich-hien-dich-vu/. Migration 0037.
