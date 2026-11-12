@@ -306,12 +306,12 @@ function blockClass(it: ListItem) {
   )
 }
 
-/** Số khách – tên – SĐT – giờ (S10) */
+/** Số khách – tên – dịch vụ – giờ (S65, thay SĐT của S10; SĐT xem ở chi tiết, Danh sách) */
 function cellParts(it: ListItem) {
   return [
     it.guestCount > 1 ? `${it.guestCount} khách` : null,
     it.name,
-    it.phone,
+    it.serviceSummary,
     `${it.startTime}–${it.endTime}`,
   ].filter(Boolean) as string[]
 }
@@ -454,7 +454,17 @@ export function DayTimeline(props: {
                       {parts.slice(0, p.guestCount > 1 ? 2 : 1).join(' · ')}
                     </span>
                     {parts.slice(p.guestCount > 1 ? 2 : 1).map((s) => (
-                      <span key={s} className={cx('caption block truncate', tone.sub)}>
+                      <span
+                        key={s}
+                        className={cx(
+                          'caption',
+                          // Ô đủ cao: dịch vụ được hai dòng (line-clamp cần bỏ "block"), còn lại một dòng cắt bớt
+                          s === p.serviceSummary && p.height >= 90
+                            ? 'line-clamp-2 [overflow-wrap:anywhere]'
+                            : 'block truncate',
+                          tone.sub,
+                        )}
+                      >
                         {s}
                       </span>
                     ))}
@@ -557,6 +567,16 @@ export function WeekGrid(props: {
                     {it.guestCount > 1 ? `${it.guestCount} · ` : ''}
                     {it.name}
                   </span>
+                  {it.serviceSummary ? (
+                    <span
+                      className={cx(
+                        'line-clamp-1 text-[12px] leading-[15px] [overflow-wrap:anywhere]',
+                        calTone(it).sub,
+                      )}
+                    >
+                      {it.serviceSummary}
+                    </span>
+                  ) : null}
                   <span className={cx('block text-[12px] leading-[15px]', calTone(it).sub)}>
                     {it.startTime}
                   </span>

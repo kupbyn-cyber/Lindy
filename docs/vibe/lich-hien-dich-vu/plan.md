@@ -52,7 +52,7 @@ Thêm cột `service_chips` (mảng chữ) vào `branch_booking_settings`, trả
   - `bun run test` pass, gồm `tests/acceptance/lich-dich-vu.test.ts`
 - Dừng hỏi anh: Không, trừ khi bước 0 không dựng được DB (migration chỉ chạy ở DB local/test; không triển khai)
 
-### ☐ Gói 2 — Ô lịch Ngày/Tuần hiện dịch vụ thay SĐT
+### ☑ Gói 2 — Ô lịch Ngày/Tuần hiện dịch vụ thay SĐT
 - Mục tiêu: ô lịch đọc được dịch vụ; SĐT chỉ còn ở chi tiết và màn Danh sách.
 - File: sửa `src/components/lich/views.tsx`
 - Các bước:
@@ -147,3 +147,4 @@ Chi tiết: ./review.md
 - 12/11 15:46 · Bắt đầu · nhánh vibe/lich-hien-dich-vu · chuẩn: build + lint + typecheck pass (test chờ DB ở Gói 1 bước 0)
 - 12/11 15:50 · Bước 0: Postgres 16 có sẵn (cụm 16/main) + PG_ADMIN_URL; bootstrap, migrate, seed, dev-passwords, demo-data; test hiện trạng 508/509 (backup.test.ts lỗi giờ chập chờn, chạy riêng pass)
 - 12/11 15:50 · ☑ Gói 1 — Dựng DB test, cột service_chips + API + test quyền · lint, typecheck, build pass; test 514/514 · Lệch plan: kiểm '+', độ dài, trùng cả ở updateServiceChips (lỗi 422 rõ), grant execute thêm cho app_worker (đọc cài đặt)
+- 12/11 15:53 · ☑ Gói 2 — Ô lịch Ngày/Tuần hiện dịch vụ thay SĐT · lint, typecheck, build pass; xem bằng Chrome headless 390px trên DB local: Ngày tên → dịch vụ (2 dòng) → giờ, Tuần thêm dòng dịch vụ · Lệch plan: bỏ class block khi line-clamp-2 (block ghi đè -webkit-box làm dịch vụ tràn, đẩy mất giờ)
