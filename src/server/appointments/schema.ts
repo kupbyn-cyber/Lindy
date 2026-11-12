@@ -68,6 +68,21 @@ export const SettingsBody = z.strictObject({
   defaultDurationMin: z.number().int().min(15, 'Ít nhất 15 phút.').max(720, 'Tối đa 720 phút.'),
 })
 
+// Chip dịch vụ của form lịch (S65): tối đa 20, mỗi chip 1–30 ký tự, không "+" (dấu nối chip trong ô Dịch vụ)
+export const ServiceChipsBody = z.strictObject({
+  branchId: z.uuid().optional(),
+  chips: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, 'Tên chip không được trống.')
+        .max(30, 'Tên chip tối đa 30 ký tự.')
+        .regex(/^[^+]*$/, 'Tên chip không chứa dấu +.'),
+    )
+    .max(20, 'Tối đa 20 chip dịch vụ.'),
+})
+
 // Không còn lọc Mới đặt / Đã chốt lịch: mọi lịch tạo ra là chốt luôn (S02)
 export const LIST_FILTERS = ['active', 'customer_cancel', 'cancelled', 'no_show'] as const
 export type ListFilter = (typeof LIST_FILTERS)[number]

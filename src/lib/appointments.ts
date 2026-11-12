@@ -35,6 +35,8 @@ export type Settings = {
   closeTime: string
   defaultDurationMin: number
   timezone: string
+  /** Chip dịch vụ của form lịch (S65), Linh sửa ở Cài đặt lịch */
+  serviceChips: string[]
   /** Mùa cọc đang bật hôm nay (Đợt 3): lịch tạo hôm nay cần cọc */
   depositSeason?: { name: string; endDate: string; amountPerGuest: number } | null
 }

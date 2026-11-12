@@ -130,12 +130,19 @@ async function linkedOrders(tx: Tx, id: string) {
 
 const activeCount = (orders: { status: string }[]) => orders.filter((o) => o.status !== 'cancelled').length
 
-type Settings = { openTime: string; closeTime: string; defaultDurationMin: number; timezone: string }
+type Settings = {
+  openTime: string
+  closeTime: string
+  defaultDurationMin: number
+  timezone: string
+  /** Chip dịch vụ của form lịch (S65) */
+  serviceChips: string[]
+}
 
 async function loadSettings(tx: Tx, branchId: string): Promise<Settings> {
   const [s] = await tx<Settings[]>`
     select to_char(s.open_time, 'HH24:MI') as open_time, to_char(s.close_time, 'HH24:MI') as close_time,
-           s.default_duration_min, b.timezone
+           s.default_duration_min, b.timezone, s.service_chips
     from branches b join branch_booking_settings s on s.branch_id = b.id
     where b.id = ${branchId}`
   if (!s) throw notFound('Không tìm thấy cài đặt lịch của cơ sở.')
@@ -813,6 +820,40 @@ export async function updateSettings(
               ${tx.json({ before, after: input })})`
     return loadSettings(tx, branch.id)
   })
+}
+
+/**
+ * Bộ chip dịch vụ của form lịch (S65): chỉ booking_settings.manage (policy booking_settings_manage kiểm lại ở DB).
+ * Bỏ trùng không phân biệt hoa thường, giữ thứ tự Linh xếp. Trả getSettings (có mùa cọc) SAU khi giao dịch ghi đã
+ * commit — getSettings mở giao dịch riêng, gọi trong callback sẽ đọc bộ chip cũ.
+ */
+export async function updateServiceChips(auth: Auth, input: { branchId?: string; chips: string[] }) {
+  const branch = requireBranch(auth, input.branchId)
+  if (!hasPerm(auth, branch.id, 'booking_settings.manage'))
+    throw forbidden('Chỉ chủ quán đổi được chip dịch vụ.')
+  const seen = new Set<string>()
+  const chips: string[] = []
+  for (const raw of input.chips) {
+    const c = raw.trim()
+    const key = c.toLocaleLowerCase('vi')
+    if (!c || seen.has(key)) continue
+    if (c.length > 30 || c.includes('+')) throw invalid('Tên chip 1–30 ký tự, không chứa dấu +.')
+    seen.add(key)
+    chips.push(c)
+  }
+  if (chips.length > 20) throw invalid('Tối đa 20 chip dịch vụ.')
+  await withUser(auth.userId, async (tx) => {
+    const before = await loadSettings(tx, branch.id)
+    await tx`
+      update branch_booking_settings
+      set service_chips = ${chips}::text[], updated_at = now(), updated_by = ${auth.userId}
+      where branch_id = ${branch.id}`
+    await tx`
+      insert into audit_logs (actor_user_id, branch_id, action, entity_type, entity_id, details)
+      values (${auth.userId}, ${branch.id}, 'booking_settings.service_chips_updated', 'branch', ${branch.id},
+              ${tx.json({ before: before.serviceChips, after: chips })})`
+  })
+  return getSettings(auth, branch.id)
 }
 
 export { toLocalDate }

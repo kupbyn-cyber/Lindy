@@ -28,7 +28,7 @@ Thêm cột `service_chips` (mảng chữ) vào `branch_booking_settings`, trả
 
 ## Chi tiết gói
 
-### ☐ Gói 1 — Cột `service_chips` + API đọc/sửa + test quyền
+### ☑ Gói 1 — Cột `service_chips` + API đọc/sửa + test quyền
 - Mục tiêu: lưu bộ chip theo cơ sở, ai xem lịch đọc được, chỉ người có `booking_settings.manage` sửa được (server lẫn DB).
 - File: tạo `db/migrations/0037_service_chips.sql`, `src/routes/api/service-chips.ts`, `tests/acceptance/lich-dich-vu.test.ts` · sửa `src/server/appointments/service.ts`, `src/server/appointments/schema.ts`, `src/lib/appointments.ts`, `src/routeTree.gen.ts` (tự sinh khi build)
 - Các bước:
@@ -145,3 +145,5 @@ Chi tiết: ./review.md
 
 ## Nhật ký triển khai
 - 12/11 15:46 · Bắt đầu · nhánh vibe/lich-hien-dich-vu · chuẩn: build + lint + typecheck pass (test chờ DB ở Gói 1 bước 0)
+- 12/11 15:50 · Bước 0: Postgres 16 có sẵn (cụm 16/main) + PG_ADMIN_URL; bootstrap, migrate, seed, dev-passwords, demo-data; test hiện trạng 508/509 (backup.test.ts lỗi giờ chập chờn, chạy riêng pass)
+- 12/11 15:50 · ☑ Gói 1 — Dựng DB test, cột service_chips + API + test quyền · lint, typecheck, build pass; test 514/514 · Lệch plan: kiểm '+', độ dài, trùng cả ở updateServiceChips (lỗi 422 rõ), grant execute thêm cho app_worker (đọc cài đặt)

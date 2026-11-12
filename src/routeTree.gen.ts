@@ -25,6 +25,7 @@ import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as ApiOverviewRouteImport } from './routes/api/overview'
 import { Route as ApiReviewRouteImport } from './routes/api/review'
+import { Route as ApiServiceChipsRouteImport } from './routes/api/service-chips'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
 import { Route as OauthRegisterRouteImport } from './routes/oauth.register'
 import { Route as OauthRevokeRouteImport } from './routes/oauth.revoke'
@@ -203,6 +204,11 @@ const ApiOverviewRoute = ApiOverviewRouteImport.update({
 const ApiReviewRoute = ApiReviewRouteImport.update({
   id: '/api/review',
   path: '/api/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiServiceChipsRoute = ApiServiceChipsRouteImport.update({
+  id: '/api/service-chips',
+  path: '/api/service-chips',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
@@ -718,6 +724,7 @@ export interface FileRoutesByFullPath {
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
+  '/api/service-chips': typeof ApiServiceChipsRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/revoke': typeof OauthRevokeRoute
@@ -832,6 +839,7 @@ export interface FileRoutesByTo {
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
+  '/api/service-chips': typeof ApiServiceChipsRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/revoke': typeof OauthRevokeRoute
@@ -949,6 +957,7 @@ export interface FileRoutesById {
   '/api/me': typeof ApiMeRoute
   '/api/overview': typeof ApiOverviewRoute
   '/api/review': typeof ApiReviewRoute
+  '/api/service-chips': typeof ApiServiceChipsRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/register': typeof OauthRegisterRoute
   '/oauth/revoke': typeof OauthRevokeRoute
@@ -1067,6 +1076,7 @@ export interface FileRouteTypes {
     | '/api/me'
     | '/api/overview'
     | '/api/review'
+    | '/api/service-chips'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/revoke'
@@ -1181,6 +1191,7 @@ export interface FileRouteTypes {
     | '/api/me'
     | '/api/overview'
     | '/api/review'
+    | '/api/service-chips'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/revoke'
@@ -1297,6 +1308,7 @@ export interface FileRouteTypes {
     | '/api/me'
     | '/api/overview'
     | '/api/review'
+    | '/api/service-chips'
     | '/oauth/authorize'
     | '/oauth/register'
     | '/oauth/revoke'
@@ -1413,6 +1425,7 @@ export interface RootRouteChildren {
   ApiMeRoute: typeof ApiMeRoute
   ApiOverviewRoute: typeof ApiOverviewRoute
   ApiReviewRoute: typeof ApiReviewRoute
+  ApiServiceChipsRoute: typeof ApiServiceChipsRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthRegisterRoute: typeof OauthRegisterRoute
   OauthRevokeRoute: typeof OauthRevokeRoute
@@ -1594,6 +1607,13 @@ declare module '@tanstack/react-router' {
       path: '/api/review'
       fullPath: '/api/review'
       preLoaderRoute: typeof ApiReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/service-chips': {
+      id: '/api/service-chips'
+      path: '/api/service-chips'
+      fullPath: '/api/service-chips'
+      preLoaderRoute: typeof ApiServiceChipsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth/authorize': {
@@ -2436,6 +2456,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMeRoute: ApiMeRoute,
   ApiOverviewRoute: ApiOverviewRoute,
   ApiReviewRoute: ApiReviewRoute,
+  ApiServiceChipsRoute: ApiServiceChipsRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthRegisterRoute: OauthRegisterRoute,
   OauthRevokeRoute: OauthRevokeRoute,
