@@ -66,7 +66,7 @@ Thêm cột `service_chips` (mảng chữ) vào `branch_booking_settings`, trả
   - mở `bun run dev` trên DB local (Gói 1 bước 0), đăng nhập tài khoản seed (mật khẩu `DEV_PASSWORD` sau `dev-passwords.ts`), sửa một lịch demo cho có dịch vụ; màn Ngày có lịch có dịch vụ: ô hiện tên → dịch vụ → giờ; lịch không có dịch vụ: tên → giờ, không dòng trống
 - Dừng hỏi anh: Không
 
-### ☐ Gói 3 — Form lịch: ô Dịch vụ hiện sẵn + hàng chip
+### ☑ Gói 3 — Form lịch: ô Dịch vụ hiện sẵn + hàng chip
 - Mục tiêu: điền dịch vụ chỉ bằng chạm chip, vẫn gõ tự do được.
 - File: sửa `src/lib/appointments.ts`, `src/components/lich/AppointmentForm.tsx`, `src/routes/_app/lich/index.tsx`, `src/routes/_app/lich/$id.tsx`, `tests/unit/lib.test.ts`
 - Các bước:
@@ -148,3 +148,4 @@ Chi tiết: ./review.md
 - 12/11 15:50 · Bước 0: Postgres 16 có sẵn (cụm 16/main) + PG_ADMIN_URL; bootstrap, migrate, seed, dev-passwords, demo-data; test hiện trạng 508/509 (backup.test.ts lỗi giờ chập chờn, chạy riêng pass)
 - 12/11 15:50 · ☑ Gói 1 — Dựng DB test, cột service_chips + API + test quyền · lint, typecheck, build pass; test 514/514 · Lệch plan: kiểm '+', độ dài, trùng cả ở updateServiceChips (lỗi 422 rõ), grant execute thêm cho app_worker (đọc cài đặt)
 - 12/11 15:53 · ☑ Gói 2 — Ô lịch Ngày/Tuần hiện dịch vụ thay SĐT · lint, typecheck, build pass; xem bằng Chrome headless 390px trên DB local: Ngày tên → dịch vụ (2 dòng) → giờ, Tuần thêm dòng dịch vụ · Lệch plan: bỏ class block khi line-clamp-2 (block ghi đè -webkit-box làm dịch vụ tràn, đẩy mất giờ)
+- 12/11 15:54 · ☑ Gói 3 — Form lịch: ô Dịch vụ hiện sẵn + hàng chip · lint, typecheck, build pass; unit 28/28; thử Chrome headless (tài khoản thợ): chạm Tay, Chân, Gel → "Tay + Chân + Gel", chạm Chân → "Tay + Gel" · Lệch plan: bỏ role="group" ở hàng chip (biome a11y đòi fieldset), giống hàng Thời lượng

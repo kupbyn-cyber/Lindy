@@ -132,3 +132,29 @@ export function addMinutes(hhmm: string, n: number) {
   const t = Math.min(h * 60 + m + n, 23 * 60 + 59)
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`
 }
+
+// ---------------------------------------------------------------- Chip dịch vụ (S65)
+
+const chipKey = (s: string) => s.trim().toLocaleLowerCase('vi')
+const chipParts = (text: string) =>
+  text
+    .split('+')
+    .map((p) => p.trim())
+    .filter(Boolean)
+
+/** Ô Dịch vụ đang có đúng phần `chip` (so nguyên phần giữa các dấu "+", không phân biệt hoa thường) */
+export function hasServiceChip(text: string, chip: string) {
+  return chipParts(text).some((p) => chipKey(p) === chipKey(chip))
+}
+
+/**
+ * Chạm chip: có rồi thì bỏ (mọi phần khớp), chưa có thì thêm cuối; nối lại bằng " + ". Phần chữ tự do khác giữ nguyên.
+ * Ví dụ "Tay + Chân" chạm "Tay" → "Chân"; "tay úp móng" chạm "Tay" → "tay úp móng + Tay".
+ */
+export function toggleServiceChip(text: string, chip: string) {
+  const parts = chipParts(text)
+  const next = hasServiceChip(text, chip)
+    ? parts.filter((p) => chipKey(p) !== chipKey(chip))
+    : [...parts, chip.trim()]
+  return next.join(' + ')
+}

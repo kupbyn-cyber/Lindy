@@ -526,6 +526,7 @@ function DetailPage() {
         open={editing}
         editing={d}
         defaultDurationMin={settings.data?.defaultDurationMin ?? 120}
+        serviceChips={settings.data?.serviceChips ?? []}
         onClose={() => setEditing(false)}
       />
     </section>

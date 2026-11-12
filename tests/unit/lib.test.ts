@@ -1,6 +1,12 @@
 // Hàm thuần (bước 0.6, 1.2): tiền, SĐT (K06), giờ Việt Nam khi máy chủ chạy UTC, trùng giờ, xếp cột.
 import { describe, expect, it } from 'vitest'
-import { addMinutes, type ListItem, layoutDay } from '../../src/lib/appointments'
+import {
+  addMinutes,
+  hasServiceChip,
+  type ListItem,
+  layoutDay,
+  toggleServiceChip,
+} from '../../src/lib/appointments'
 import { formatVND, parseVND } from '../../src/lib/money'
 import {
   maskPhonesInText,
@@ -280,5 +286,22 @@ describe('Xếp cột lịch chồng giờ', () => {
     )
     const byId = Object.fromEntries(placed.map((p) => [p.id, p.col]))
     expect(byId.c).toBe(1)
+  })
+})
+
+describe('S65 — chip dịch vụ', () => {
+  it('chạm chip: thêm cuối, chạm lại bỏ, nối " + ", chỉ khớp nguyên phần', () => {
+    expect(toggleServiceChip('', 'Tay')).toBe('Tay')
+    expect(toggleServiceChip('Tay', 'Chân')).toBe('Tay + Chân')
+    expect(toggleServiceChip('Tay + Chân', 'Tay')).toBe('Chân')
+    expect(toggleServiceChip('tay úp móng', 'Tay')).toBe('tay úp móng + Tay')
+    expect(toggleServiceChip('Tay +  + Gel', 'Chân')).toBe('Tay + Gel + Chân')
+    expect(toggleServiceChip('Tay +  + Gel', 'Gel')).toBe('Tay')
+    expect(toggleServiceChip('TAY', 'Tay')).toBe('')
+  })
+  it('chip đang bật khi ô có đúng phần đó', () => {
+    expect(hasServiceChip('Tay + Chân', 'chân')).toBe(true)
+    expect(hasServiceChip('tay úp móng', 'Tay')).toBe(false)
+    expect(hasServiceChip('', 'Tay')).toBe(false)
   })
 })

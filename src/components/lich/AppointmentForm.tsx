@@ -15,7 +15,15 @@ import {
   useToast,
 } from '~/components/ui'
 import { ApiError, api } from '~/lib/api'
-import { addMinutes, type Detail, type ListItem, type Settings, type Warnings } from '~/lib/appointments'
+import {
+  addMinutes,
+  type Detail,
+  hasServiceChip,
+  type ListItem,
+  type Settings,
+  toggleServiceChip,
+  type Warnings,
+} from '~/lib/appointments'
 import { formatVND } from '~/lib/money'
 import { movePhoneOutOfName, nameLooksMessy, normalizePhone } from '~/lib/phone'
 import { hhmmToMinutes } from '~/lib/time'
@@ -65,6 +73,8 @@ export function AppointmentForm(props: {
   defaultDurationMin: number
   /** Mùa cọc đang bật hôm nay: lịch tạo mới cần cọc (C01) */
   depositSeason?: Settings['depositSeason']
+  /** Chip dịch vụ chạm nhanh (S65, Linh sửa ở Cài đặt lịch) */
+  serviceChips: string[]
   onSaved?: (id: string) => void
 }) {
   const toast = useToast()
@@ -78,10 +88,12 @@ export function AppointmentForm(props: {
   const [conflict, setConflict] = useState<Detail | null>(null)
   const [warnings, setWarnings] = useState<Warnings | null>(null)
   const [picking, setPicking] = useState(false)
-  // Lịch thường chỉ cần tên và giờ: ngày, giờ lẻ, dịch vụ, ghi chú mở khi cần (S52)
+  // Lịch thường chỉ cần tên và giờ: ngày, giờ lẻ, ghi chú mở khi cần (S52); dịch vụ luôn hiện, có chip (S65)
   const [moreOpen, setMoreOpen] = useState(false)
   // SĐT vừa lấy ra khỏi ô tên khách (S40)
   const [moved, setMoved] = useState<string | null>(null)
+  // Chạm chip làm ô Dịch vụ vượt giới hạn: không đổi, báo ngắn ở ô
+  const [chipError, setChipError] = useState<string | null>(null)
   const requestId = useRef<string>('')
   // Cọc ghi kèm khi tạo lịch (khách đã chuyển); mã riêng để bấm lại không ghi hai khoản
   const [depositOn, setDepositOn] = useState(false)
@@ -98,7 +110,8 @@ export function AppointmentForm(props: {
     setWarnings(null)
     setEndTouched(false)
     setMoved(null)
-    setMoreOpen(!!props.editing?.serviceSummary || !!props.editing?.notes)
+    setChipError(null)
+    setMoreOpen(!!props.editing?.notes)
     if (props.editing) {
       setV(fromDetail(props.editing))
       setVersion(props.editing.version)
@@ -425,25 +438,55 @@ export function AppointmentForm(props: {
           error={v.phone && !phoneCheck.ok ? phoneCheck.error : undefined}
           onChange={(e) => set('phone', e.target.value)}
         />
+        <div className="flex flex-col gap-2">
+          <TextField
+            label="Dịch vụ dự kiến"
+            placeholder="sơn gel tay + chân"
+            value={v.serviceSummary}
+            maxLength={LIMITS.service}
+            error={chipError ?? undefined}
+            onChange={(e) => {
+              setChipError(null)
+              set('serviceSummary', e.target.value)
+            }}
+          />
+          {props.serviceChips.length > 0 ? (
+            <div className="lo-chips">
+              {props.serviceChips.map((c) => {
+                const on = hasServiceChip(v.serviceSummary, c)
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    className={cx('lo-toggle', 'label', on && 'is-on')}
+                    aria-pressed={on}
+                    onClick={() => {
+                      const next = toggleServiceChip(v.serviceSummary, c)
+                      if (next.length > LIMITS.service) {
+                        setChipError(`Dịch vụ tối đa ${LIMITS.service} ký tự.`)
+                        return
+                      }
+                      setChipError(null)
+                      set('serviceSummary', next)
+                    }}
+                  >
+                    {c}
+                  </button>
+                )
+              })}
+            </div>
+          ) : null}
+        </div>
         {moreOpen ? (
-          <>
-            <TextField
-              label="Dịch vụ dự kiến"
-              placeholder="sơn gel tay + chân"
-              value={v.serviceSummary}
-              maxLength={LIMITS.service}
-              onChange={(e) => set('serviceSummary', e.target.value)}
-            />
-            <TextArea
-              label="Ghi chú nội bộ"
-              value={v.notes}
-              maxLength={LIMITS.notes}
-              onChange={(e) => set('notes', e.target.value)}
-            />
-          </>
+          <TextArea
+            label="Ghi chú nội bộ"
+            value={v.notes}
+            maxLength={LIMITS.notes}
+            onChange={(e) => set('notes', e.target.value)}
+          />
         ) : (
           <Button variant="quiet" className="self-start" onClick={() => setMoreOpen(true)}>
-            Thêm dịch vụ, ghi chú
+            Thêm ghi chú
           </Button>
         )}
 
